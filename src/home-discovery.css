@@ -1,0 +1,19 @@
+.home-discovery{padding:105px 6vw;background:#e8e6dc}
+.home-page{display:flex;flex-direction:column}.home-page>.hero-new{order:1}.home-page>.search-stage{order:2}.home-page>.home-discovery{order:3}.home-page>.portal{order:4}.home-page>.spotlight{order:5}.home-page>.home-latest{order:6}.home-page>.manifesto{order:7}
+.home-discovery-head{display:grid;grid-template-columns:1fr 1.2fr;gap:70px;align-items:end;margin-bottom:60px}
+.home-discovery-head h2{font:700 clamp(48px,5.5vw,82px)/.92 'Manrope',sans-serif;letter-spacing:-.065em;margin:0}
+.discovery-tiles{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-left:1px solid var(--line)}
+.discovery-tiles>a{aspect-ratio:1/1;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:26px;display:flex;flex-direction:column;justify-content:space-between;transition:background .25s,color .25s}
+.discovery-tiles>a:nth-child(1){background:var(--acid)}
+.discovery-tiles>a:nth-child(2){background:var(--forest);color:white}
+.discovery-tiles>a:nth-child(3){background:#f7f5ee}
+.discovery-tiles>a:nth-child(4){background:var(--black);color:white}
+.discovery-tiles>a:hover{background:white;color:var(--black)}
+.discovery-tiles>a>span{font:600 9px 'IBM Plex Mono';letter-spacing:.12em}
+.discovery-tiles>a>div small{font:600 8px 'IBM Plex Mono';letter-spacing:.12em;opacity:.65}
+.discovery-tiles h3{font:700 30px/1 'Manrope';letter-spacing:-.045em;margin:13px 0}
+.discovery-tiles p{font-size:13px;line-height:1.65;max-width:230px;margin:0;opacity:.72}
+.discovery-tiles>a>svg{width:26px;height:26px;align-self:flex-end}
+@media(max-width:1000px){.discovery-tiles{grid-template-columns:1fr 1fr}.discovery-tiles>a{aspect-ratio:1.2/1}}
+@media(max-width:760px){.home-discovery{padding:75px 20px}.home-discovery-head{display:block}.home-discovery-head h2{font-size:48px;margin-top:35px}.discovery-tiles>a{padding:20px;aspect-ratio:1/1}.discovery-tiles h3{font-size:24px}}
+@media(max-width:460px){.discovery-tiles{grid-template-columns:1fr}.discovery-tiles>a{aspect-ratio:1.3/1}}

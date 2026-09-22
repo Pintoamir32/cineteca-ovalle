@@ -1,0 +1,6 @@
+node_modules
+dist
+.edge-preview-profile
+.edge-preview-profile-2
+.edge-preview-profile-3
+.env

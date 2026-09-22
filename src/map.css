@@ -1,0 +1,11 @@
+.real-map{background:#dfe2d3;min-height:720px}
+.real-map iframe{position:absolute;inset:0;width:100%;height:100%;border:0;filter:saturate(.72) contrast(1.04)}
+.map-caption{position:absolute;z-index:2;left:20px;bottom:20px;background:var(--black);color:white;padding:11px 14px;display:flex;align-items:center;gap:8px;font:600 8px 'IBM Plex Mono';text-transform:uppercase}
+.map-caption svg{width:15px}
+.map-location-list{display:grid;margin:-18px 0 30px;border-top:1px solid rgba(255,255,255,.2)}
+.map-location-list button{border:0;border-bottom:1px solid rgba(255,255,255,.2);background:transparent;color:white;padding:11px 0;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:9px;text-align:left;font-size:10px}
+.map-location-list button svg{width:14px}
+.map-location-list button b{font:600 9px 'IBM Plex Mono';color:#92a49b}
+.map-location-list button.active,.map-location-list button.active b{color:var(--acid)}
+.map-explorer>aside h2{margin-bottom:35px}
+@media(max-width:760px){.real-map{height:600px;min-height:600px}.map-caption{left:12px;bottom:12px}}

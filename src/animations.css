@@ -1,0 +1,45 @@
+[data-reveal]{opacity:0;transform:translateY(28px);transition:opacity .8s cubic-bezier(.16,.8,.3,1),transform .8s cubic-bezier(.16,.8,.3,1)}
+[data-reveal].is-visible{opacity:1;transform:none}
+.stagger-item{opacity:0;transform:translateY(18px);transition:opacity .6s cubic-bezier(.16,.8,.3,1),transform .6s cubic-bezier(.16,.8,.3,1)}
+[data-reveal].is-visible .stagger-item{opacity:1;transform:none}
+
+@keyframes imgReveal{from{opacity:0;transform:scale(1.04);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}
+.record-photo>img,.page-hero>img,.ficha-hero>img,.discovery-hero>img,.about-hero>img,.collection-card>img,.detail-image>img,.spotlight-image>img,.ficha-gallery-grid>img,.timeline-detail>img{animation:imgReveal .85s cubic-bezier(.16,.8,.3,1) both}
+
+@keyframes heroPhotoZoom{0%{opacity:0;filter:blur(10px);transform:scale(1.22)}18%{opacity:1;filter:blur(0)}100%{opacity:1;filter:blur(0);transform:scale(1)}}
+.hero-photo>img{animation:heroPhotoZoom 5s cubic-bezier(.25,.46,.45,.94) both}
+
+@keyframes panelDrop{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+.filter-panel{animation:panelDrop .28s cubic-bezier(.16,.8,.3,1) both;transform-origin:top}
+
+.arrow-hover svg,.about-cta a svg,.ficha-cta svg,.timeline-detail-copy a svg,.home-latest-head>a svg,.spotlight-copy>a svg,.detail-copy>a svg,.related-page ~ a svg{transition:transform .28s cubic-bezier(.16,.8,.3,1)}
+.about-cta a:hover svg,.ficha-cta:hover svg,.timeline-detail-copy a:hover svg,.home-latest-head>a:hover svg,.spotlight-copy>a:hover svg,.detail-copy>a:hover svg{transform:translateX(5px)}
+
+.filter-toggle,.catalog-search button,.ficha-location a,.back-link{transition:transform .2s ease,background .2s ease,color .2s ease}
+.filter-toggle:hover{transform:translateY(-2px)}
+.back-link:hover{transform:translateX(-4px)}
+
+.scroll-progress{position:fixed;top:0;left:0;right:0;height:3px;z-index:60;pointer-events:none;background:rgba(255,255,255,0)}
+.scroll-progress>div{height:100%;background:var(--acid);width:0;transition:width .1s linear;box-shadow:0 0 8px rgba(217,255,67,.6)}
+
+.stat-counter{font-variant-numeric:tabular-nums}
+
+@keyframes heroFadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+.hero-title>.eyebrow{animation:heroFadeUp .8s cubic-bezier(.16,.8,.3,1) .1s both}
+.hero-title>h1{animation:heroFadeUp .9s cubic-bezier(.16,.8,.3,1) .2s both}
+.hero-title>p{animation:heroFadeUp .8s cubic-bezier(.16,.8,.3,1) .35s both}
+.hero-edition{animation:heroFadeUp .8s cubic-bezier(.16,.8,.3,1) .15s both}
+.reel-button{animation:heroFadeUp .8s cubic-bezier(.16,.8,.3,1) .45s both}
+.hero-index{animation:heroFadeUp .8s cubic-bezier(.16,.8,.3,1) .55s both}
+
+@media(prefers-reduced-motion: reduce){
+  [data-reveal],.stagger-item,.route-view,.hero-title>*,.hero-edition,.reel-button,.hero-index,
+  .record-photo>img,.page-hero>img,.ficha-hero>img,.discovery-hero>img,.about-hero>img,.collection-card>img,
+  .detail-image>img,.spotlight-image>img,.hero-photo>img,.ficha-gallery-grid>img,.timeline-detail>img,.filter-panel{
+    animation:none!important;
+    transition:none!important;
+    opacity:1!important;
+    transform:none!important;
+    filter:none!important;
+  }
+}
