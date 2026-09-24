@@ -1,5 +1,5 @@
 .home-discovery{padding:105px 6vw;background:#e8e6dc}
-.home-page{display:flex;flex-direction:column}.home-page>.hero-new{order:1}.home-page>.search-stage{order:2}.home-page>.home-discovery{order:3}.home-page>.portal{order:4}.home-page>.spotlight{order:5}.home-page>.home-latest{order:6}.home-page>.manifesto{order:7}
+.home-page{display:flex;flex-direction:column}.home-page>.hero-new{order:1}.home-page>.search-stage{order:2}.home-page>.home-stats{order:2}.home-page>.home-discovery{order:3}.home-page>.portal{order:4}.home-page>.spotlight{order:5}.home-page>.home-latest{order:6}.home-page>.manifesto{order:7}
 .home-discovery-head{display:grid;grid-template-columns:1fr 1.2fr;gap:70px;align-items:end;margin-bottom:60px}
 .home-discovery-head h2{font:700 clamp(48px,5.5vw,82px)/.92 'Manrope',sans-serif;letter-spacing:-.065em;margin:0}
 .discovery-tiles{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-left:1px solid var(--line)}
@@ -17,3 +17,28 @@
 @media(max-width:1000px){.discovery-tiles{grid-template-columns:1fr 1fr}.discovery-tiles>a{aspect-ratio:1.2/1}}
 @media(max-width:760px){.home-discovery{padding:75px 20px}.home-discovery-head{display:block}.home-discovery-head h2{font-size:48px;margin-top:35px}.discovery-tiles>a{padding:20px;aspect-ratio:1/1}.discovery-tiles h3{font-size:24px}}
 @media(max-width:460px){.discovery-tiles{grid-template-columns:1fr}.discovery-tiles>a{aspect-ratio:1.3/1}}
+
+/* Contadores del archivo (entre buscador y "Otras formas de explorar") */
+.home-stats{padding:100px 6vw;background:var(--black);color:#fff}
+.home-stats-head{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px 70px;align-items:end;margin-bottom:56px}
+.home-stats-head>span{grid-column:1/-1;font:700 9px 'IBM Plex Mono';letter-spacing:.18em;color:var(--acid)}
+.home-stats-head h2{font:700 clamp(34px,4.2vw,62px)/1 'Syne';letter-spacing:-.05em;margin:0;text-wrap:balance}
+.home-stats-head h2 em{font-style:normal;color:var(--acid)}
+.home-stats-head p{font-size:15px;line-height:1.75;color:rgba(255,255,255,.62);margin:0;max-width:440px}
+.home-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.14)}
+.home-stat{position:relative;display:flex;flex-direction:column;padding:28px 26px 26px;background:var(--black);color:#fff;transition:background .25s}
+.home-stat-icon{width:20px;height:20px;color:var(--acid);margin-bottom:30px}
+.home-stat strong{font:700 clamp(48px,5vw,76px)/.9 'Syne';letter-spacing:-.06em;color:#fff}
+.home-stat>span{font:700 14px 'Manrope';margin-top:14px}
+.home-stat small{font-size:12px;line-height:1.5;color:rgba(255,255,255,.55);margin-top:4px}
+.home-stat-arrow{position:absolute;top:26px;right:24px;width:18px;opacity:.3;transition:.25s}
+.home-stat:hover{background:#1c1f1c}
+.home-stat:hover .home-stat-arrow{opacity:1;color:var(--acid);transform:translateX(3px)}
+.home-stat.is-total{background:var(--acid);color:var(--black)}
+.home-stat.is-total strong{color:var(--black)}
+.home-stat.is-total small{color:color-mix(in srgb,var(--black) 62%,transparent)}
+.home-stat.is-total .home-stat-icon,.home-stat.is-total:hover .home-stat-arrow{color:var(--black)}
+.home-stat.is-total:hover{background:#e6ff7a}
+@media(max-width:1000px){.home-stats-head{grid-template-columns:1fr}.home-stats-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.home-stats{padding:64px 20px}.home-stats-head{margin-bottom:36px}.home-stat{padding:22px 18px}.home-stat-icon{margin-bottom:18px}}
+@media(max-width:420px){.home-stats-grid{grid-template-columns:1fr}}

@@ -62,24 +62,24 @@ export const sections = [
 ];
 
 export const recordExtras = {
-  1:{credits:[['Fotografía','María Cortés'],['Montaje','Jorge Tapia'],['Producción','Taller Limarí']],relations:[3,4,5],location:'Valle del Limarí',mediaType:'video',media:'https://storage.googleapis.com/coverr-main/mp4/Mt_Baker.mp4',gallery:['https://images.unsplash.com/photo-1472396961693-142e6e269027?auto=format&fit=crop&w=1200&q=85','https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=85']},
-  2:{credits:[['Guion','Elena Godoy'],['Cámara','Raúl Fuentes'],['Música','Enrique Soto']],relations:[3,4,8],location:'Ovalle',mediaType:'video',media:'https://storage.googleapis.com/coverr-main/mp4/Footboys.mp4',gallery:['https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1200&q=85']},
+  1:{credits:[['Fotografía','María Cortés'],['Montaje','Jorge Tapia'],['Producción','Taller Limarí']],relations:[3,4,5],locations:['Valle del Limarí','Monte Patria','Río Hurtado'],mediaType:'video',media:'https://storage.googleapis.com/coverr-main/mp4/Mt_Baker.mp4',gallery:['https://images.unsplash.com/photo-1472396961693-142e6e269027?auto=format&fit=crop&w=1200&q=85','https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=85']},
+  2:{credits:[['Guion','Elena Godoy'],['Cámara','Raúl Fuentes'],['Música','Enrique Soto']],relations:[3,4,8],locations:['Ovalle'],mediaType:'video',media:'https://storage.googleapis.com/coverr-main/mp4/Footboys.mp4',gallery:['https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1200&q=85']},
   3:{credits:[['Rol principal','Dirección'],['Archivo','Fondo Elena Godoy'],['Donación','Familia Godoy']],relations:[2,4,6],location:'Ovalle',mediaType:'image',gallery:['https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1000&q=85']},
   4:{credits:[['Medio','Diario El Limarí'],['Fondo','Manuel Peñafiel'],['Páginas','2']],relations:[1,2,8],location:'Ovalle',mediaType:'document'},
   5:{credits:[['Entrevista','Camila Rojas'],['Sonido','Javier Muñoz'],['Duración','42 minutos']],relations:[1,3,8],location:'Monte Patria',mediaType:'audio',media:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'},
   6:{credits:[['Edición','Revista Norte Audiovisual'],['Extensión','12 minutos'],['Licencia','CC BY-NC']],relations:[1,2,3],location:'Ovalle',mediaType:'text'},
-  7:{credits:[['Dirección','Luis Cortés'],['Formato','Súper 8'],['Restauración','2024']],relations:[1,9,11],location:'Río Hurtado',mediaType:'video',media:'https://storage.googleapis.com/coverr-main/mp4/Mt_Baker.mp4'},
+  7:{credits:[['Dirección','Luis Cortés'],['Formato','Súper 8'],['Restauración','2024']],relations:[1,9,11],locations:['Río Hurtado','Monte Patria'],mediaType:'video',media:'https://storage.googleapis.com/coverr-main/mp4/Mt_Baker.mp4'},
   8:{credits:[['Oficio','Proyeccionista'],['Actividad','1958—1994'],['Fondo','Familia Peñafiel']],relations:[2,4,5],location:'Monte Patria',mediaType:'image'},
   9:{credits:[['Medio','La Provincia'],['Fecha','15 de junio de 1975'],['Sección','Cultura']],relations:[2,4,8],location:'Ovalle',mediaType:'document'},
   10:{credits:[['Realización','Cineteca de Ovalle'],['Cámara','Ana Rojas'],['Duración','28 minutos']],relations:[5,8,9],location:'Ovalle',mediaType:'video',media:'https://storage.googleapis.com/coverr-main/mp4/Footboys.mp4'},
   11:{credits:[['Revista','Cuadernos del Norte'],['Volumen','N.º 12'],['Páginas','34—49']],relations:[1,6,7],location:'Provincia del Limarí',mediaType:'text'},
-  12:{credits:[['Dirección','Rosa Alcayaga'],['Cámara','Hernán Cortés'],['Sonido','Javier Muñoz']],relations:[19,22,26],location:'Monte Patria',mediaType:'video',media:'https://storage.googleapis.com/coverr-main/mp4/Mt_Baker.mp4'},
-  13:{credits:[['Dirección','Francisco Ibarra'],['Guion','Francisco Ibarra'],['Producción','Estudios Limarí']],relations:[20,18,25],location:'Ovalle',mediaType:'video',media:'https://storage.googleapis.com/coverr-main/mp4/Footboys.mp4'},
-  14:{credits:[['Dirección','Teresa Bahamondes'],['Investigación','Teresa Bahamondes'],['Sonido','Javier Muñoz']],relations:[21,35,26],location:'Río Hurtado',mediaType:'video'},
-  15:{credits:[['Dirección','Hernán Cortés'],['Cámara','Hernán Cortés'],['Montaje','Rosa Alcayaga']],relations:[22,12,19],location:'Punitaqui',mediaType:'video'},
-  16:{credits:[['Dirección','Patricio Reyes'],['Guion','Patricio Reyes'],['Actuación','Osvaldo Molina']],relations:[23,41,25],location:'Ovalle',mediaType:'video'},
-  17:{credits:[['Dirección','Marisol Varas'],['Cámara','Hernán Cortés'],['Montaje','Marisol Varas']],relations:[24,40,22],location:'Río Hurtado',mediaType:'video'},
-  18:{credits:[['Dirección','Osvaldo Molina'],['Actuación','Osvaldo Molina'],['Producción','Cine Club Ovalle']],relations:[25,37,13],location:'Ovalle',mediaType:'video'},
+  12:{credits:[['Dirección','Rosa Alcayaga'],['Cámara','Hernán Cortés'],['Sonido','Javier Muñoz']],relations:[19,22,26],locations:['Monte Patria'],mediaType:'video',media:'https://storage.googleapis.com/coverr-main/mp4/Mt_Baker.mp4'},
+  13:{credits:[['Dirección','Francisco Ibarra'],['Guion','Francisco Ibarra'],['Producción','Estudios Limarí']],relations:[20,18,25],locations:['Ovalle'],mediaType:'video',media:'https://storage.googleapis.com/coverr-main/mp4/Footboys.mp4'},
+  14:{credits:[['Dirección','Teresa Bahamondes'],['Investigación','Teresa Bahamondes'],['Sonido','Javier Muñoz']],relations:[21,35,26],locations:['Río Hurtado','Ovalle'],mediaType:'video'},
+  15:{credits:[['Dirección','Hernán Cortés'],['Cámara','Hernán Cortés'],['Montaje','Rosa Alcayaga']],relations:[22,12,19],locations:['Punitaqui'],mediaType:'video'},
+  16:{credits:[['Dirección','Patricio Reyes'],['Guion','Patricio Reyes'],['Actuación','Osvaldo Molina']],relations:[23,41,25],locations:['Ovalle'],mediaType:'video'},
+  17:{credits:[['Dirección','Marisol Varas'],['Cámara','Hernán Cortés'],['Montaje','Marisol Varas']],relations:[24,40,22],locations:['Río Hurtado'],mediaType:'video'},
+  18:{credits:[['Dirección','Osvaldo Molina'],['Actuación','Osvaldo Molina'],['Producción','Cine Club Ovalle']],relations:[25,37,13],locations:['Ovalle'],mediaType:'video'},
   19:{credits:[['Rol principal','Dirección documental'],['Archivo','Fondo Rosa Alcayaga'],['Donación','Familia Alcayaga']],relations:[12,15,24],location:'Monte Patria',mediaType:'image'},
   20:{credits:[['Rol principal','Dirección · Montaje'],['Archivo','Fondo Francisco Ibarra'],['Formación','Escuela de cine, Santiago']],relations:[13,18,25],location:'Ovalle',mediaType:'image'},
   21:{credits:[['Rol principal','Documental · Investigación'],['Disciplina','Sociología'],['Línea de trabajo','Sistemas de riego']],relations:[14,35,42],location:'Río Hurtado',mediaType:'image'},
@@ -137,3 +137,50 @@ export const locations = [
   {id:4,name:'Combarbalá',lat:-31.1790,lon:-71.0020,text:'Relatos locales y circuitos históricos de exhibición.'},
   {id:5,name:'Punitaqui',lat:-30.8330,lon:-71.2650,text:'Colecciones familiares, fotografías y prensa histórica.'}
 ];
+
+// Portada: cada línea del título va en `title` (separadas por \n); `em` es el remate en cursiva
+export const heroSlides = [
+  { eyebrow:'CINE · TERRITORIO · MEMORIA', title:'Un archivo\nque vuelve a', em:'mirarnos.', desc:'La memoria audiovisual de Ovalle, abierta para todas y todos.', image:'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1900&q=90', alt:'Rodaje cinematográfico', link:'/archivo' },
+  { eyebrow:'OBRAS AUDIOVISUALES', title:'Películas que\ncuentan el', em:'territorio.', desc:'Ficción y documental de casi ocho décadas de cine regional.', image:'https://images.unsplash.com/photo-1533130061792-64b345e4a833?auto=format&fit=crop&w=1900&q=90', alt:'Paisaje del Valle del Limarí', link:'/peliculas' },
+  { eyebrow:'VOCES Y OFICIOS', title:'Las personas\ndetrás de', em:'cada imagen.', desc:'Directoras, actores, técnicos y gestores del cine del Limarí.', image:'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1900&q=90', alt:'Retrato', link:'/personas' },
+  { eyebrow:'RECORRIDOS CURATORIALES', title:'Historias\nreunidas por', em:'temas.', desc:'Explora colecciones temáticas dentro del archivo.', image:'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1900&q=90', alt:'Colecciones del archivo', link:'/colecciones' }
+];
+
+// Ajustes generales del sitio
+export const site = { featuredId: 1 };
+
+// Textos del inicio. Usa *asteriscos* para la cursiva y saltos de línea donde quieras cortar.
+// {años} se reemplaza por los años de historia del archivo.
+export const homeContent = {
+  heroEdition:'ARCHIVO DIGITAL\nEDICIÓN 2026', heroCta:'Explorar',
+  searchKicker:'ENCUENTRA ALGO', searchTitle:'Más de mil historias esperan\nser encontradas.', searchPlaceholder:'Título, persona, año, tema…', searchAdvanced:'Búsqueda avanzada',
+  statsKicker:'EL ARCHIVO EN CIFRAS', statsTitle:'Más de {años} años de cine del Limarí, *contados uno a uno.*', statsText:'Cada número es una historia rescatada: películas restauradas, voces que vuelven a escucharse y documentos que regresan a manos de la comunidad.',
+  stats:[
+    {label:'Películas',hint:'Ficción y documental restaurados'},
+    {label:'Personas',hint:'Quienes filmaron, actuaron y proyectaron'},
+    {label:'Documentos de prensa',hint:'Recortes, crónicas y programas'},
+    {label:'Entrevistas',hint:'Memoria oral en audio y video'},
+    {label:'Artículos',hint:'Investigación y crítica'},
+    {label:'Colecciones',hint:'Recorridos curatoriales'},
+    {label:'Comunas',hint:'Territorios del Limarí'},
+    {label:'Registros en total',hint:'Todo el archivo, abierto'}
+  ],
+  portalLabel:'ENTRAR AL ARCHIVO', portalTitle:'Cinco puertas.\n*Infinitas conexiones.*', portalText:'Cada área vive ahora en su propia página, con filtros y contenidos específicos para encontrar lo que buscas más rápido.',
+  discoveryLabel:'OTRAS FORMAS DE EXPLORAR', discoveryTitle:'El archivo desde\notras perspectivas.',
+  tiles:[
+    {kicker:'RECORRIDOS TEMÁTICOS',title:'Colecciones',text:'Historias reunidas por temas, épocas y comunidades.'},
+    {kicker:'HISTORIA AUDIOVISUAL',title:'Línea de tiempo',text:'Recorre los hitos cinematográficos del territorio.'},
+    {kicker:'GEOGRAFÍA DEL ARCHIVO',title:'Mapa territorial',text:'Descubre registros conectados con cada localidad.'},
+    {kicker:'MEMORIA INSTITUCIONAL',title:'La Cineteca',text:'Conoce nuestra historia, misión y trabajo patrimonial.'}
+  ],
+  spotlightLabel:'PIEZA DESTACADA', spotlightTag:'Digitalización 4K', spotlightCta:'Abrir ficha', spotlightImage:'',
+  latestLabel:'HALLAZGOS RECIENTES', latestTitle:'Recién catalogado', latestLink:'Ver todo el archivo', latestIds:[],
+  manifestoText:'Preservar una imagen es devolverle\nal territorio una parte de su *memoria.*', manifestoSign:'CINETECA DE OVALLE', manifestoSub:'DESDE 1968 · REGIÓN DE COQUIMBO',
+  footerTitle:'El archivo\nsigue *creciendo.*', footerExplore:'EXPLORAR', footerConnect:'CONECTAR',
+  footerLinks:['Colecciones','Línea de tiempo','Mapa del archivo','Instagram','Contacto','Visítanos'],
+  footerInstagram:'', footerEmail:'archivo@cinetecadeovalle.cl', footerCopy:'© 2026 CINETECA DE OVALLE', footerPlace:'OVALLE · COQUIMBO · CHILE', footerTop:'INICIO ↑',
+  hidden:[]
+};
+
+// Colores de toda la app. `palette` son los colores de etiquetas de fichas y colecciones.
+export const theme = { acid:'#d9ff43', forest:'#123c2f', black:'#101210', paper:'#f2f0e9', palette:['#d9ff43','#8ee6c4','#ffc3d8','#ffdc72','#b8c8ff'] };

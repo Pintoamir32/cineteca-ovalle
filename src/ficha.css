@@ -13,7 +13,7 @@
 .ficha-body{display:grid;grid-template-columns:1fr 360px;align-items:start;margin:0 24px;background:#f8f7f1;border:1px solid var(--line);border-top:0}
 .ficha-main{padding:70px 5vw;border-right:1px solid var(--line)}
 .ficha-section-label{display:flex;align-items:center;gap:12px;font:700 8px 'IBM Plex Mono';letter-spacing:.16em;color:var(--forest);margin-bottom:22px}
-.ficha-section-label span{width:26px;height:26px;border:1px solid currentColor;display:grid;place-items:center;border-radius:50%;flex-shrink:0}
+.ficha-section-label>span:first-child{width:26px;height:26px;border:1px solid currentColor;display:grid;place-items:center;border-radius:50%;flex-shrink:0}
 .ficha-main h2{font:700 clamp(30px,3.2vw,46px)/1.05 'Syne';letter-spacing:-.04em;margin:0 0 22px}
 .ficha-main>p{font-size:14px;line-height:1.9;color:#575d58;max-width:720px}
 .ficha-credits{display:grid;grid-template-columns:repeat(3,1fr);margin-top:40px;border-top:1px solid var(--line)}
@@ -75,3 +75,123 @@
 @media(max-width:460px){
   .ficha-credits{grid-template-columns:1fr}
 }
+
+/* Ficha de película: sin hero, imagen principal en el sidebar */
+.ficha-film .ficha-body{margin-top:24px;margin-bottom:24px;border-top:1px solid var(--line)}
+.ficha-film .ficha-main{padding-top:36px}
+.ficha-film-head{margin-bottom:72px}
+.ficha-film-top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:18px;margin-bottom:56px;border-bottom:1px solid var(--line)}
+.ficha-film-top .back-link{display:inline-flex;align-items:center;gap:8px;margin:0;font:700 9px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--forest)}
+.ficha-film-top .back-link svg{width:15px}
+.ficha-film-top .ficha-code{margin:0;color:#8a908a}
+.ficha-film-head>.ficha-tag{display:table;margin:0 0 22px}
+.ficha-film-head h1{font:700 clamp(48px,6vw,96px)/.92 'Syne';letter-spacing:-.055em;margin:0;max-width:16ch;text-wrap:balance}
+.ficha-film-byline{display:flex;align-items:center;flex-wrap:wrap;gap:22px 32px;margin-top:40px;padding-top:28px;border-top:1px solid var(--line)}
+.ficha-film-director{display:flex;align-items:center;gap:14px;padding-right:32px;border-right:1px solid var(--line)}
+.ficha-film-director>span{width:46px;height:46px;border-radius:50%;background:var(--acid);color:var(--forest);display:grid;place-items:center;font:700 14px 'Syne';letter-spacing:-.02em;flex-shrink:0}
+.ficha-film-director small{display:block;font:700 8px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:#8a908a;margin-bottom:5px}
+.ficha-film-director strong{font:700 19px/1.1 'Syne';letter-spacing:-.02em}
+.ficha-film-specs{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}
+.ficha-film-specs li>*{display:inline-flex;align-items:center;gap:8px;padding:9px 15px 9px 12px;background:#fff;border:1px solid var(--line);border-radius:999px}
+.ficha-film-specs svg{width:14px;height:14px;color:var(--forest);flex-shrink:0}
+.ficha-film-specs li>*{font:600 13px 'Manrope';white-space:nowrap;color:var(--black);transition:.2s}
+.ficha-film-specs a:hover{border-color:var(--forest);background:var(--acid)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ficha-film .ficha-aside{padding:28px 28px 36px;position:static}
+.ficha-poster{position:relative;margin:0;aspect-ratio:2/3;overflow:hidden;background:var(--black);box-shadow:0 24px 50px -24px color-mix(in srgb,var(--black) 45%,transparent)}
+.ficha-poster img{width:100%;height:100%;object-fit:cover;filter:grayscale(.15)}
+.ficha-poster figcaption{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;gap:12px;padding:40px 16px 14px;background:linear-gradient(0deg,rgba(6,9,7,.85),transparent);font:700 8px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:#fff}
+.ficha-poster figcaption span:last-child{color:var(--acid)}
+.ficha-film-aside .ficha-cta{margin:0 0 34px;background:var(--black)}
+.ficha-film-aside .ficha-cta:hover{background:var(--forest)}
+.ficha-film-aside .ficha-cta svg{color:var(--acid)}
+.ficha-aside-label{display:flex;align-items:center;gap:10px;font:700 8px 'IBM Plex Mono';letter-spacing:.16em;text-transform:uppercase;color:var(--forest);margin-bottom:14px}
+.ficha-aside-label::after{content:'';flex:1;height:1px;background:var(--line)}
+.ficha-film-facts{display:grid;grid-template-columns:1fr 1fr;margin:0 0 20px;border:1px solid var(--line)}
+.ficha-film-facts>div{padding:14px 16px;border-bottom:1px solid var(--line)}
+.ficha-film-facts>div:not(.wide):nth-child(odd){border-left:1px solid var(--line)}
+.ficha-film-facts>.wide{grid-column:1/-1}
+.ficha-film-facts>div:last-child{border-bottom:0}
+.ficha-film-facts dt{font:700 7.5px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:#8a908a;margin-bottom:6px}
+.ficha-film-facts dd{margin:0;font:600 14px 'Manrope'}
+.ficha-film-related{display:grid;gap:8px;margin-bottom:34px}
+.ficha-film-related a{display:flex;align-items:center;gap:12px;padding:6px 10px 6px 6px;border:1px solid var(--line);color:var(--black);transition:.2s}
+.ficha-film-related img{width:44px;height:56px;object-fit:cover;flex-shrink:0;filter:grayscale(.4)}
+.ficha-film-related a>div{flex:1;min-width:0}
+.ficha-film-related small{display:block;font:700 7.5px 'IBM Plex Mono';letter-spacing:.08em;text-transform:uppercase;color:var(--forest);margin-bottom:4px}
+.ficha-film-related strong{display:block;font:600 12px 'Manrope';overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ficha-film-related a>svg{width:14px;flex-shrink:0}
+.ficha-film-related a:hover{border-color:var(--forest)}
+.ficha-film-related a:hover img{filter:none}
+@media(max-width:1000px){.ficha-film .ficha-film-aside{display:grid;grid-template-columns:minmax(0,280px) 1fr;gap:0 28px;align-items:start}.ficha-film .ficha-film-aside>.ficha-poster{grid-row:1/span 20}.ficha-film .ficha-film-aside>:not(.ficha-poster){grid-column:2}}
+@media(max-width:600px){.ficha-film-aside{display:block}.ficha-film-aside>.ficha-poster{max-width:320px;margin-bottom:16px}}
+@media(max-width:760px){.ficha-film .ficha-body{margin-top:14px}.ficha-film-head{margin-bottom:48px}.ficha-film-top{margin-bottom:36px}.ficha-film-director{padding-right:0;border-right:0}}
+.ficha-film-director{color:var(--black);transition:color .2s}
+.ficha-film-director strong{text-decoration:underline;text-decoration-color:transparent;text-underline-offset:4px;transition:text-decoration-color .2s}
+.ficha-film-director-arrow{width:15px;color:var(--forest);opacity:0;transform:translateX(-4px);transition:.2s}
+.ficha-film-director:hover strong{text-decoration-color:var(--forest)}
+.ficha-film-director:hover .ficha-film-director-arrow{opacity:1;transform:none}
+.ficha-film-facts{margin-bottom:34px}
+.ficha-film-locations{list-style:none;margin:0 0 12px;padding:0;border:1px solid var(--line)}
+.ficha-film-locations li+li{border-top:1px solid var(--line)}
+.ficha-film-locations a{display:flex;align-items:center;gap:12px;padding:13px 16px;color:var(--black);transition:background .2s}
+.ficha-film-locations svg{width:16px;color:var(--forest);flex-shrink:0}
+.ficha-film-locations strong{flex:1;font:600 14px 'Manrope'}
+.ficha-film-locations svg:last-child{width:14px;opacity:.35;transition:.2s}
+.ficha-film-locations a:hover{background:var(--paper)}
+.ficha-film-locations a:hover svg:last-child{opacity:1;transform:translateX(3px)}
+.ficha-film-maplink{display:inline-flex;justify-self:start;width:max-content;align-items:center;gap:6px;font:700 9px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--forest)}
+.ficha-film-maplink svg{width:13px}
+/* Personas: sidebar de película bajo el hero */
+.ficha-person .ficha-aside{padding:28px 28px 36px;position:static}
+.ficha-person .ficha-body{margin-bottom:24px}
+@media(max-width:760px){.ficha-person .ficha-body{margin-bottom:14px}}
+.ficha-person .ficha-film-aside .ficha-cta{margin-top:0}
+
+/* Filmografía de la persona (reemplaza el archivo digital) */
+.ficha-filmography-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px}
+.ficha-filmography-head .ficha-section-label{margin-bottom:0}
+.ficha-filmography-head>span{font:700 8px 'IBM Plex Mono';letter-spacing:.12em;color:#8a908a}
+.ficha-filmography-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.ficha-filmography-list li{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:22px;padding:18px 0;border-bottom:1px solid var(--line)}
+.ficha-filmography-list img{width:64px;aspect-ratio:2/3;object-fit:cover;filter:grayscale(.35);transition:filter .25s}
+.ficha-filmography-list li:hover img{filter:none}
+.ficha-filmography-info{min-width:0}
+.ficha-filmography-info small{display:block;font:700 8px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:#8a908a;margin-bottom:8px}
+.ficha-filmography-info h3{font:700 clamp(20px,2vw,26px)/1.1 'Syne';letter-spacing:-.03em;margin:0 0 10px}
+.ficha-filmography-roles{display:flex;flex-wrap:wrap;gap:6px}
+.ficha-filmography-roles span{padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;font:600 11px 'Manrope';color:var(--forest)}
+.ficha-filmography-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 16px;background:var(--black);color:#fff;font:700 9px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;transition:background .2s,color .2s}
+.ficha-filmography-btn svg{width:14px;color:var(--acid);transition:transform .2s,color .2s}
+.ficha-filmography-btn:hover{background:var(--acid);color:var(--black)}
+.ficha-filmography-btn:hover svg{color:var(--black);transform:translateX(3px)}
+.ficha-filmography-empty{padding:28px;border:1px dashed var(--line);font-size:13px;color:#6b716c}
+@media(max-width:600px){.ficha-filmography-list li{grid-template-columns:52px 1fr;gap:14px}.ficha-filmography-list img{width:52px}.ficha-filmography-btn{grid-column:2;justify-self:start}}
+
+/* Botón volver unificado (todas las fichas) */
+a.back-link.back-link{display:inline-flex;align-items:center;gap:10px;width:max-content;padding:5px 18px 5px 5px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--black);font:500 12px 'Manrope';letter-spacing:0;text-transform:none;transition:border-color .2s,background .2s,box-shadow .2s}
+a.back-link.back-link b{font-weight:800}
+a.back-link.back-link:hover{transform:none;border-color:var(--forest);box-shadow:0 8px 20px -10px color-mix(in srgb,var(--forest) 35%,transparent)}
+.back-link-icon{width:30px;height:30px;flex-shrink:0;display:grid;place-items:center;border-radius:50%;background:var(--black);color:var(--acid);transition:background .2s,color .2s,transform .2s}
+a.back-link.back-link .back-link-icon svg{width:15px;height:15px}
+a.back-link.back-link:hover .back-link-icon{background:var(--acid);color:var(--black);transform:translateX(-3px)}
+/* Sobre el hero oscuro */
+.ficha-hero a.back-link.back-link{margin:28px 0 0 6vw;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.28);color:#fff;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.ficha-hero a.back-link.back-link:hover{background:rgba(255,255,255,.18);border-color:var(--acid)}
+.ficha-hero a.back-link.back-link .back-link-icon{background:var(--acid);color:var(--black)}
+.ficha-hero a.back-link.back-link:hover .back-link-icon{background:#fff}
+@media(max-width:760px){.ficha-hero a.back-link.back-link{margin:20px 0 0 22px}}
+
+/* Personas mencionadas en la película */
+.ficha-people{margin-top:64px}
+.ficha-people-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.ficha-person-card{display:flex;align-items:center;gap:14px;padding:10px 16px 10px 10px;background:#fff;border:1px solid var(--line);color:var(--black);transition:border-color .2s,box-shadow .2s}
+.ficha-person-card img{width:58px;height:58px;border-radius:50%;object-fit:cover;flex-shrink:0;filter:grayscale(.4);transition:filter .25s}
+.ficha-person-card>div{flex:1;min-width:0}
+.ficha-person-card h3{font:700 15px/1.2 'Syne';letter-spacing:-.02em;margin:0 0 3px}
+.ficha-person-card small{display:block;font-size:11px;color:#6b716c;margin-bottom:8px}
+.ficha-person-card .ficha-filmography-roles span{padding:3px 8px;font-size:10px}
+.ficha-person-card>svg{width:15px;flex-shrink:0;color:var(--forest);opacity:.4;transition:.2s}
+.ficha-person-card:hover{border-color:var(--forest);box-shadow:0 10px 24px -14px color-mix(in srgb,var(--forest) 40%,transparent)}
+.ficha-person-card:hover img{filter:none}
+.ficha-person-card:hover>svg{opacity:1;transform:translateX(3px)}

@@ -20,7 +20,7 @@
 .back-link:hover{transform:translateX(-4px)}
 
 .scroll-progress{position:fixed;top:0;left:0;right:0;height:3px;z-index:60;pointer-events:none;background:rgba(255,255,255,0)}
-.scroll-progress>div{height:100%;background:var(--acid);width:0;transition:width .1s linear;box-shadow:0 0 8px rgba(217,255,67,.6)}
+.scroll-progress>div{height:100%;background:var(--acid);width:0;transition:width .1s linear;box-shadow:0 0 8px color-mix(in srgb,var(--acid) 60%,transparent)}
 
 .stat-counter{font-variant-numeric:tabular-nums}
 

@@ -73,3 +73,13 @@
   .subnav a{font-size:8px}
   .inner-subnav{position:sticky;top:76px}
 }
+
+/* Buscador de navbar destacado */
+.topbar .nav-search{height:42px;gap:8px;padding:0 5px 0 16px!important;border:1px solid rgba(255,255,255,.22)!important;border-radius:999px;background:rgba(255,255,255,.08);transition:border-color .2s,background .2s,box-shadow .2s}
+.topbar .nav-search:hover{border-color:rgba(255,255,255,.4)!important;background:rgba(255,255,255,.12)}
+.topbar .nav-search:focus-within{border-color:var(--acid)!important;background:rgba(255,255,255,.14);box-shadow:0 0 0 4px color-mix(in srgb,var(--acid) 18%,transparent)}
+.topbar .nav-search input{width:240px!important;padding:0!important;font-size:13px;color:#fff}
+.topbar .nav-search input::placeholder{color:rgba(255,255,255,.6)}
+.topbar .nav-search button{width:32px;height:32px;flex-shrink:0;display:grid;place-items:center;padding:0;border-radius:50%;background:var(--acid);color:var(--black);cursor:pointer;transition:transform .2s}
+.topbar .nav-search button:hover{transform:scale(1.08)}
+.topbar .nav-search svg{width:15px;height:15px}
