@@ -12,11 +12,9 @@
 /* ---------- Barra lateral: cabecera y pie fijos, lista con su propio desplazamiento ---------- */
 .cms-side{position:sticky;top:0;height:100vh;height:100dvh;background:var(--forest);color:#fff;display:flex;flex-direction:column;overflow:hidden;z-index:40}
 .cms-side-top{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 16px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
-.cms-side-brand{display:flex;align-items:center;gap:11px;border:0;background:transparent;padding:6px 8px;border-radius:var(--r-md);cursor:pointer;color:#fff;text-align:left}
+.cms-side-brand{display:flex;flex-direction:column;align-items:flex-start;gap:7px;border:0;background:transparent;padding:6px 8px;border-radius:var(--r-md);cursor:pointer;color:#fff;text-align:left}
 .cms-side-brand:hover{background:rgba(255,255,255,.07)}
-.cms-side-brand .brand-symbol{width:34px;height:34px}
-.cms-side-brand>span:last-child{display:grid;gap:4px}
-.cms-side-brand b{font:700 18px/1 'Manrope',sans-serif;letter-spacing:-.05em}
+.cms-side-brand .logo-mark{height:auto;width:100%}
 .cms-side-brand small{font:600 8px/1 'IBM Plex Mono';letter-spacing:.25em;text-transform:uppercase;color:var(--acid)}
 .cms-menu-btn{display:none!important}
 .cms-side-drawer{flex:1;min-height:0;display:flex;flex-direction:column}
@@ -795,11 +793,8 @@ html:has(.cms-preview-doc){overflow:hidden}
 /* ---------- Inicio de sesión ---------- */
 .login{min-height:100vh;min-height:100dvh;display:grid;place-items:center;align-content:center;gap:18px;padding:32px 16px;background:radial-gradient(1200px 600px at 20% -10%,color-mix(in srgb,var(--acid) 18%,transparent),transparent 60%),var(--forest);font:14px/1.5 'Manrope',sans-serif;color:#101210}
 .login-card{width:min(420px,100%);background:#fff;border-radius:22px;padding:30px 30px 24px;box-shadow:0 30px 80px rgba(0,0,0,.35)}
-.login-brand{display:flex;align-items:center;gap:11px;margin-bottom:26px}
-.login-brand .brand-symbol{width:38px;height:38px}
-.login-brand .brand-symbol i{background:var(--forest)}
-.login-brand>span:last-child{display:grid;gap:4px}
-.login-brand b{font:700 20px/1 'Manrope',sans-serif;letter-spacing:-.05em}
+.login-brand{display:flex;flex-direction:column;align-items:flex-start;gap:9px;margin-bottom:26px;color:var(--black);--logo-accent:var(--forest)}
+.login-brand .logo-mark{height:auto;width:100%}
 .login-brand small{font:600 8px/1 'IBM Plex Mono';letter-spacing:.25em;text-transform:uppercase;color:#6b716c}
 .login h1{margin:0;font:600 30px/1.05 'Syne',sans-serif;letter-spacing:-.04em}
 .login-lead{margin:8px 0 22px;color:#5b615c}

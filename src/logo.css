@@ -1,0 +1,11 @@
+/* Logo en dos capas enmascaradas: ornamentos en el acento del tema, nombre en currentColor */
+.logo-mark{position:relative;display:block;height:58px;aspect-ratio:1871/540;max-width:100%}
+.logo-mark::before,.logo-mark::after{content:'';position:absolute;inset:0;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat;transition:background-color .25s}
+.logo-mark::before{--m:url(/logo-cineteca-ornamento.png);background:var(--logo-accent,var(--acid))}
+.logo-mark::after{--m:url(/logo-cineteca-texto.png);background:var(--logo-color,currentColor)}
+.brand{line-height:0}
+.brand:hover .logo-mark{--logo-color:var(--acid);--logo-accent:#fff}
+.brand:focus-visible{outline:2px solid var(--acid);outline-offset:6px}
+footer .brand .logo-mark{height:104px}
+@media(min-width:1400px){.topbar .logo-mark{height:64px}}
+@media(max-width:760px){.topbar .logo-mark{height:44px}footer .brand .logo-mark{height:80px}}

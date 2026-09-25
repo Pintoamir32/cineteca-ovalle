@@ -10,6 +10,7 @@ import { UsersPage } from './Users';
 import { LoginScreen, PasswordField } from './Login';
 import { TYPE_META, TYPES, code, extraOf, missingFields, typeBySlug, typeColor } from './meta';
 import { RecordEditor } from './RecordEditor';
+import { LogoMark } from '../Logo';
 import { CollectionEditor, CollectionList, LocationEditor, LocationList, TimelineEditor, TimelineList } from './SiteEditors';
 import { HomeEditor } from './HomeEditor';
 import { TOURS, Tour, markTourSeen, tourSeen, tourViewOf } from './Tour';
@@ -101,7 +102,7 @@ function AdminShell({session,onLogout}){
       <aside className={`cms-side ${menu?'is-open':''}`}>
         <div className="cms-side-top">
           <button type="button" className="cms-side-brand" onClick={()=>go('/admin')} title="Ir al resumen">
-            <span className="brand-symbol"><i/><i/><i/><i/></span><span><b>Cineteca</b><small>Gestión</small></span>
+            <LogoMark/><small>Gestión</small>
           </button>
           {helpBtn('cms-side-help-top')}
           <button type="button" className="cms-icon-btn cms-menu-btn" onClick={()=>setMenu(!menu)} aria-label={menu?'Cerrar menú':'Abrir menú'} aria-expanded={menu}>{menu?<X/>:<Menu/>}</button>

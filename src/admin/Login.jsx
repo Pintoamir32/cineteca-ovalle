@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
 import { login, passwordProblem, setupAccount } from './auth';
+import { LogoMark } from '../Logo';
 
 // Campo de contraseña con botón para mostrarla
 export function PasswordField({label,value,onChange,autoComplete,autoFocus,hint}){
@@ -36,7 +37,7 @@ export function LoginScreen({setup,expired,onLogin}){
 
   return <div className="login">
     <div className="login-card">
-      <div className="login-brand"><span className="brand-symbol"><i/><i/><i/><i/></span><span><b>Cineteca</b><small>Gestión</small></span></div>
+      <div className="login-brand"><LogoMark/><small>Gestión</small></div>
       <h1>{setup?'Crea tu cuenta':'Iniciar sesión'}</h1>
       {expired&&<p className="login-error" role="status">Tu sesión terminó. Vuelve a iniciar sesión para seguir editando.</p>}
       <p className="login-lead">{setup?'Todavía no hay cuentas. Crea la cuenta de administración: con ella podrás crear otras para quienes editen el sitio.':'Entra para editar el contenido del sitio.'}</p>

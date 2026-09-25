@@ -6,8 +6,9 @@ import { useRevealScan } from './reveal';
 import { useSiteText } from './site-text';
 import { tagStyle } from './color';
 import { recordPath } from './repository';
+import { LogoMark } from './Logo';
 
-export function Brand(){return <Link className="brand" to="/"><span className="brand-symbol"><i/><i/><i/><i/></span><span><b>Cineteca</b><small>Ovalle</small></span></Link>}
+export function Brand(){return <Link className="brand" to="/" aria-label="Cineteca de Ovalle — inicio"><LogoMark/></Link>}
 
 export function ScrollProgress(){
   const barRef=useRef(null);

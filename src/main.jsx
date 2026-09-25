@@ -11,6 +11,7 @@ import './navigation.css';
 import './home-discovery.css';
 import './animations.css';
 import './ficha.css';
+import './logo.css';
 import { hydrate } from './store';
 
 // El gestor se carga aparte para no sumar peso al sitio público
