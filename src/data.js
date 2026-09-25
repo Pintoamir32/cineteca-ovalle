@@ -177,8 +177,8 @@ export const homeContent = {
   latestLabel:'HALLAZGOS RECIENTES', latestTitle:'Recién catalogado', latestLink:'Ver todo el archivo', latestIds:[],
   manifestoText:'Preservar una imagen es devolverle\nal territorio una parte de su *memoria.*', manifestoSign:'CINETECA DE OVALLE', manifestoSub:'DESDE 1968 · REGIÓN DE COQUIMBO',
   footerTitle:'El archivo\nsigue *creciendo.*', footerExplore:'EXPLORAR', footerConnect:'CONECTAR',
-  footerLinks:['Colecciones','Línea de tiempo','Mapa del archivo','Instagram','Contacto','Visítanos'],
-  footerInstagram:'', footerEmail:'archivo@cinetecadeovalle.cl', footerCopy:'© 2026 CINETECA DE OVALLE', footerPlace:'OVALLE · COQUIMBO · CHILE', footerTop:'INICIO ↑',
+  footerLinks:['Colecciones','Línea de tiempo','Mapa del archivo','Instagram','Contacto'],
+  footerInstagram:'https://www.instagram.com/cinetecadeovalle/', footerEmail:'cinetecadeovalle@gmail.com', footerCopy:'© 2026 CINETECA DE OVALLE', footerPlace:'OVALLE · COQUIMBO · CHILE', footerTop:'INICIO ↑',
   hidden:[]
 };
 

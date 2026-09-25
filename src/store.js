@@ -45,13 +45,20 @@ async function request(url,options){
   return body;
 }
 
+// Contenido guardado antes de tener los datos reales del pie: los valores de ejemplo pasan a los actuales.
+const PLACEHOLDERS={footerInstagram:[''],footerEmail:['archivo@cinetecadeovalle.cl']};
+function withoutPlaceholders(home){
+  for(const [k,old] of Object.entries(PLACEHOLDERS))if(old.includes(home[k]??''))home[k]=ORIGINAL.homeContent[k];
+  return home;
+}
+
 // Carga el contenido guardado. Si el servidor no responde, el sitio muestra el contenido original.
 export async function hydrate(){
   try{
     const saved=await request('/api/content');
     serverVersion=saved.version||0;
     if(saved.data){
-      for(const k of Object.keys(LIVE))if(saved.data[k])apply(k,k==='homeContent'?{...ORIGINAL.homeContent,...saved.data[k]}:saved.data[k]);
+      for(const k of Object.keys(LIVE))if(saved.data[k])apply(k,k==='homeContent'?withoutPlaceholders({...ORIGINAL.homeContent,...saved.data[k]}):saved.data[k]);
       lastSaved=saved.updatedAt||null;
     }
   }catch(err){console.warn('No se pudo cargar el contenido guardado',err)}
