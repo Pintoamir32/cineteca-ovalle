@@ -118,7 +118,7 @@ export const TOURS={
     SAVE
   ],
   respaldo:[
-    {target:'.cms-head',title:'Respaldo',text:'Todo lo que editas se guarda en este navegador. Descarga un respaldo con frecuencia para no perder trabajo o para pasarlo a otro computador.'},
+    {target:'.cms-head',title:'Respaldo',text:'Todo lo que editas se guarda en el servidor del sitio y lo ven todos los visitantes. Aun así, descarga un respaldo de vez en cuando para tener una copia propia.'},
     {target:'.cms-backup > :first-child',title:'Exportar',text:'Descarga un archivo con todas las fichas, imágenes, colecciones, línea de tiempo, comunas y la portada. Guárdalo en un lugar seguro.'},
     {target:'.cms-backup > :nth-child(2)',title:'Importar',text:'Carga un respaldo descargado antes. Reemplaza todo el contenido actual por el del archivo, así que conviene exportar primero.'},
     {target:'.cms-danger-section',title:'Restablecer',text:'Vuelve al contenido original del sitio y borra todos los cambios. Úsalo solo si quieres empezar de cero.'}

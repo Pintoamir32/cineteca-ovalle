@@ -2,10 +2,10 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle, ArrowLeft, ArrowUpRight, BookOpen, CalendarRange, Check, CircleCheck, CircleHelp, Database, LogOut, UserPlus, Download, ExternalLink, Eye, EyeOff, FileText, Film, Home, Layers, LayoutDashboard, MapPin, Menu, Mic2, Palette, Plus, RotateCcw, Save, Search, Trash2, Upload, UserRound, X } from 'lucide-react';
 import { collections, heroSlides, locations, recordExtras, records, timelineEvents } from '../data';
-import { exportData, getLastSaved, importData, resetData, setRecordPublished, storageEstimate, useStoreVersion } from '../store';
+import { exportData, getLastSaved, hydrate, importData, resetData, setRecordPublished, useStoreVersion } from '../store';
 import { tagStyle } from '../color';
-import { Modal, UiProvider, formatBytes, thumb, useUi } from './fields';
-import { changePassword, createUser, currentSession, endSession, getUsers } from './auth';
+import { Modal, UiProvider, thumb, useUi } from './fields';
+import { authStatus, changePassword, createUser, listUsers, logout as endSession } from './auth';
 import { LoginScreen, PasswordField } from './Login';
 import { TYPE_META, TYPES, code, extraOf, missingFields, typeBySlug, typeColor } from './meta';
 import { RecordEditor } from './RecordEditor';
@@ -23,14 +23,39 @@ const NavContext=createContext(null);
 export const useAdminNav=()=>useContext(NavContext);
 
 export default function AdminApp(){
-  const [session,setSession]=useState(currentSession);
-  return <UiProvider>{session?<AdminShell session={session} onLogout={()=>{endSession();setSession(null)}}/>:<LoginScreen onLogin={setSession}/>}</UiProvider>;
+  const [auth,setAuth]=useState({loading:true});
+  const check=()=>{
+    setAuth({loading:true});
+    // Con sesión se vuelve a cargar el contenido: así incluye las fichas en borrador
+    authStatus().then(async s=>{if(s.user)await hydrate();setAuth({hasUsers:s.hasUsers,session:s.user})})
+      .catch(err=>setAuth({error:err.message}));
+  };
+  useEffect(check,[]);
+  // Si la sesión vence mientras se edita, se vuelve a pedir el inicio de sesión
+  useEffect(()=>{
+    const onUnauthorized=()=>setAuth(a=>a.session?{hasUsers:true,session:null,expired:true}:a);
+    window.addEventListener('cms-unauthorized',onUnauthorized);return()=>window.removeEventListener('cms-unauthorized',onUnauthorized);
+  },[]);
+  const onLogin=async user=>{await hydrate();setAuth({hasUsers:true,session:user})};
+  const onLogout=async()=>{await endSession();await hydrate();setAuth({hasUsers:true,session:null})};
+  let screen;
+  if(auth.loading)screen=<div className="login"><p className="login-wait">Cargando el gestor…</p></div>;
+  else if(auth.error)screen=<div className="login"><div className="login-card"><h1>Sin conexión</h1><p className="login-lead">{auth.error}</p><button type="button" className="login-submit" onClick={check}>Reintentar</button></div></div>;
+  else if(auth.session)screen=<AdminShell session={auth.session} onLogout={onLogout}/>;
+  else screen=<LoginScreen setup={!auth.hasUsers} expired={auth.expired} onLogin={onLogin}/>;
+  return <UiProvider>{screen}</UiProvider>;
 }
 
 function AdminShell({session,onLogout}){
   useStoreVersion();
   const navigate=useNavigate(), location=useLocation(), {confirm}=useUi();
   const dirty=useRef(false), [menu,setMenu]=useState(false), [account,setAccount]=useState(false);
+  useEffect(()=>{
+    const onConflict=async()=>{
+      if(await confirm({title:'Otra persona guardó cambios',text:'Mientras editabas, alguien más guardó el contenido. Para no borrar su trabajo, tu último cambio no se guardó. Recarga la página para ver la versión más reciente y vuelve a hacer tu cambio.',ok:'Recargar ahora',cancel:'Más tarde'})){dirty.current=false;location.reload()}
+    };
+    window.addEventListener('cms-conflict',onConflict);return()=>window.removeEventListener('cms-conflict',onConflict);
+  },[]);// eslint-disable-line react-hooks/exhaustive-deps
   const logout=async()=>{
     if(dirty.current&&!await confirm({title:'¿Cerrar sesión sin guardar?',text:'Tienes cambios sin guardar. Si cierras la sesión ahora se perderán.',ok:'Cerrar sesión',danger:true}))return;
     dirty.current=false;onLogout();
@@ -144,12 +169,13 @@ function AccountDialog({session,onClose,onLogout}){
   const run=async fn=>{setError('');setBusy(true);try{await fn()}catch(err){setError(err.message)}setBusy(false)};
   const savePassword=e=>{e.preventDefault();run(async()=>{
     if(next!==next2)throw new Error('Las contraseñas nuevas no coinciden.');
-    await changePassword(session.id,cur,next);setCur('');setNext('');setNext2('');toast('Contraseña cambiada.');
+    await changePassword(cur,next);setCur('');setNext('');setNext2('');toast('Contraseña cambiada. Las demás sesiones de tu cuenta se cerraron.');
   })};
   const addUser=e=>{e.preventDefault();run(async()=>{
-    const u=await createUser({name,user,password:pass});setName('');setUser('');setPass('');toast(`Cuenta creada para ${u.name}. Ya puede entrar con el usuario «${u.user}».`);
+    const u=await createUser({name,user,password:pass});setName('');setUser('');setPass('');setUsers(await listUsers());toast(`Cuenta creada para ${u.name}. Ya puede entrar con el usuario «${u.user}».`);
   })};
-  const users=getUsers();
+  const [users,setUsers]=useState([]);
+  useEffect(()=>{listUsers().then(setUsers).catch(()=>{})},[]);
   return <Modal title="Mi cuenta" onClose={onClose} className="cms-account">
     <div className="cms-account-me"><span className="cms-avatar is-big">{initials(session.name)}</span><span><strong>{session.name}</strong><small>Usuario: {session.user}</small></span>
       <button type="button" className="cms-btn" onClick={onLogout}><LogOut/> Cerrar sesión</button></div>
@@ -165,7 +191,7 @@ function AccountDialog({session,onClose,onLogout}){
       <button type="submit" className="cms-btn is-primary" disabled={busy}>Guardar contraseña</button>
     </form>:<form className="cms-account-form" onSubmit={addUser}>
       <ul className="cms-account-users">{users.map(u=><li key={u.id}><span className="cms-avatar">{initials(u.name)}</span><span><strong>{u.name}{u.id===session.id&&' (tú)'}</strong><small>{u.user}</small></span></li>)}</ul>
-      <p className="cms-help">Crea una cuenta para otra persona que edite el sitio en este computador. Cada cuenta ve su propio tutorial la primera vez que entra.</p>
+      <p className="cms-help">Crea una cuenta para otra persona que edite el sitio. Podrá entrar desde cualquier computador con su usuario y contraseña, y verá su propio tutorial la primera vez.</p>
       <label className="login-field"><span>Nombre</span><input value={name} onChange={e=>setName(e.target.value)} required/></label>
       <label className="login-field"><span>Usuario</span><input value={user} onChange={e=>setUser(e.target.value)} autoCapitalize="none" spellCheck={false} required/></label>
       <PasswordField label="Contraseña inicial" value={pass} onChange={setPass} autoComplete="new-password" hint="Al menos 8 caracteres. Dásela a la persona; después puede cambiarla."/>
@@ -329,8 +355,6 @@ function RecordList(){
 
 function Backup(){
   const {toast,confirm}=useUi(), inputRef=useRef(null);
-  const [storage,setStorage]=useState(null);
-  useEffect(()=>{storageEstimate().then(setStorage)},[]);
   const onImport=async file=>{
     if(!file)return;
     if(!await confirm({title:'¿Reemplazar los datos actuales?',text:`Se cargará “${file.name}” y reemplazará todo el contenido del archivo. Te recomendamos exportar un respaldo antes.`,ok:'Importar',danger:true}))return;
@@ -342,12 +366,12 @@ function Backup(){
     await resetData();toast('Contenido original restablecido.');
   };
   return <div className="cms-page">
-    <PageHead eyebrow="DATOS" title="Respaldo" desc="El contenido se guarda en este navegador. Exporta un respaldo con frecuencia para no perder trabajo y para moverlo a otro equipo."/>
+    <PageHead eyebrow="DATOS" title="Respaldo" desc="El contenido se guarda en el servidor del sitio y lo ven todos los visitantes. Descarga un respaldo de vez en cuando para tener una copia propia."/>
     <div className="cms-backup">
       <article className="cms-card"><Download/><h2>Exportar</h2><p>Descarga un archivo con todas las fichas, imágenes subidas, colecciones, línea de tiempo, comunas y portada.</p><button type="button" className="cms-btn is-primary" onClick={()=>{exportData();toast('Respaldo descargado.')}}><Download/> Descargar respaldo</button></article>
       <article className="cms-card"><Upload/><h2>Importar</h2><p>Carga un respaldo exportado antes. Reemplaza el contenido actual por el del archivo.</p><button type="button" className="cms-btn" onClick={()=>inputRef.current.click()}><Upload/> Elegir archivo…</button><input ref={inputRef} type="file" accept="application/json,.json" hidden onChange={e=>onImport(e.target.files[0])}/></article>
     </div>
-    <p className="cms-help"><Check/> {savedLabel()}{storage?` · Espacio usado en este navegador: ${formatBytes(storage.usage||0)}`:''}</p>
+    <p className="cms-help"><Check/> {savedLabel()}</p>
     <section className="cms-danger-section">
       <h2>Zona de peligro</h2>
       <div><p><strong>Restablecer todo.</strong> Vuelve al contenido original del sitio y borra las fichas creadas, las imágenes subidas y todos los cambios. Úsalo solo si quieres empezar de cero.</p>

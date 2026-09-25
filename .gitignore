@@ -5,3 +5,6 @@ dist
 .edge-preview-profile-3
 .env
 cineteca-hostinger.zip
+
+# Datos locales del servidor de desarrollo
+server/.data

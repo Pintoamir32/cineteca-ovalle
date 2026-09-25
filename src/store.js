@@ -5,8 +5,6 @@ import { collections, heroSlides, homeContent, locations, recordExtras, records,
 // para que todas las páginas que ya los importan vean los cambios sin tocar sus imports.
 const LIVE={records,recordExtras,collections,timelineEvents,locations,heroSlides,site,homeContent,theme};
 const ORIGINAL=structuredClone(LIVE);
-const LEGACY_KEY='cdo_custom_records';
-const DB_NAME='cineteca-cms', DATA_KEY='data';
 
 // Colores de toda la app: se aplican como variables CSS sobre :root
 export function applyTheme(t=theme){
@@ -23,48 +21,70 @@ function apply(name,value){
   Object.assign(target,copy);
 }
 
-// IndexedDB mínimo: a diferencia de localStorage, aguanta imágenes y medios subidos
-function idb(mode,fn){
-  return new Promise((resolve,reject)=>{
-    const open=indexedDB.open(DB_NAME,1);
-    open.onupgradeneeded=()=>open.result.createObjectStore('kv');
-    open.onerror=()=>reject(open.error);
-    open.onsuccess=()=>{
-      const db=open.result, tx=db.transaction('kv',mode), req=fn(tx.objectStore('kv'));
-      tx.oncomplete=()=>{db.close();resolve(req?.result)};
-      tx.onerror=()=>{db.close();reject(tx.error)};
-    };
-  });
-}
-
-let version=0, lastSaved=null;
+let version=0, lastSaved=null, serverVersion=0;
 const listeners=new Set();
 const notify=()=>{version++;listeners.forEach(fn=>fn())};
 export const subscribe=fn=>{listeners.add(fn);return()=>listeners.delete(fn)};
 export const useStoreVersion=()=>useSyncExternalStore(subscribe,()=>version);
 export const getLastSaved=()=>lastSaved;
 
-export async function hydrate(){
-  try{
-    const saved=await idb('readonly',s=>s.get(DATA_KEY));
-    if(saved){
-      for(const k of Object.keys(LIVE))if(saved[k])apply(k,k==='homeContent'?{...ORIGINAL.homeContent,...saved[k]}:saved[k]);
-      lastSaved=saved.savedAt||null;
-    }else{
-      // Registros creados con el formulario anterior (localStorage)
-      const legacy=JSON.parse(localStorage.getItem(LEGACY_KEY)||'[]');
-      if(legacy.length)records.push(...legacy.filter(r=>!records.some(x=>x.id===r.id)));
-    }
-  }catch(err){console.warn('No se pudieron cargar los datos guardados',err)}
-  applyTheme();
+/* ---------- Servidor ----------
+   El contenido vive en el servidor (base de datos en Hostinger). Todos los visitantes cargan
+   la misma versión; quien inició sesión en el gestor recibe además las fichas en borrador. */
+
+// Avisos para la interfaz: sesión vencida u otra persona guardó antes
+const signal=(type,detail)=>window.dispatchEvent(new CustomEvent(type,{detail}));
+async function request(url,options){
+  const res=await fetch(url,{credentials:'same-origin',...options});
+  const body=await res.json().catch(()=>({}));
+  if(res.status===401)signal('cms-unauthorized');
+  if(res.status===409)signal('cms-conflict');
+  if(!res.ok)throw Object.assign(new Error(body.error||'No se pudo conectar con el servidor.'),{status:res.status});
+  return body;
 }
 
-async function persist(){
-  const savedAt=new Date().toISOString();
-  await idb('readwrite',s=>s.put({...LIVE,savedAt},DATA_KEY));
-  lastSaved=savedAt;
-  localStorage.removeItem(LEGACY_KEY);
+// Carga el contenido guardado. Si el servidor no responde, el sitio muestra el contenido original.
+export async function hydrate(){
+  try{
+    const saved=await request('/api/content');
+    serverVersion=saved.version||0;
+    if(saved.data){
+      for(const k of Object.keys(LIVE))if(saved.data[k])apply(k,k==='homeContent'?{...ORIGINAL.homeContent,...saved.data[k]}:saved.data[k]);
+      lastSaved=saved.updatedAt||null;
+    }
+  }catch(err){console.warn('No se pudo cargar el contenido guardado',err)}
+  applyTheme();
   notify();
+}
+
+// Las imágenes y archivos subidos se envían aparte y el contenido guarda solo su dirección
+const uploaded=new Map();
+async function upload(dataUrl){
+  if(uploaded.has(dataUrl))return uploaded.get(dataUrl);
+  const blob=await (await fetch(dataUrl)).blob();
+  const {url}=await request('/api/media',{method:'POST',headers:{'Content-Type':blob.type||'application/octet-stream'},body:blob});
+  uploaded.set(dataUrl,url);
+  return url;
+}
+async function externalize(node){
+  if(typeof node==='string')return node.startsWith('data:')&&node.length>200?upload(node):node;
+  if(Array.isArray(node)){for(let i=0;i<node.length;i++)node[i]=await externalize(node[i]);return node}
+  if(node&&typeof node==='object'){for(const k of Object.keys(node))node[k]=await externalize(node[k]);return node}
+  return node;
+}
+
+// Los guardados van en fila: cada uno parte de la versión que dejó el anterior
+let queue=Promise.resolve();
+function persist(){
+  const run=async()=>{
+    await externalize(LIVE);
+    const res=await request('/api/content',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:LIVE,baseVersion:serverVersion})});
+    serverVersion=res.version;lastSaved=res.updatedAt;
+    notify();
+  };
+  const next=queue.then(run,run);
+  queue=next.catch(()=>{});
+  return next;
 }
 
 // Aplica varios cambios a la vez y los guarda
@@ -178,6 +198,3 @@ export function saveTheme(next){
   return setData({theme:next,...(swap.size&&{records:records.map(recolor),collections:collections.map(recolor)})});
 }
 
-export async function storageEstimate(){
-  try{return await navigator.storage?.estimate?.()}catch{return null}
-}

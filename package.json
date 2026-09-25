@@ -4,17 +4,24 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node server/index.js --dev",
     "build": "vite build",
-    "preview": "vite preview"
+    "start": "node server/index.js",
+    "preview": "vite build && node server/index.js"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
+    "express": "^5.2.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.468.0",
+    "mysql2": "^3.24.4",
     "react": "latest",
     "react-dom": "latest",
     "react-router-dom": "^7.9.1",
     "vite": "latest"
+  },
+  "main": "server/index.js",
+  "engines": {
+    "node": ">=20"
   }
 }
