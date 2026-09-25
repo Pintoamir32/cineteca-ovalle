@@ -454,3 +454,24 @@ footer,
 .filter-panel.filter-panel-two{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(max-width:1100px){.filter-panel.filter-panel-wide{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.filter-panel.filter-panel-wide,.filter-panel.filter-panel-two{grid-template-columns:1fr}}
+
+/* Vista de tabla del archivo: columnas ordenables desde el encabezado */
+.record-table-wrap{overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg,18px);margin-bottom:28px}
+.record-table{width:100%;border-collapse:collapse;font-size:14px;min-width:680px}
+.record-table th{position:sticky;top:0;background:#fbfaf6;text-align:left;border-bottom:1px solid var(--line);padding:0;white-space:nowrap}
+.record-table th button{display:flex;align-items:center;gap:6px;width:100%;border:0;background:transparent;padding:14px 14px;font:600 10px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:#6b716c;cursor:pointer;text-align:left}
+.record-table th button:hover{color:var(--black);background:#f2f0e9}
+.record-table th[aria-sort=ascending] button,.record-table th[aria-sort=descending] button{color:var(--forest)}
+.record-table th svg{width:13px;height:13px;flex-shrink:0}
+.record-table th svg.is-idle{opacity:.35}
+.record-table th.is-num button{justify-content:flex-end}
+.record-table td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:middle;color:#3b403c}
+.record-table td.is-num{text-align:right;font-variant-numeric:tabular-nums;font-family:'IBM Plex Mono',monospace;font-size:13px}
+.record-table tbody tr{cursor:pointer;transition:background .15s}
+.record-table tbody tr:hover{background:color-mix(in srgb,var(--acid) 16%,#fff)}
+.record-table tr:last-child td{border-bottom:0}
+.record-table td a{font-weight:700;color:var(--black);text-decoration:none}
+.record-table td a:hover{text-decoration:underline;text-underline-offset:3px}
+.record-table .is-thumb{width:64px;padding:8px 6px 8px 12px}
+.record-table .is-thumb img{width:52px;height:40px;object-fit:cover;border-radius:6px;display:block}
+.record-table-tag{display:inline-block;font:600 9px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:999px;color:var(--black)}

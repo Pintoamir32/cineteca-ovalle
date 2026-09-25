@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, ArrowUpRight, BookOpen, CalendarRange, Check, CircleCheck, CircleHelp, Database, LogOut, UserPlus, Download, ExternalLink, Eye, EyeOff, FileText, Film, Home, Layers, LayoutDashboard, MapPin, Menu, Mic2, Palette, Plus, RotateCcw, Save, Search, Trash2, Upload, UserRound, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowUpRight, BookOpen, CalendarRange, Check, CircleCheck, CircleHelp, Database, LogOut, UserPlus, Download, ExternalLink, Eye, EyeOff, FileText, Film, Home, Layers, LayoutDashboard, MapPin, Menu, Mic2, Palette, Plus, RotateCcw, Save, Search, Trash2, Upload, UserRound, Users, X } from 'lucide-react';
 import { collections, heroSlides, locations, recordExtras, records, timelineEvents } from '../data';
 import { exportData, getLastSaved, hydrate, importData, resetData, setRecordPublished, useStoreVersion } from '../store';
 import { tagStyle } from '../color';
 import { Modal, UiProvider, thumb, useUi } from './fields';
-import { authStatus, changePassword, createUser, listUsers, logout as endSession } from './auth';
+import { authStatus, changePassword, logout as endSession } from './auth';
+import { UsersPage } from './Users';
 import { LoginScreen, PasswordField } from './Login';
 import { TYPE_META, TYPES, code, extraOf, missingFields, typeBySlug, typeColor } from './meta';
 import { RecordEditor } from './RecordEditor';
@@ -116,7 +117,10 @@ function AdminShell({session,onLogout}){
           </>)}
           {group('Página de inicio',item('inicio',Home,'Inicio y carrusel',heroSlides.length))}
           {group('Apariencia',item('colores',Palette,'Colores'))}
-          {group('Datos',item('respaldo',Database,'Respaldo'))}
+          {group('Sistema',<>
+            {item('usuarios',Users,'Usuarios')}
+            {item('respaldo',Database,'Respaldo')}
+          </>)}
         </nav>
         <div className="cms-side-foot">
           <div className="cms-side-actions">
@@ -132,7 +136,7 @@ function AdminShell({session,onLogout}){
         </div>
       </aside>
       {tour&&<Tour key={tour.view} steps={tour.steps} onClose={closeTour}/>}
-      {account&&<AccountDialog session={session} onClose={()=>setAccount(false)} onLogout={()=>{setAccount(false);logout()}}/>}
+      {account&&<AccountDialog session={session} onClose={()=>setAccount(false)} onLogout={()=>{setAccount(false);logout()}} onUsers={()=>{setAccount(false);go('/admin/usuarios')}}/>}
       {menu&&<button type="button" className="cms-side-backdrop" onClick={()=>setMenu(false)} aria-label="Cerrar menú"/>}
       <main className="cms-main">
         <Routes>
@@ -149,6 +153,7 @@ function AdminShell({session,onLogout}){
           <Route path="linea-de-tiempo/:index" element={<TimelineEditor/>}/>
           <Route path="comunas" element={<LocationList/>}/>
           <Route path="comunas/:index" element={<LocationEditor/>}/>
+          <Route path="usuarios" element={<UsersPage session={session}/>}/>
           <Route path="respaldo" element={<Backup/>}/>
           <Route path="*" element={<Dashboard/>}/>
         </Routes>
@@ -159,45 +164,32 @@ function AdminShell({session,onLogout}){
 
 const initials=name=>String(name||'?').split(/\s+/).filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase();
 
-/* ---------- Mi cuenta: contraseña y cuentas para otras personas ---------- */
+/* ---------- Mi cuenta: la contraseña propia (las demás cuentas están en «Usuarios») ---------- */
 
-function AccountDialog({session,onClose,onLogout}){
-  const {toast}=useUi(), [tab,setTab]=useState('password');
+function AccountDialog({session,onClose,onLogout,onUsers}){
+  const {toast}=useUi();
   const [cur,setCur]=useState(''), [next,setNext]=useState(''), [next2,setNext2]=useState('');
-  const [name,setName]=useState(''), [user,setUser]=useState(''), [pass,setPass]=useState('');
   const [error,setError]=useState(''), [busy,setBusy]=useState(false);
-  const run=async fn=>{setError('');setBusy(true);try{await fn()}catch(err){setError(err.message)}setBusy(false)};
-  const savePassword=e=>{e.preventDefault();run(async()=>{
-    if(next!==next2)throw new Error('Las contraseñas nuevas no coinciden.');
-    await changePassword(cur,next);setCur('');setNext('');setNext2('');toast('Contraseña cambiada. Las demás sesiones de tu cuenta se cerraron.');
-  })};
-  const addUser=e=>{e.preventDefault();run(async()=>{
-    const u=await createUser({name,user,password:pass});setName('');setUser('');setPass('');setUsers(await listUsers());toast(`Cuenta creada para ${u.name}. Ya puede entrar con el usuario «${u.user}».`);
-  })};
-  const [users,setUsers]=useState([]);
-  useEffect(()=>{listUsers().then(setUsers).catch(()=>{})},[]);
+  const savePassword=async e=>{
+    e.preventDefault();setError('');setBusy(true);
+    try{
+      if(next!==next2)throw new Error('Las contraseñas nuevas no coinciden.');
+      await changePassword(cur,next);setCur('');setNext('');setNext2('');toast('Contraseña cambiada. Las demás sesiones de tu cuenta se cerraron.');
+    }catch(err){setError(err.message)}
+    setBusy(false);
+  };
   return <Modal title="Mi cuenta" onClose={onClose} className="cms-account">
     <div className="cms-account-me"><span className="cms-avatar is-big">{initials(session.name)}</span><span><strong>{session.name}</strong><small>Usuario: {session.user}</small></span>
       <button type="button" className="cms-btn" onClick={onLogout}><LogOut/> Cerrar sesión</button></div>
-    <div className="cms-segment is-small cms-seg-block">
-      <button type="button" className={tab==='password'?'active':''} onClick={()=>{setTab('password');setError('')}}>Cambiar contraseña</button>
-      <button type="button" className={tab==='users'?'active':''} onClick={()=>{setTab('users');setError('')}}>Cuentas · {users.length}</button>
-    </div>
-    {tab==='password'?<form className="cms-account-form" onSubmit={savePassword}>
+    <form className="cms-account-form" onSubmit={savePassword}>
+      <strong className="cms-account-sub">Cambiar mi contraseña</strong>
       <PasswordField label="Contraseña actual" value={cur} onChange={setCur} autoComplete="current-password"/>
       <PasswordField label="Contraseña nueva" value={next} onChange={setNext} autoComplete="new-password" hint="Al menos 8 caracteres."/>
       <PasswordField label="Repite la contraseña nueva" value={next2} onChange={setNext2} autoComplete="new-password"/>
       {error&&<p className="login-error" role="alert">{error}</p>}
       <button type="submit" className="cms-btn is-primary" disabled={busy}>Guardar contraseña</button>
-    </form>:<form className="cms-account-form" onSubmit={addUser}>
-      <ul className="cms-account-users">{users.map(u=><li key={u.id}><span className="cms-avatar">{initials(u.name)}</span><span><strong>{u.name}{u.id===session.id&&' (tú)'}</strong><small>{u.user}</small></span></li>)}</ul>
-      <p className="cms-help">Crea una cuenta para otra persona que edite el sitio. Podrá entrar desde cualquier computador con su usuario y contraseña, y verá su propio tutorial la primera vez.</p>
-      <label className="login-field"><span>Nombre</span><input value={name} onChange={e=>setName(e.target.value)} required/></label>
-      <label className="login-field"><span>Usuario</span><input value={user} onChange={e=>setUser(e.target.value)} autoCapitalize="none" spellCheck={false} required/></label>
-      <PasswordField label="Contraseña inicial" value={pass} onChange={setPass} autoComplete="new-password" hint="Al menos 8 caracteres. Dásela a la persona; después puede cambiarla."/>
-      {error&&<p className="login-error" role="alert">{error}</p>}
-      <button type="submit" className="cms-btn is-primary" disabled={busy}><UserPlus/> Crear cuenta</button>
-    </form>}
+    </form>
+    <button type="button" className="cms-btn is-ghost is-block cms-mt" onClick={onUsers}><UserPlus/> Crear o administrar otras cuentas</button>
   </Modal>;
 }
 

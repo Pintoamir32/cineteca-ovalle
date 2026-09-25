@@ -16,7 +16,7 @@ export function tourViewOf(path){
   if(a==='colecciones')return b?'coleccion':'colecciones';
   if(a==='linea-de-tiempo')return b?'hito':'linea';
   if(a==='comunas')return b?'comuna':'comunas';
-  return {inicio:'inicio',colores:'colores',respaldo:'respaldo'}[a]||'dashboard';
+  return {inicio:'inicio',colores:'colores',respaldo:'respaldo',usuarios:'usuarios'}[a]||'dashboard';
 }
 
 // Pantallas ya vistas por cada cuenta: cada persona ve el tutorial en su primer inicio de sesión
@@ -41,7 +41,7 @@ export const TOURS={
     {target:'.cms-kpis',title:'El archivo en cifras',text:'Cuántas fichas hay, cuántas están incompletas y cuántos archivos digitales (videos, audios y documentos) tiene el archivo.'},
     {target:'.cms-dash-grid',title:'Qué hay que hacer',text:'«Por completar» lista las fichas a las que les falta algo (imagen, descripción, archivo…). Haz clic en una para completarla. «Editado recientemente» te lleva de vuelta a lo último que tocaste.'},
     {target:'.cms-type-cards',title:'Secciones del archivo',text:'Entra a una sección para ver sus fichas, o usa «+ Nueva» para crear una directamente.'},
-    {target:'.cms-side-foot',title:'Tu cuenta, el sitio y el tutorial',text:'«Ver sitio público» abre el sitio en otra pestaña. «Tutorial» vuelve a mostrar la guía de la pantalla en la que estés. Con tu nombre abres «Mi cuenta» (cambiar contraseña o crear cuentas para otras personas) y con «Cerrar sesión» sales del gestor.'}
+    {target:'.cms-side-foot',title:'Tu cuenta, el sitio y el tutorial',text:'«Ver sitio público» abre el sitio en otra pestaña. «Tutorial» vuelve a mostrar la guía de la pantalla en la que estés. Con tu nombre abres «Mi cuenta» para cambiar tu contraseña, y con «Cerrar sesión» sales del gestor. Las cuentas de las demás personas se administran en «Usuarios».'}
   ],
   list:[
     {target:'.cms-head',title:'Una sección del archivo',text:'Aquí están todas las fichas de esta sección. Haz clic en cualquiera para editarla.'},
@@ -116,6 +116,11 @@ export const TOURS={
     {target:'[data-tour="Etiquetas de fichas y colecciones"]',title:'Colores de etiquetas',text:'Los colores que se ofrecen para las etiquetas. Si cambias uno, las fichas y colecciones que lo usaban se actualizan.'},
     {target:'[data-tour="Legibilidad"]',title:'¿Se lee bien?',text:'Revisa automáticamente si los textos se leen bien sobre cada fondo. Si aparece un aviso, elige un color más claro u oscuro.'},
     SAVE
+  ],
+  usuarios:[
+    {target:'.cms-head',title:'Usuarios',text:'Aquí están todas las personas que pueden entrar al gestor y editar el sitio.'},
+    {target:'.cms-head-actions',title:'Nuevo usuario',text:'Crea una cuenta con nombre, usuario y una contraseña inicial. Dale esos datos a la persona: después puede cambiar su contraseña desde «Mi cuenta».'},
+    {target:'.cms-table',title:'Cada cuenta',text:'El lápiz cambia el nombre o el usuario. La llave pone una contraseña nueva (útil si alguien la olvidó) y cierra sus sesiones abiertas. El basurero elimina la cuenta; no puedes eliminar la tuya y siempre queda al menos una.'}
   ],
   respaldo:[
     {target:'.cms-head',title:'Respaldo',text:'Todo lo que editas se guarda en el servidor del sitio y lo ven todos los visitantes. Aun así, descarga un respaldo de vez en cuando para tener una copia propia.'},

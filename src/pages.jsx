@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, CalendarDays, CirclePlay, Clapperboard, Clock, Film, Grid2X2, List, MapPin, Search, Settings2, X } from 'lucide-react';
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpDown, CalendarDays, CirclePlay, Clapperboard, Clock, Film, Grid2X2, List, MapPin, Search, Settings2, Table2, X } from 'lucide-react';
 import { Counter, RecordCard, RecordRow } from './components';
 import { collections, locations, recordExtras, sections, timelineEvents } from './data';
 import { countByCollection, countByLocation, countByType, getAllRecords, getFilmPeople, getFilmography, getLocations, getRecordPeople, placesOf } from './repository';
@@ -55,6 +55,21 @@ const FACETS=[
 ];
 const FACET_KEY={Dirección:'director',Año:'anio',Género:'genero',Duración:'duracion',Soporte:'soporte'};
 
+/* Vista de tabla: columnas según la sección, ordenables desde el encabezado */
+const yearNum=r=>Number((/\d{4}/.exec(r.year)||[])[0])||0;
+const minutes=r=>Number((/(\d+)\s*min/.exec(formatParts(r)[1]||'')||[])[1])||0;
+const SUBTITLE={peliculas:'Dirección',personas:'Roles',prensa:'Medio',entrevistas:'Persona entrevistada',articulos:'Autoría'};
+function tableColumns(kind){
+  const cols=[{key:'title',label:'Título',get:r=>r.title}];
+  if(kind==='archivo')cols.push({key:'type',label:'Tipo',get:r=>r.type});
+  cols.push({key:'subtitle',label:SUBTITLE[kind]||'Autoría',get:r=>r.subtitle});
+  cols.push({key:'year',label:kind==='personas'?'Años':'Año',get:r=>r.year,sort:yearNum,num:true});
+  if(kind==='peliculas')cols.push({key:'genre',label:'Género',get:r=>formatParts(r)[0]},{key:'duration',label:'Duración',get:r=>formatParts(r)[1],sort:minutes,num:true});
+  else if(kind!=='personas')cols.push({key:'format',label:'Formato',get:r=>formatParts(r)[0]});
+  cols.push({key:'collection',label:'Colección',get:r=>r.collection});
+  return cols;
+}
+
 export function ArchivePage({kind='archivo'}){
   const [params,setParams]=useSearchParams(), [showFilters,setShowFilters]=useState(false); const info=pageInfo[kind], section=sections.find(s=>s.slug===kind); const q=params.get('q')||'';
   const year=params.get('year')||'', collection=params.get('collection')||'', recordType=params.get('type')||'';
@@ -69,22 +84,42 @@ export function ArchivePage({kind='archivo'}){
   const personOptions=useMemo(()=>kind==='peliculas'?[...new Set(scoped.flatMap(filmPeopleNames))].sort((a,b)=>a.localeCompare(b,'es')):[],[scoped,kind]);
   const genreOptions=useMemo(()=>[...new Set(scoped.map(r=>formatParts(r)[0]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es')),[scoped]);
   const list=useMemo(()=>{const filtered=getAllRecords().filter(r=>(!section||r.type===section.type)&&(!recordType||r.type===recordType)&&(!year||decadeOf(r)===Number(year))&&(!collection||r.collection===collection)&&activeFacets.every(f=>{const v=f.get(r);return Array.isArray(v)?v.includes(f.value):v===f.value})&&searchText(r).includes(fold(q)));return reverseOrder?filtered.reverse():filtered},[q,section,year,collection,recordType,facetSig,reverseOrder]);
-  const totalPages=Math.max(1,Math.ceil(list.length/PAGE_SIZE));
+  const view=['list','table'].includes(params.get('view'))?params.get('view'):'grid';
+  const columns=useMemo(()=>tableColumns(kind),[kind]);
+  const sortKey=params.get('orden')||'', sortDir=params.get('dir')==='desc'?'desc':'asc';
+  const sorted=useMemo(()=>{
+    const col=columns.find(c=>c.key===sortKey);if(!col)return list;
+    const val=col.sort||col.get, factor=sortDir==='desc'?-1:1;
+    return [...list].sort((a,b)=>{const x=val(a),y=val(b);return factor*(col.num||col.sort?(x-y):String(x||'').localeCompare(String(y||''),'es',{sensitivity:'base'}))});
+  },[list,columns,sortKey,sortDir]);
+  // Primer clic: ascendente; segundo: descendente
+  const sortBy=key=>{const next=new URLSearchParams(params);const dir=sortKey===key&&sortDir==='asc'?'desc':'asc';next.set('orden',key);next.set('dir',dir);next.delete('page');setParams(next)};
+  const perPage=view==='table'?20:PAGE_SIZE;
+  const totalPages=Math.max(1,Math.ceil(list.length/perPage));
   const page=Math.min(totalPages,Math.max(1,Number(params.get('page'))||1));
-  const pagedList=useMemo(()=>list.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE),[list,page]);
+  const pagedList=useMemo(()=>sorted.slice((page-1)*perPage,page*perPage),[sorted,page,perPage]);
+  const navigate=useNavigate();
   const goToPage=n=>{const next=new URLSearchParams(params);n>1?next.set('page',n):next.delete('page');setParams(next);window.scrollTo({top:0,left:0,behavior:'instant'})};
   const update=e=>{const v=e.target.value,next=new URLSearchParams(params);v?next.set('q',v):next.delete('q');next.delete('page');setParams(next)};
   const setFilter=(key,value)=>{const next=new URLSearchParams(params);value?next.set(key,value):next.delete(key);next.delete('page');setParams(next)};
-  const view=params.get('view')==='list'?'list':'grid';
   const setView=v=>{const next=new URLSearchParams(params);v==='grid'?next.delete('view'):next.set('view',v);setParams(next)};
   const headerCount=section?countByType(section.type):getAllRecords().length;
   return <main className="catalog-page"><section className="page-hero"><img src={info.image} alt=""/><div className="page-hero-shade"/><div><span>{info.eyebrow}</span><h1>{info.title}</h1><p>{info.desc}</p></div><b><Counter value={headerCount} pad={3}/><small>REGISTROS</small></b></section>
     <section className="catalog-content" data-reveal><div className="catalog-tools"><div className="catalog-search"><Search/><input value={q} onChange={update} placeholder={kind==='peliculas'?'Buscar por título, director o persona…':`Buscar en ${info.title.toLowerCase()}…`}/>{q&&<button onClick={()=>setParams({})}><X/></button>}</div><button className="filter-toggle" onClick={()=>setShowFilters(!showFilters)}><Settings2/> Filtros</button></div>
     {showFilters&&<div className={`filter-panel${kind==='peliculas'?' filter-panel-wide':section?' filter-panel-two':''}`}>{!section&&<SearchSelect label="Tipo de registro" value={recordType} onChange={v=>setFilter('type',v)} options={[{value:'',label:'Todos'},...sections.map(s=>({value:s.type,label:s.type}))]}/>}<SearchSelect label="Año" value={year} onChange={v=>setFilter('year',v)} options={[{value:'',label:'Todos los años'},...decadeOptions.map(d=>({value:String(d),label:`Década de ${d}`}))]}/>{kind==='peliculas'&&<><SearchSelect label="Género" value={params.get('genero')||''} onChange={v=>setFilter('genero',v)} options={[{value:'',label:'Todos los géneros'},...genreOptions.map(g=>({value:g,label:`${g} (${scoped.filter(r=>formatParts(r)[0]===g).length})`}))]}/><SearchSelect label="Duración" value={params.get('metraje')||''} onChange={v=>setFilter('metraje',v)} options={[{value:'',label:'Cualquier duración'},...METRAJES.map(m=>({value:m.label,label:`${m.label} · ${m.hint} (${scoped.filter(r=>metrajeOf(r)===m.label).length})`}))]}/></>}{kind==='peliculas'&&<><SearchSelect label="Dirección" value={params.get('director')||''} onChange={v=>setFilter('director',v)} options={[{value:'',label:'Todas las direcciones'},...directorOptions.map(d=>({value:d,label:d}))]}/><SearchSelect label="Persona" value={params.get('persona')||''} onChange={v=>setFilter('persona',v)} options={[{value:'',label:'Cualquier persona'},...personOptions.map(n=>({value:n,label:`${n} (${scoped.filter(r=>filmPeopleNames(r).includes(n)).length})`}))]}/></>}<SearchSelect label="Colección" value={collection} onChange={v=>setFilter('collection',v)} options={[{value:'',label:'Todas las colecciones'},...collectionOptions.map(c=>({value:c,label:c}))]}/></div>}
-    <div className="catalog-heading"><p><b>{list.length}</b> resultados {q&&<>para “{q}”</>}{activeFacets.map(f=><button key={f.key} className="catalog-chip" onClick={()=>setFilter(f.key,'')}>{f.label}: {f.value} <X/></button>)}</p><div className="view-toggle"><button className={view==='grid'?'active':''} onClick={()=>setView('grid')} aria-label="Vista de cuadrícula"><Grid2X2/></button><button className={view==='list'?'active':''} onClick={()=>setView('list')} aria-label="Vista de lista"><List/></button></div></div>
+    <div className="catalog-heading"><p><b>{list.length}</b> resultados {q&&<>para “{q}”</>}{activeFacets.map(f=><button key={f.key} className="catalog-chip" onClick={()=>setFilter(f.key,'')}>{f.label}: {f.value} <X/></button>)}</p><div className="view-toggle"><button className={view==='grid'?'active':''} onClick={()=>setView('grid')} aria-label="Vista de cuadrícula"><Grid2X2/></button><button className={view==='list'?'active':''} onClick={()=>setView('list')} aria-label="Vista de lista"><List/></button><button className={view==='table'?'active':''} onClick={()=>setView('table')} aria-label="Vista de tabla" title="Tabla ordenable"><Table2/></button></div></div>
     {view==='grid'
       ?<div className={`record-grid${compactCards?' record-grid-compact':''}${kind==='peliculas'?' record-grid-poster':''}`}>{pagedList.map((r,i)=><RecordCard item={r} index={i} key={r.id}/>)}</div>
-      :<div className="record-list">{pagedList.map((r,i)=><RecordRow item={r} index={i} key={r.id}/>)}</div>}
+      :view==='list'?<div className="record-list">{pagedList.map((r,i)=><RecordRow item={r} index={i} key={r.id}/>)}</div>
+      :<div className="record-table-wrap"><table className="record-table">
+        <thead><tr><th className="is-thumb" aria-label="Imagen"/>{columns.map(c=>{const on=sortKey===c.key;return <th key={c.key} aria-sort={on?(sortDir==='asc'?'ascending':'descending'):'none'} className={c.num?'is-num':undefined}>
+          <button type="button" onClick={()=>sortBy(c.key)} title={`Ordenar por ${c.label.toLowerCase()}`}>{c.label}{on?(sortDir==='asc'?<ArrowUp/>:<ArrowDown/>):<ArrowUpDown className="is-idle"/>}</button>
+        </th>})}</tr></thead>
+        <tbody>{pagedList.map(r=><tr key={r.id} onClick={()=>navigate(`/ficha/${r.id}`)}>
+          <td className="is-thumb"><img src={r.image} alt="" loading="lazy" decoding="async"/></td>
+          {columns.map((c,i)=><td key={c.key} className={c.num?'is-num':undefined}>{i===0?<Link to={`/ficha/${r.id}`} onClick={e=>e.stopPropagation()}>{c.get(r)}</Link>:c.key==='type'?<span className="record-table-tag" style={tagStyle(r.color)}>{c.get(r)}</span>:(c.get(r)||'—')}</td>)}
+        </tr>)}</tbody>
+      </table></div>}
     {!list.length&&<div className="no-results"><Search/><h3>No encontramos coincidencias.</h3><p>Prueba con otro término de búsqueda.</p><button onClick={()=>setParams({})}>Limpiar búsqueda</button></div>}
     {totalPages>1&&<nav className="pagination"><button disabled={page===1} onClick={()=>goToPage(page-1)}><ArrowLeft/> Anterior</button><div className="pagination-pages">{pageNumbers(page,totalPages).map((n,i)=>n==='…'?<span key={`e${i}`}>…</span>:<button key={n} className={n===page?'active':''} onClick={()=>goToPage(n)}>{n}</button>)}</div><button disabled={page===totalPages} onClick={()=>goToPage(page+1)}>Siguiente <ArrowRight/></button></nav>}</section>
   </main>

@@ -19,3 +19,8 @@ export const logout=()=>call('/api/auth/logout',{}).catch(()=>{});
 export const changePassword=(current,next)=>call('/api/auth/password',{current,next});
 export const listUsers=()=>call('/api/users').then(r=>r.users);
 export const createUser=({name,user,password})=>call('/api/users',{name,user,password}).then(r=>r.user);
+
+/* Mantenedor de usuarios */
+export const updateUser=(id,{name,user})=>call(`/api/users/${id}`,{name,user},'PUT').then(r=>r.user);
+export const resetUserPassword=(id,password)=>call(`/api/users/${id}/password`,{password});
+export const deleteUser=id=>call(`/api/users/${id}`,{},'DELETE');

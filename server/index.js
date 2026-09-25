@@ -121,7 +121,37 @@ api.post('/auth/password',needUser,async(req,res)=>{
   res.json({ok:true});
 });
 
-api.get('/users',needUser,async(req,res)=>res.json({users:(await db.listUsers()).map(u=>({id:u.id,name:u.name,user:u.username}))}));
+api.get('/users',needUser,async(req,res)=>res.json({users:(await db.listUsers()).map(u=>({id:u.id,name:u.name,user:u.username,createdAt:u.createdAt}))}));
+
+/* Mantenedor de usuarios */
+api.put('/users/:id',needUser,async(req,res)=>{
+  const target=await db.userById(req.params.id);
+  if(!target)return res.status(404).json({error:'Esa cuenta ya no existe.'});
+  const name=String(req.body.name||'').trim().slice(0,120), username=normUser(req.body.user);
+  if(!name)return res.status(400).json({error:'Escribe el nombre.'});
+  if(!/^[a-z0-9._@-]{3,}$/.test(username))return res.status(400).json({error:'El usuario debe tener al menos 3 caracteres, sin espacios.'});
+  const taken=await db.userByName(username);
+  if(taken&&taken.id!==target.id)return res.status(400).json({error:'Ya existe una cuenta con ese usuario.'});
+  await db.updateUser(target.id,name,username);
+  res.json({user:{id:target.id,name,user:username}});
+});
+// Restablece la contraseña de otra persona (por ejemplo, si la olvidó) y cierra sus sesiones abiertas
+api.post('/users/:id/password',needUser,async(req,res)=>{
+  const target=await db.userById(req.params.id);
+  if(!target)return res.status(404).json({error:'Esa cuenta ya no existe.'});
+  const problem=passwordProblem(req.body.password);if(problem)return res.status(400).json({error:problem});
+  const salt=crypto.randomBytes(16).toString('hex');
+  await db.setPassword(target.id,salt,await hashPassword(req.body.password,salt));
+  await db.deleteUserSessions(target.id,target.id===req.user.id?req.sessionToken:'');
+  res.json({ok:true});
+});
+api.delete('/users/:id',needUser,async(req,res)=>{
+  if(req.params.id===req.user.id)return res.status(400).json({error:'No puedes eliminar tu propia cuenta.'});
+  if((await db.countUsers())<=1)return res.status(400).json({error:'Debe quedar al menos una cuenta.'});
+  if(!await db.userById(req.params.id))return res.status(404).json({error:'Esa cuenta ya no existe.'});
+  await db.deleteUser(req.params.id);
+  res.json({ok:true});
+});
 api.post('/users',needUser,async(req,res)=>{
   const user=await newUser(req.body);
   if(user.error)return res.status(400).json(user);
