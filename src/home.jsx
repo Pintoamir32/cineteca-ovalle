@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowDownRight, ArrowRight, BookOpen, ChevronLeft, ChevronRight, CirclePlay, FileText, Film, Grid2X2, Layers, MapPin, Mic2, Search, Settings2, Sparkles, UserRound } from 'lucide-react';
 import { Counter, RecordCard, SearchResults } from './components';
-import { collections, locations, records, sections, site } from './data';
+import { collections, locations, sections, site } from './data';
 import { countByType, getAllRecords } from './repository';
 import { buildSearchIndex, matchIndex } from './search-index';
 import { SearchSelect } from './SearchSelect';
@@ -30,13 +30,15 @@ const TILE_LINKS=[['/colecciones',ArrowDownRight],['/linea-de-tiempo',ArrowDownR
 export function Home(){
   // t(): texto de la página; en el gestor se vuelve editable con un clic
   const {edit,content:c,t}=useSiteText();
-  const slides=c.slides, featuredId=edit?c.featuredId:site.featuredId;
+  // En el sitio no se muestran las diapositivas de fichas en borrador (en el gestor, sí)
+  const visible=c.slides.filter(x=>!x.recordId||getAllRecords().some(r=>r.id===x.recordId));
+  const slides=edit||!visible.length?c.slides:visible, featuredId=edit?c.featuredId:site.featuredId;
   const show=id=>edit||!c.hidden?.includes(id);
   const sectionClass=id=>edit&&c.hidden?.includes(id)?' is-hidden-section':'';
   // En el gestor cada sección muestra su nombre al pasar el mouse
   const tag=id=>edit?{'data-edit':HOME_SECTIONS.find(([k])=>k===id)?.[1]}:{};
-  // Numeración de secciones según las que están visibles
-  const numbers={};let n=0;for(const id of ['portal','discovery','spotlight','latest'])if(!c.hidden?.includes(id))numbers[id]=String(++n).padStart(2,'0');
+  // Numeración de secciones visibles, en el orden en que aparecen (ver home-discovery.css)
+  const numbers={};let n=0;for(const id of ['discovery','portal','spotlight','latest'])if(!c.hidden?.includes(id))numbers[id]=String(++n).padStart(2,'0');
 
   const [term,setTerm]=useState(''),[advanced,setAdvanced]=useState(false),[showResults,setShowResults]=useState(false); const nav=useNavigate(); const searchRef=useRef(null);
   const [advType,setAdvType]=useState(''),[advYear,setAdvYear]=useState(''),[advCollection,setAdvCollection]=useState('');
@@ -62,7 +64,7 @@ export function Home(){
   const goTo=path=>{nav(path);setTerm('');setShowResults(false)};
   useEffect(()=>{const onClick=e=>{if(searchRef.current&&!searchRef.current.contains(e.target))setShowResults(false)};document.addEventListener('mousedown',onClick);return()=>document.removeEventListener('mousedown',onClick)},[]);
   const years=Number.isFinite(firstYear)?Math.floor((new Date().getFullYear()-firstYear)/10)*10:0;
-  const latest=(c.latestIds?.length?c.latestIds.map(id=>allRecords.find(r=>r.id===id)).filter(Boolean):records.slice(0,4));
+  const latest=(c.latestIds?.length?c.latestIds.map(id=>allRecords.find(r=>r.id===id)).filter(Boolean):allRecords.slice(0,4));
   const s=i=>`slides.${Math.min(slide,slides.length-1)}.${i}`;
 
   return <main className="home-page">
@@ -72,7 +74,7 @@ export function Home(){
       <div className="hero-edition">{t('heroEdition')}</div>
       <div className="hero-title" key={`title-${slide}`}>
         <div className="eyebrow"><span>●</span> {t(s('eyebrow'))}</div>
-        <h1>{t(s('title'))}<br/>{edit?t(s('em'),{as:'em'}):<em>{current.em}</em>}</h1>
+        <h1>{t(s('title'))}{(edit||current.em)&&<><br/>{edit?t(s('em'),{as:'em'}):<em>{current.em}</em>}</>}</h1>
         <p>{t(s('desc'))}</p>
       </div>
       <div className="hero-index">

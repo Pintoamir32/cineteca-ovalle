@@ -1,0 +1,28 @@
+# Cineteca de Ovalle · configuración para Hostinger (Apache)
+
+# Siempre con https
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# La app maneja sus propias rutas (/peliculas, /ficha/12, /admin…):
+# todo lo que no sea un archivo real se sirve con index.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]
+
+# index.html nunca en caché, para que cada actualización se vea de inmediato;
+# los archivos de assets/ llevan su versión en el nombre y pueden guardarse un año
+<IfModule mod_headers.c>
+  <FilesMatch "index\.html$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+  <FilesMatch "\.(js|css|woff2?|png|jpe?g|webp|svg)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
+
+# Compresión de texto
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+</IfModule>

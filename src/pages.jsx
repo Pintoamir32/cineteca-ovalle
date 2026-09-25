@@ -2,10 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, CalendarDays, CirclePlay, Clapperboard, Clock, Film, Grid2X2, List, MapPin, Search, Settings2, X } from 'lucide-react';
 import { Counter, RecordCard, RecordRow } from './components';
-import { collections, locations, recordExtras, records, sections, timelineEvents } from './data';
-import { countByCollection, countByLocation, countByType, getAllRecords, getFilmPeople, getFilmography, getLocations, getRecordPeople } from './repository';
+import { collections, locations, recordExtras, sections, timelineEvents } from './data';
+import { countByCollection, countByLocation, countByType, getAllRecords, getFilmPeople, getFilmography, getLocations, getRecordPeople, placesOf } from './repository';
+import { useEdit } from './edit-context';
 import { SearchSelect } from './SearchSelect';
 import { BackLink, DocumentView, MediaViewer } from './record-views';
+import { tagStyle } from './color';
 
 
 const PAGE_SIZE=8;
@@ -88,7 +90,7 @@ export function ArchivePage({kind='archivo'}){
   </main>
 }
 
-export function DetailPage(){const {id}=useParams();const item=records.find(r=>r.id===Number(id));if(!item)return <Navigate to="/archivo"/>;const related=records.filter(r=>r.id!==item.id).slice(0,3);return <main className="detail-page"><BackLink item={item}/><section className="detail-hero"><div className="detail-image"><img src={item.image} alt=""/><span style={{background:item.color}}>{item.type}</span></div><div className="detail-copy"><span>FICHA CDO—{String(item.id).padStart(4,'0')}</span><h1>{item.title}</h1><p>{item.description}</p><dl><div><dt>Fecha</dt><dd>{item.year}</dd></div><div><dt>Autoría</dt><dd>{item.subtitle}</dd></div><div><dt>Formato</dt><dd>{item.format}</dd></div><div><dt>Colección</dt><dd>{item.collection}</dd></div></dl><button><CirclePlay/> Consultar archivo digital</button></div></section><section className="related-page"><div className="section-label"><span>+</span> RECURSOS RELACIONADOS</div><div className="record-grid">{related.map((r,i)=><RecordCard item={r} index={i} key={r.id}/>)}</div></section></main>}
+export function DetailPage(){const {id}=useParams();const item=getAllRecords().find(r=>r.id===Number(id));if(!item)return <Navigate to="/archivo"/>;const related=getAllRecords().filter(r=>r.id!==item.id).slice(0,3);return <main className="detail-page"><BackLink item={item}/><section className="detail-hero"><div className="detail-image"><img src={item.image} alt=""/><span style={tagStyle(item.color)}>{item.type}</span></div><div className="detail-copy"><span>FICHA CDO—{String(item.id).padStart(4,'0')}</span><h1>{item.title}</h1><p>{item.description}</p><dl><div><dt>Fecha</dt><dd>{item.year}</dd></div><div><dt>Autoría</dt><dd>{item.subtitle}</dd></div><div><dt>Formato</dt><dd>{item.format}</dd></div><div><dt>Colección</dt><dd>{item.collection}</dd></div></dl><button><CirclePlay/> Consultar archivo digital</button></div></section><section className="related-page"><div className="section-label"><span>+</span> RECURSOS RELACIONADOS</div><div className="record-grid">{related.map((r,i)=><RecordCard item={r} index={i} key={r.id}/>)}</div></section></main>}
 
 export function AboutPage(){
   return <main className="about-page">
@@ -119,49 +121,61 @@ export function AboutPage(){
 }
 
 
+const DEFAULT_EXTRA={credits:[['Estado','Catalogado'],['Origen','Archivo CDO']],relations:[],location:'Ovalle',mediaType:'image'};
+
 export function RichDetailPage(){
   const {id}=useParams(), item=getAllRecords().find(r=>r.id===Number(id)); if(!item)return <Navigate to="/archivo"/>;
-  const extra=recordExtras[item.id]||{credits:[['Estado','Catalogado'],['Origen','Archivo CDO']],relations:[],location:'Ovalle',mediaType:'image'};
+  return <RecordDetail key={item.id} item={item} extra={recordExtras[item.id]||DEFAULT_EXTRA}/>;
+}
+
+// Ficha pública de un registro. El gestor la usa también como vista previa editable (ver edit-context)
+export function RecordDetail({item,extra}){
+  const {edit,f,slot}=useEdit();
   const related=(extra.relations||[]).map(rid=>getAllRecords().find(r=>r.id===rid)).filter(Boolean);
-  if(['Prensa','Entrevista','Artículo'].includes(item.type))return <DocumentView key={item.id} item={item} extra={extra} related={related} people={getRecordPeople(item)}/>;
-  const isFilm=item.type==='Película', isPerson=item.type==='Persona', placeList=getLocations(item.id);
-  const filmography=isPerson?getFilmography(item):[];
-  const people=isPerson?[]:getRecordPeople(item);
+  if(['Prensa','Entrevista','Artículo'].includes(item.type))return <DocumentView item={item} extra={extra} related={related} people={getRecordPeople(item,extra)}/>;
+  const isFilm=item.type==='Película', isPerson=item.type==='Persona', placeList=placesOf(extra);
+  const filmography=isPerson?getFilmography(item,extra):[];
+  const people=isPerson?[]:getRecordPeople(item,extra);
+  const credits=extra.credits||[], gallery=extra.gallery||[];
   const [genre,duration,medium]=(item.format||'').split(' · ');
-  const filmFormat=duration?[['Género',genre],['Duración',duration],['Soporte',medium]].filter(([,v])=>v):[['Formato',item.format]];
+  // En el gestor se muestran los tres datos aunque estén vacíos, para poder completarlos
+  const parts=[['Género',genre,'format.0'],['Duración',duration,'format.1'],['Soporte',medium,'format.2']];
+  const filmFormat=edit&&isFilm?parts:duration?parts.filter(([,v])=>v):[['Formato',item.format,'format.0']];
   // Películas y personas comparten sidebar, con sus propios datos y llamada a la acción
   const view={
-    Película:{facts:[['Dirección',item.subtitle,true],['Año',item.year],...filmFormat,['Colección',item.collection,true]],label:'Ficha técnica',cta:['#media',CirclePlay,'Ver película'],places:'Locación'},
-    Persona:{facts:[['Roles',item.subtitle,true],['Vida',item.year],['Obras',item.format],['Colección',item.collection,true]],label:'Ficha biográfica',cta:['#filmografia',Film,'Ver filmografía'],places:'Territorio'},
+    Película:{facts:[['Dirección',item.subtitle,true,'subtitle'],['Año',item.year,false,'year'],...filmFormat.map(([k,v,key])=>[k,v,false,key]),['Colección',item.collection,true]],label:'Ficha técnica',cta:['#media',CirclePlay,'Ver película'],places:'Locación'},
+    Persona:{facts:[['Roles',item.subtitle,true,'subtitle'],['Vida',item.year,false,'year'],['Obras',item.format,false,'format.0'],['Colección',item.collection,true]],label:'Ficha biográfica',cta:['#filmografia',Film,'Ver filmografía'],places:'Territorio'},
   }[item.type]||{facts:[['Autoría',item.subtitle,true],['Fecha',item.year],['Formato',item.format],['Colección',item.collection,true]],label:'Ficha',cta:['#media',CirclePlay,'Consultar archivo digital'],places:'Territorio'};
   const [ctaHref,CtaIcon,ctaText]=view.cta;
+  const initials=(item.subtitle||'').split(' ').filter(Boolean).map(w=>w[0]).slice(0,2).join('');
   return <main className={`ficha-page${isFilm?' ficha-film':' ficha-person'}`}>
     {!isFilm&&<section className="ficha-hero">
       <img src={item.image} alt="" loading="lazy" decoding="async"/>
       <div className="ficha-hero-shade"/>
+      {slot('image')}
       <BackLink item={item}/>
       <div className="ficha-hero-content">
-        <span className="ficha-tag" style={{background:item.color}}>{item.type}</span>
+        <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
         <span className="ficha-code">FICHA CDO—{String(item.id).padStart(4,'0')}</span>
-        <h1>{item.title}</h1>
-        <p>{item.description}</p>
+        <h1>{f('title',item.title)}</h1>
+        <p>{f('description',item.description,{multiline:true})}</p>
       </div>
     </section>}
     <section className="ficha-body" data-reveal>
       <article className="ficha-main">
         {isFilm&&<header className="ficha-film-head">
           <div className="ficha-film-top"><BackLink item={item}/><span className="ficha-code">FICHA CDO—{String(item.id).padStart(4,'0')}</span></div>
-          <span className="ficha-tag" style={{background:item.color}}>{item.type}</span>
-          <h1>{item.title}</h1>
+          <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
+          <h1>{f('title',item.title)}</h1>
           <div className="ficha-film-byline">
-            <Link className="ficha-film-director" to={`/peliculas?director=${encodeURIComponent(item.subtitle)}`} title={`Ver todas las películas de ${item.subtitle}`}><span aria-hidden="true">{item.subtitle.split(' ').map(w=>w[0]).slice(0,2).join('')}</span><div><small>Dirigida por</small><strong>{item.subtitle}</strong></div><ArrowRight className="ficha-film-director-arrow" aria-hidden="true"/></Link>
-            <ul className="ficha-film-specs">{[['Año',item.year],...filmFormat].map(([k,v])=>{const Icon={Año:CalendarDays,Género:Clapperboard,Duración:Clock,Soporte:Film}[k]||Film;const key=FACET_KEY[k];return <li key={k}>{key?<Link to={`/peliculas?${key}=${encodeURIComponent(v)}`} title={`Ver películas · ${k}: ${v}`}><Icon aria-hidden="true"/><span className="sr-only">{k}: </span>{v}</Link>:<span><Icon aria-hidden="true"/>{v}</span>}</li>})}</ul>
+            <Link className="ficha-film-director" to={`/peliculas?director=${encodeURIComponent(item.subtitle)}`} title={`Ver todas las películas de ${item.subtitle}`}><span aria-hidden="true">{initials}</span><div><small>Dirigida por</small><strong>{f('subtitle',item.subtitle)}</strong></div><ArrowRight className="ficha-film-director-arrow" aria-hidden="true"/></Link>
+            <ul className="ficha-film-specs">{[['Año',item.year,'year'],...filmFormat].map(([k,v,field])=>{const Icon={Año:CalendarDays,Género:Clapperboard,Duración:Clock,Soporte:Film}[k]||Film;const key=FACET_KEY[k];const text=f(field,v,{placeholder:k});return <li key={k}>{key?<Link to={`/peliculas?${key}=${encodeURIComponent(v)}`} title={`Ver películas · ${k}: ${v}`}><Icon aria-hidden="true"/><span className="sr-only">{k}: </span>{text}</Link>:<span><Icon aria-hidden="true"/>{text}</span>}</li>})}</ul>
           </div>
         </header>}
         <div className="ficha-section-label"><span>01</span> DESCRIPCIÓN</div>
         <h2>Una pieza, múltiples lecturas.</h2>
-        <p>{item.description} Este registro forma parte de un proceso continuo de investigación, preservación y acceso comunitario al patrimonio audiovisual de la Provincia del Limarí.</p>
-        <div className="ficha-credits">{extra.credits.map(([k,v],i)=><div key={k} className="stagger-item" style={{transitionDelay:`${i*60}ms`}}><small>{k}</small><strong>{v}</strong></div>)}</div>
+        <p>{f('description',item.description,{multiline:true})} Este registro forma parte de un proceso continuo de investigación, preservación y acceso comunitario al patrimonio audiovisual de la Provincia del Limarí.</p>
+        <div className="ficha-credits">{credits.map(([k,v],i)=><div key={`${k}-${i}`} className="stagger-item" style={{transitionDelay:`${i*60}ms`}}><small>{f(`creditKey.${i}`,k,{placeholder:'Dato'})}</small><strong>{f(`credits.${i}`,v,{placeholder:'Completar…'})}</strong></div>)}{slot('credits')}</div>
         {isPerson?<div className="ficha-media ficha-filmography" id="filmografia">
           <div className="ficha-filmography-head"><div className="ficha-section-label"><span>02</span> FILMOGRAFÍA</div><span>{String(filmography.length).padStart(2,'0')} {filmography.length===1?'PELÍCULA':'PELÍCULAS'}</span></div>
           {filmography.length?<ol className="ficha-filmography-list">{filmography.map(({film,roles})=>{const [fGenre,fDuration]=(film.format||'').split(' · ');return <li key={film.id}>
@@ -176,6 +190,7 @@ export function RichDetailPage(){
         </div>:<div className="ficha-media" id="media">
           <div className="ficha-section-label"><span>02</span> ARCHIVO DIGITAL</div>
           <MediaViewer item={item} extra={extra}/>
+          {slot('media')}
         </div>}
         {isFilm&&<div className="ficha-people" id="personas">
           <div className="ficha-filmography-head"><div className="ficha-section-label"><span>03</span> PERSONAS MENCIONADAS</div><span>{String(people.length).padStart(2,'0')} {people.length===1?'PERSONA':'PERSONAS'}</span></div>
@@ -185,45 +200,57 @@ export function RichDetailPage(){
             <ArrowRight/>
           </Link>)}</div>:<p className="ficha-filmography-empty">Aún no hay personas vinculadas a esta película en el archivo.</p>}
         </div>}
-        {extra.gallery?.length>0&&<div className="ficha-gallery">
+        {gallery.length>0&&<div className="ficha-gallery">
           <div className="ficha-section-label"><span>{isFilm?'04':'03'}</span> GALERÍA</div>
-          <div className="ficha-gallery-grid">{extra.gallery.map((src,i)=><img src={src} alt={`Material asociado ${i+1}`} key={src} loading="lazy" decoding="async"/>)}</div>
+          <div className="ficha-gallery-grid">{gallery.map((src,i)=><img src={src} alt={`Material asociado ${i+1}`} key={`${i}-${src.slice(-24)}`} loading="lazy" decoding="async"/>)}</div>
+          {slot('gallery')}
         </div>}
       </article>
       <aside className="ficha-aside ficha-film-aside">
-        {isFilm&&<figure className="ficha-poster"><img src={item.image} alt={`Imagen de ${item.title}`} decoding="async"/><figcaption><span>{item.collection}</span><span>{item.year}</span></figcaption></figure>}
+        {isFilm&&<figure className="ficha-poster"><img src={item.image} alt={`Imagen de ${item.title}`} decoding="async"/>{slot('image')}<figcaption><span>{item.collection}</span><span>{item.year}</span></figcaption></figure>}
         <a className="ficha-cta" href={ctaHref}><CtaIcon/> {ctaText}</a>
-        {related.length>0&&<><div className="ficha-aside-label">Relacionados</div><div className="ficha-film-related">{related.map(r=><Link to={`/ficha/${r.id}`} key={r.id}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><small>{r.type}</small><strong>{r.title}</strong></div><ArrowRight/></Link>)}</div></>}
+        {related.length>0&&<><div className="ficha-aside-label">Relacionados</div><div className="ficha-film-related">{related.map(r=><Link to={`/ficha/${r.id}`} key={r.id}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><small>{r.type}</small><strong>{r.title}</strong></div><ArrowRight/></Link>)}</div>{slot('relations')}</>}
         <div className="ficha-aside-label">{view.label}</div>
-        <dl className="ficha-film-facts">{view.facts.map(([k,v,wide])=><div key={k} className={wide?'wide':undefined}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+        <dl className="ficha-film-facts">{view.facts.map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>
         <div className="ficha-aside-label">{placeList.length>1?`${isFilm?'Locaciones':'Territorios'} · ${placeList.length}`:view.places}</div>
         <ul className="ficha-film-locations">{placeList.map(l=><li key={l}><Link to={`/${item.slug}?locacion=${encodeURIComponent(l)}`} title={`Ver ${item.slug} vinculadas a ${l}`}><MapPin/><strong>{l}</strong><ArrowRight/></Link></li>)}</ul>
+        {slot('places')}
         <Link className="ficha-film-maplink" to="/mapa">Ver en el mapa <ArrowRight/></Link>
       </aside>
     </section>
   </main>
 }
 
-export function CollectionsPage(){return <main className="discovery-page"><section className="discovery-hero"><img src="https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>RECORRIDOS CURATORIALES</span><h1>Colecciones</h1><p>Entradas temáticas para descubrir conexiones inesperadas dentro del archivo.</p></section><section className="collections-grid" data-reveal>{collections.map((c,i)=><Link to={`/archivo?collection=${encodeURIComponent(c.title)}`} className="collection-card stagger-item" style={{transitionDelay:`${i*80}ms`}} key={c.slug}><img src={c.image} alt="" loading="lazy" decoding="async"/><div className="collection-shade"/><span>0{i+1} · {c.years}</span><h2>{c.title}</h2><p>{c.description}</p><b style={{background:c.color}}>{countByCollection(c.title)} registros <ArrowRight/></b></Link>)}</section></main>}
+// En el gestor (ver edit-context): `items` es la lista con el borrador y `index` el elemento en edición
+export function CollectionsPage(){
+  const {edit,f,slot}=useEdit();
+  const list=edit?.items||collections, on=i=>edit?.index===i;
+  const v=(i,key,value,opts)=>on(i)?f(key,value,opts):value;
+  return <main className="discovery-page"><section className="discovery-hero"><img src="https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>RECORRIDOS CURATORIALES</span><h1>Colecciones</h1><p>Entradas temáticas para descubrir conexiones inesperadas dentro del archivo.</p></section><section className="collections-grid" data-reveal>{list.map((c,i)=><Link to={`/archivo?collection=${encodeURIComponent(c.title)}`} className={`collection-card stagger-item${on(i)?' is-editing':''}`} style={{transitionDelay:`${i*80}ms`}} key={c.slug||i} onClick={edit&&!on(i)?ev=>{ev.preventDefault();edit.pick?.(i)}:undefined}><img src={c.image} alt="" loading="lazy" decoding="async"/><div className="collection-shade"/>{on(i)&&slot('image')}<span>{String(i+1).padStart(2,'0')} · {v(i,'years',c.years,{placeholder:'1968—1990'})}</span><h2>{v(i,'title',c.title)}</h2><p>{v(i,'description',c.description,{multiline:true})}</p><b style={tagStyle(c.color)}>{on(i)&&edit.count!=null?edit.count:countByCollection(c.title)} registros <ArrowRight/></b></Link>)}</section></main>;
+}
 
 export function TimelinePage(){
-  const [active,setActive]=useState(timelineEvents[0]);
+  const {edit,f,slot}=useEdit();
+  const list=edit?.items||timelineEvents;
+  const [picked,setActive]=useState(list[0]);
+  const active=edit?list[edit.index]:picked, isActive=(e,i)=>edit?i===edit.index:active.year===e.year;
   return <main className="timeline-page">
     <section className="discovery-hero"><img src="https://images.unsplash.com/photo-1586899028174-e7098604235b?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>HISTORIA AUDIOVISUAL</span><h1>Línea de tiempo</h1><p>Ochenta años de imágenes, encuentros y memoria en movimiento.</p></section>
     <section className="timeline-layout" data-reveal>
       <div className="timeline-spine">
-        {timelineEvents.map((e,i)=><button key={e.year} className={`timeline-entry${active.year===e.year?' active':''} stagger-item`} style={{transitionDelay:`${(i%8)*50}ms`}} onClick={()=>setActive(e)}>
+        {list.map((e,i)=><button key={`${e.year}-${i}`} className={`timeline-entry${isActive(e,i)?' active':''} stagger-item`} style={{transitionDelay:`${(i%8)*50}ms`}} onClick={()=>edit?(i!==edit.index&&edit.pick?.(i)):setActive(e)}>
           <span className="timeline-entry-year">{e.year}</span>
           <span className="timeline-entry-line"><span className="timeline-entry-dot"/></span>
           <span className="timeline-entry-body"><small>{e.type}</small><strong>{e.title}</strong></span>
         </button>)}
       </div>
       <aside className="timeline-detail">
-        <img src={active.image} alt="" loading="lazy" decoding="async"/>
+        {active.image?<img src={active.image} alt="" loading="lazy" decoding="async"/>:<div className="timeline-detail-noimg"/>}
+        {slot('image')}
         <div className="timeline-detail-copy">
-          <span>{active.type} · {active.year}</span>
-          <h2>{active.title}</h2>
-          <p>{active.text}</p>
+          <span>{active.type} · {f('year',active.year,{placeholder:'1970'})}</span>
+          <h2>{f('title',active.title)}</h2>
+          <p>{f('text',active.text,{multiline:true})}</p>
           <Link to="/archivo">Explorar registros <ArrowRight/></Link>
         </div>
       </aside>
@@ -236,5 +263,5 @@ export function MapPage(){
   const delta=selected.name==='Combarbalá'?0.25:0.18;
   const bbox=`${selected.lon-delta},${selected.lat-delta},${selected.lon+delta},${selected.lat+delta}`;
   const mapUrl=`https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${selected.lat}%2C${selected.lon}`;
-  return <main className="map-page"><section className="discovery-hero"><img src="https://images.unsplash.com/photo-1472396961693-142e6e269027?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>GEOGRAFÍA DEL ARCHIVO</span><h1>Mapa del Limarí</h1><p>Explora las obras, personas y documentos según su vínculo con el territorio.</p></section><section className="map-explorer" data-reveal><div className="archive-map real-map"><iframe key={selected.id} title={`Mapa de ${selected.name}`} src={mapUrl} loading="lazy"/><div className="map-caption"><MapPin/> Mapa geográfico · OpenStreetMap</div></div><aside><span>LOCALIDAD SELECCIONADA</span><h2>{selected.name}</h2><div className="map-location-list">{locations.map(l=><button key={l.id} className={selected.id===l.id?'active':''} onClick={()=>setSelected(l)}><MapPin/>{l.name}<b>{countByLocation(l.name)}</b></button>)}</div><strong>{countByLocation(selected.name)}</strong><small>REGISTROS VINCULADOS</small><p>{selected.text}</p><Link to={`/archivo?locacion=${encodeURIComponent(selected.name)}`}>Explorar registros <ArrowRight/></Link></aside></section></main>
+  return <main className="map-page"><section className="discovery-hero"><img src="https://images.unsplash.com/photo-1472396961693-142e6e269027?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>GEOGRAFÍA DEL ARCHIVO</span><h1>Mapa del Limarí</h1><p>Explora las obras, personas y documentos según su vínculo con el territorio.</p></section><section className="map-explorer" data-reveal><div className="archive-map real-map"><iframe key={selected.id} title={`Mapa de ${selected.name}`} src={mapUrl} loading="lazy"/><div className="map-caption"><MapPin/> Mapa geográfico · OpenStreetMap</div></div><aside><span>LOCALIDAD SELECCIONADA</span><h2>{selected.name}</h2><div className="map-location-list">{locations.map(l=><button key={l.id} className={selected.id===l.id?'active':''} onClick={()=>setSelected(l)}><MapPin/>{l.name}<b>{countByLocation(l.name)}</b></button>)}</div><strong>{countByLocation(selected.name)}</strong><small>REGISTROS VINCULADOS</small><Link to={`/archivo?locacion=${encodeURIComponent(selected.name)}`}>Explorar registros <ArrowRight/></Link></aside></section></main>
 }

@@ -4,6 +4,7 @@ import { ArrowDownRight, ArrowRight, Menu, Search, X } from 'lucide-react';
 import { buildSearchIndex, matchIndex } from './search-index';
 import { useRevealScan } from './reveal';
 import { useSiteText } from './site-text';
+import { tagStyle } from './color';
 
 export function Brand(){return <Link className="brand" to="/"><span className="brand-symbol"><i/><i/><i/><i/></span><span><b>Cineteca</b><small>Ovalle</small></span></Link>}
 
@@ -91,6 +92,6 @@ export function Footer(){
   return <footer><div className="footer-main"><Brand/><h2>{t('footerTitle',{em:'i'})}</h2><div className="footer-links"><div><small>{t('footerExplore')}</small><Link to="/colecciones">{l(0)}</Link><Link to="/linea-de-tiempo">{l(1)}</Link><Link to="/mapa">{l(2)}</Link></div><div><small>{t('footerConnect')}</small><a href={c.footerInstagram||'#instagram'} target={c.footerInstagram?.startsWith('http')?'_blank':undefined} rel="noreferrer">{l(3)}</a><a href={`mailto:${c.footerEmail}`}>{l(4)}</a><Link to="/nosotros">{l(5)}</Link></div></div></div><div className="footer-line"><span>{t('footerCopy')}</span><span>{t('footerPlace')}</span><Link to="/">{t('footerTop')}</Link></div></footer>;
 }
 
-export const RecordCard = memo(function RecordCard({item,index=0}){return <Link className={`record-card card-${index%4} stagger-item`} style={{transitionDelay:`${(index%8)*60}ms`}} to={`/ficha/${item.id}`}><div className="record-photo"><img src={item.image} alt="" loading="lazy" decoding="async"/><span style={{background:item.color}}>{item.type}</span><i><ArrowDownRight/></i></div><div className="record-data"><span>{item.year} · {item.collection}</span><h3>{item.title}</h3><p>{item.subtitle}</p></div></Link>})
+export const RecordCard = memo(function RecordCard({item,index=0}){return <Link className={`record-card card-${index%4} stagger-item`} style={{transitionDelay:`${(index%8)*60}ms`}} to={`/ficha/${item.id}`}><div className="record-photo"><img src={item.image} alt="" loading="lazy" decoding="async"/><span style={tagStyle(item.color)}>{item.type}</span><i><ArrowDownRight/></i></div><div className="record-data"><span>{item.year} · {item.collection}</span><h3>{item.title}</h3><p>{item.subtitle}</p></div></Link>})
 
-export const RecordRow = memo(function RecordRow({item,index=0}){return <Link className="record-row stagger-item" style={{transitionDelay:`${(index%8)*40}ms`}} to={`/ficha/${item.id}`}><div className="record-row-thumb"><img src={item.image} alt="" loading="lazy" decoding="async"/></div><div className="record-row-body"><span className="record-row-tag" style={{background:item.color}}>{item.type}</span><h3>{item.title}</h3><p>{item.subtitle}</p></div><div className="record-row-meta"><span>{item.year}</span><small>{item.collection}</small></div><ArrowRight/></Link>})
+export const RecordRow = memo(function RecordRow({item,index=0}){return <Link className="record-row stagger-item" style={{transitionDelay:`${(index%8)*40}ms`}} to={`/ficha/${item.id}`}><div className="record-row-thumb"><img src={item.image} alt="" loading="lazy" decoding="async"/></div><div className="record-row-body"><span className="record-row-tag" style={tagStyle(item.color)}>{item.type}</span><h3>{item.title}</h3><p>{item.subtitle}</p></div><div className="record-row-meta"><span>{item.year}</span><small>{item.collection}</small></div><ArrowRight/></Link>})

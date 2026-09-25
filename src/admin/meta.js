@@ -1,4 +1,4 @@
-import { recordExtras, theme } from '../data';
+import { recordExtras, records, theme } from '../data';
 import { getLocations } from '../repository';
 
 // Cómo se llama cada campo según el tipo de registro, y con qué se rellena una ficha nueva
@@ -32,3 +32,25 @@ export function missingFields(record,extra=extraOf(record.id)){
 }
 
 export const code=id=>`CDO—${String(id).padStart(4,'0')}`;
+
+/* ---------- Carrusel del inicio ---------- */
+
+// A dónde puede llevar el botón de una diapositiva: secciones del sitio o cualquier ficha
+export const SITE_LINKS=[['/archivo','Archivo completo'],['/peliculas','Películas'],['/personas','Personas'],['/prensa','Prensa'],['/entrevistas','Entrevistas'],['/articulos','Artículos'],['/colecciones','Colecciones'],['/linea-de-tiempo','Línea de tiempo'],['/mapa','Mapa'],['/nosotros','Sobre la Cineteca']];
+export const slideLinkOptions=()=>[
+  ...SITE_LINKS.map(([value,label])=>({value,label:`${label} · ${value}`})),
+  ...records.map(r=>({value:`/ficha/${r.id}`,label:`Ficha · ${r.type} · ${r.title}`}))
+];
+
+// Primera frase de la descripción, sin pasar de ~140 caracteres
+function lead(text=''){
+  const first=String(text).split(/(?<=[.!?])\s/)[0]||'';
+  return first.length<=140?first:`${first.slice(0,137).replace(/\s+\S*$/,'')}…`;
+}
+
+// Diapositiva armada con los datos de una ficha; sus textos se pueden ajustar después
+export const slideFromRecord=r=>({
+  eyebrow:`${r.type} · ${r.year}`.toUpperCase(),
+  title:r.title,em:r.subtitle||'',desc:lead(r.description),
+  image:r.image,alt:r.title,link:`/ficha/${r.id}`,recordId:r.id
+});

@@ -7,7 +7,7 @@ import { useStoreVersion } from '../store';
 /* Vista previa del sitio dentro de un iframe de 1280 px: así el diseño responde a ese ancho
    (y no al de la ventana del gestor). El contenido se monta con un portal, de modo que sigue
    siendo parte de esta app y los textos se pueden editar con clic. */
-export function SiteFrame({width=1280,real=false,vars,apiRef,className='',children=<Home/>}){
+export function SiteFrame({width=1280,real=false,vars,apiRef,className='',path='/',children=<Home/>}){
   const version=useStoreVersion();
   const wrapRef=useRef(null), iframeRef=useRef(null);
   const [doc,setDoc]=useState(null), [avail,setAvail]=useState(800), [height,setHeight]=useState(900);
@@ -77,6 +77,6 @@ export function SiteFrame({width=1280,real=false,vars,apiRef,className='',childr
     <div className="cms-site-frame-box" style={{width:width*scale,height:height*scale}}>
       <iframe ref={iframeRef} title="Vista previa del sitio" scrolling="no" style={{width,height,transform:`scale(${scale})`}}/>
     </div>
-    {doc&&createPortal(<div className="site" ref={siteRef}><Topbar previewPath="/"/>{children}<Footer/></div>,doc.body)}
+    {doc&&createPortal(<div className="site" ref={siteRef}><Topbar previewPath={path}/>{children}<Footer/></div>,doc.body)}
   </div>;
 }

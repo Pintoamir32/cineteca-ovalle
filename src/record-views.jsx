@@ -2,7 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, BookOpen, ChevronLeft, ChevronRight, CirclePlay, Download, FileText, Headphones, MapPin, Maximize2, X } from 'lucide-react';
 import { sections } from './data';
-import { getLocations } from './repository';
+import { placesOf } from './repository';
+import { useEdit } from './edit-context';
+import { tagStyle } from './color';
 import './record-views.css';
 
 const ARCHIVE_NOTE='Este registro forma parte de un proceso continuo de investigación, preservación y acceso comunitario al patrimonio audiovisual de la Provincia del Limarí.';
@@ -23,8 +25,10 @@ export function MediaViewer({item,extra}){
 
 /* ---------- Piezas compartidas ---------- */
 
+// [etiqueta, valor, ancho, campo editable]: en el gestor los campos editables se muestran aunque estén vacíos
 function Facts({rows}){
-  return <dl className="ficha-film-facts">{rows.filter(([,v])=>v).map(([k,v,wide])=><div key={k} className={wide?'wide':undefined}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>;
+  const {edit,f}=useEdit();
+  return <dl className="ficha-film-facts">{rows.filter(([,v,,key])=>v||(edit&&key)).map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>;
 }
 
 function PeopleCards({people,title='Personas mencionadas',number}){
@@ -52,10 +56,10 @@ function RelatedList({related}){
   </section>;
 }
 
-function Places({item}){
-  const places=getLocations(item.id);
+function Places({item,places,slot}){
   return <><div className="ficha-aside-label">{places.length>1?`Territorios · ${places.length}`:'Territorio'}</div>
     <ul className="ficha-film-locations">{places.map(l=><li key={l}><Link to={`/${item.slug}?locacion=${encodeURIComponent(l)}`}><MapPin/><strong>{l}</strong><ArrowRight/></Link></li>)}</ul>
+    {slot('places')}
     <Link className="ficha-film-maplink" to="/mapa">Ver en el mapa <ArrowRight/></Link></>;
 }
 
@@ -72,7 +76,7 @@ function docConfig(item,extra){
     meta:[item.year,kind,extent],
     caption:'Registro de memoria oral · Archivo CDO',
     cta:[isVideo?CirclePlay:Headphones,isVideo?'Ver entrevista':'Escuchar entrevista','#media'],
-    facts:[['Persona entrevistada',item.subtitle,true],['Año',item.year],['Formato',kind],['Duración',extent],...others(['Duración']),['Colección',item.collection,true]],
+    facts:[['Persona entrevistada',item.subtitle,true,'subtitle'],['Año',item.year,false,'year'],['Formato',kind,false,'format.0'],['Duración',extent,false,'format.1'],...others(['Duración']),['Colección',item.collection,true]],
     factsLabel:'Ficha de la entrevista',textLabel:'RESUMEN DE LA ENTREVISTA',player:true
   };
   if(item.type==='Artículo')return {
@@ -80,7 +84,7 @@ function docConfig(item,extra){
     meta:[item.year,kind,extent],
     caption:`Imagen: Archivo CDO · ${item.collection}`,
     cta:[BookOpen,'Leer artículo','#texto'],
-    facts:[['Autoría',item.subtitle,true],['Año',item.year],['Tipo',kind],['Lectura',extent],...others(['Extensión']),['Colección',item.collection,true]],
+    facts:[['Autoría',item.subtitle,true,'subtitle'],['Año',item.year,false,'year'],['Tipo',kind,false,'format.0'],['Lectura',extent,false,'format.1'],...others(['Extensión']),['Colección',item.collection,true]],
     factsLabel:'Ficha del artículo',textLabel:'TEXTO'
   };
   return {
@@ -88,12 +92,13 @@ function docConfig(item,extra){
     meta:[credit('Fecha')||item.year,credit('Sección')&&`Sección ${credit('Sección')}`,item.format],
     caption:'Recorte digitalizado · Archivo CDO',
     cta:[Maximize2,'Ver documento completo',null],
-    facts:[['Medio',item.subtitle,true],['Fecha',credit('Fecha')||item.year],['Tipo',kind],['Extensión',credit('Páginas')?`${credit('Páginas')} páginas`:extent],['Sección',credit('Sección')],['Fondo',credit('Fondo')],['Colección',item.collection,true]],
+    facts:[['Medio',item.subtitle,true,'subtitle'],['Fecha',credit('Fecha')||item.year,false,credit('Fecha')?undefined:'year'],['Tipo',kind,false,'format.0'],['Extensión',credit('Páginas')?`${credit('Páginas')} páginas`:extent,false,credit('Páginas')?undefined:'format.1'],['Sección',credit('Sección')],['Fondo',credit('Fondo')],['Colección',item.collection,true]],
     factsLabel:'Ficha del documento',textLabel:'TRANSCRIPCIÓN',download:true
   };
 }
 
 export function DocumentView({item,extra,related,people}){
+  const {f,slot}=useEdit();
   const cfg=docConfig(item,extra);
   // Galería: imagen principal, material propio del registro e imágenes de sus relacionados
   const gallery=useMemo(()=>[
@@ -125,27 +130,30 @@ export function DocumentView({item,extra,related,people}){
               <img src={item.image} alt={item.title} decoding="async"/>
               <span className="press-zoom"><Maximize2/> Ampliar</span>
             </button>
+            {slot('image')}
             <figcaption>{cfg.caption}</figcaption>
           </figure>
-          {cfg.player&&<div className="press-player" id="media"><MediaViewer item={item} extra={extra}/></div>}
+          {cfg.player&&<div className="press-player" id="media"><MediaViewer item={item} extra={extra}/>{slot('media')}</div>}
         </div>
         <article className="press-article">
-          <span className="ficha-tag" style={{background:item.color}}>{item.type}</span>
-          <h1>{item.title}</h1>
-          <p className="press-dek">{item.description}</p>
+          <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
+          <h1>{f('title',item.title)}</h1>
+          <p className="press-dek">{f('description',item.description,{multiline:true})}</p>
           <div className="press-actions">
             {ctaHref?<a className="ficha-cta" href={ctaHref}><CtaIcon/> {ctaText}</a>:<button type="button" className="ficha-cta" onClick={()=>setZoom(0)}><CtaIcon/> {ctaText}</button>}
             {cfg.download&&(extra.media?<a className="doc-ghost-btn" href={extra.media} download={`${item.title}.pdf`} target="_blank" rel="noreferrer"><Download/> Descargar PDF</a>:<button type="button" className="doc-ghost-btn" disabled><Download/> Descargar PDF</button>)}
+            {!cfg.player&&slot('media')}
           </div>
           <div className="ficha-aside-label">{cfg.factsLabel}</div>
           <Facts rows={cfg.facts}/>
           <div className="ficha-section-label" id="texto"><span>01</span> {cfg.textLabel}</div>
-          <div className="press-transcript"><p>{item.description}</p><p>{ARCHIVE_NOTE}</p></div>
+          <div className="press-transcript"><p>{f('description',item.description,{multiline:true})}</p><p>{ARCHIVE_NOTE}</p></div>
         </article>
       </div>
     </section>
     <section className="doc-gallery" data-reveal>
       <div className="ficha-filmography-head"><div className="ficha-section-label"><span>02</span> GALERÍA</div><span>{String(gallery.length).padStart(2,'0')} IMÁGENES</span></div>
+      {slot('gallery')}
       <div className="doc-gallery-grid">{gallery.map((g,i)=><figure key={g.src+i} className={i===0?'is-main':undefined}>
         <button type="button" onClick={()=>setZoom(i)} aria-label={`Ampliar: ${g.caption}`}><img src={g.src} alt={g.caption} loading="lazy" decoding="async"/><span className="press-zoom"><Maximize2/> Ampliar</span></button>
         <figcaption><small>{String(i+1).padStart(2,'0')} · {g.kind}</small>{g.to?<Link to={g.to}>{g.caption}</Link>:<span>{g.caption}</span>}</figcaption>
@@ -153,7 +161,7 @@ export function DocumentView({item,extra,related,people}){
     </section>
     <section className="doc-footer" data-reveal>
       <div className="doc-footer-main"><PeopleCards people={people} number="03"/></div>
-      <aside className="doc-footer-side"><RelatedList related={related}/><Places item={item}/></aside>
+      <aside className="doc-footer-side"><RelatedList related={related}/>{slot('relations')}<Places item={item} places={placesOf(extra)} slot={slot}/></aside>
     </section>
     {open&&<div className="press-lightbox" role="dialog" aria-modal="true" aria-label={shown.caption} onClick={()=>setZoom(null)}>
       <figure onClick={e=>e.stopPropagation()}>

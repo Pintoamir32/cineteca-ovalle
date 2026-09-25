@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Check, ChevronDown, FileText, Film, Headphones, ImagePlus, Images, Link2, Pencil, Plus, Search, SlidersHorizontal, Trash2, Type, Upload, X } from 'lucide-react';
 import { collections, heroSlides, recordExtras, records, theme, timelineEvents } from '../data';
 import { ImageEditor } from './ImageEditor';
+import { inkOn, isHex, tagStyle } from '../color';
 
 // Colores de etiqueta: vienen del tema elegido en «Colores»
 export const palette=()=>theme.palette;
@@ -250,7 +251,7 @@ export function RecordPicker({onPick,onClose,exclude=[],title='Vincular registro
     <div className="cms-record-options">
       {list.slice(0,80).map(r=><button key={r.id} type="button" onClick={()=>pick(r)}>
         <img src={thumb(r.image,120)} alt="" loading="lazy"/>
-        <span><strong>{r.title}</strong><small><i style={{background:r.color}}>{r.type}</i>{r.year} · {r.subtitle}</small></span>
+        <span><strong>{r.title}{r.draft&&<em className="cms-draft-mark">Borrador</em>}</strong><small><i style={tagStyle(r.color)}>{r.type}</i>{r.year} · {r.subtitle}</small></span>
         <em><Plus/> {action}</em>
       </button>)}
       {!list.length&&<p className="cms-empty"><Search/> Sin coincidencias{q&&<> para “{q}”</>}.</p>}
@@ -281,6 +282,23 @@ export function Choice({value,options,onChange,placeholder='Elegir…',allowNew=
   </div>;
 }
 
+// Colores del tema a un clic, más un selector libre (rueda de color o código hexadecimal)
 export function ColorSwatches({value,onChange}){
-  return <div className="cms-swatches">{palette().map(c=><button key={c} type="button" style={{background:c}} className={c===value?'active':''} onClick={()=>onChange(c)} aria-label={`Color ${c}`}>{c===value&&<Check/>}</button>)}</div>;
+  const current=String(value||'').toLowerCase(), colors=palette();
+  const custom=isHex(current)&&!colors.some(c=>c.toLowerCase()===current);
+  const [text,setText]=useState(current), [prev,setPrev]=useState(current);
+  if(prev!==current){setPrev(current);setText(current)}
+  return <div className="cms-swatches">
+    <div className="cms-swatches-row">
+      {colors.map(c=><button key={c} type="button" style={{background:c}} className={c.toLowerCase()===current?'active':''} onClick={()=>onChange(c)} aria-label={`Color ${c}`}>{c.toLowerCase()===current&&<Check style={{color:inkOn(c)}}/>}</button>)}
+      <label className={`cms-swatch-custom ${custom?'active':''}`} style={custom?{background:current}:undefined} title="Elegir cualquier color">
+        <input type="color" value={isHex(current)?current:'#888888'} onChange={e=>onChange(e.target.value.toLowerCase())} aria-label="Elegir cualquier color"/>
+        {custom?<Check style={{color:inkOn(current)||'#101210'}}/>:<Plus/>}
+      </label>
+    </div>
+    <label className="cms-swatches-hex"><small>Otro color</small>
+      <input value={text} spellCheck={false} maxLength={7} placeholder="#rrggbb" aria-label="Color en hexadecimal"
+        onChange={e=>{let v=e.target.value.trim();if(v&&!v.startsWith('#'))v=`#${v}`;setText(v);if(isHex(v))onChange(v.toLowerCase())}} onBlur={()=>setText(current)}/>
+    </label>
+  </div>;
 }

@@ -70,6 +70,7 @@ export function ThemeEditor(){
       <div className="cms-presets">{PRESETS.map(p=>{const {name,...colors}=p, on=same(colors,draft);return <button key={name} type="button" className={on?'active':''} onClick={()=>setDraft(structuredClone(colors))}>
         <i>{[p.forest,p.acid,p.paper,p.black].map(c=><b key={c} style={{background:c}}/>)}</i><span>{name}</span>{on&&<Check/>}
       </button>})}</div>
+      <button type="button" className="cms-btn is-ghost is-block cms-mt" onClick={()=>setDraft(originalTheme())}><RotateCcw/> Volver a los colores originales</button>
     </PanelBlock>
     <PanelBlock title="Colores principales">
       {MAIN.map(([k,label,hint])=><ColorField key={k} label={label} hint={hint} value={draft[k]} onChange={v=>set({[k]:v})}/>)}
@@ -83,9 +84,6 @@ export function ThemeEditor(){
       <ul className="cms-contrast">{checks.map(c=>{const ok=c.ratio>=c.min;return <li key={c.label} className={ok?'':'is-bad'}>
         <i style={{background:c.b,color:c.a}}>Aa</i><span>{c.label}<small>{c.ratio.toFixed(1)} : 1 {ok?'· buena':`· baja, se recomienda ${c.min}:1`}</small></span>{ok?<Check/>:<TriangleAlert/>}
       </li>})}</ul>
-    </PanelBlock>
-    <PanelBlock title="Original">
-      <button type="button" className="cms-btn is-ghost is-block" onClick={()=>setDraft(originalTheme())}><RotateCcw/> Volver a los colores originales</button>
     </PanelBlock>
   </>;
 

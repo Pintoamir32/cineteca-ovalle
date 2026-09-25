@@ -89,6 +89,15 @@ export function saveRecord(record,extra){
   });
 }
 
+// Publicar o despublicar una ficha sin tocar el resto de sus datos
+export function setRecordPublished(id,published){
+  return setData({records:records.map(r=>{
+    if(r.id!==id)return r;
+    const {draft,...rest}=r;// eslint-disable-line no-unused-vars
+    return published?rest:{...rest,draft:true};
+  })});
+}
+
 export function deleteRecord(id){
   const extras={};
   for(const [k,v] of Object.entries(recordExtras))if(Number(k)!==id)extras[k]={...v,relations:(v.relations||[]).filter(r=>r!==id)};
@@ -117,10 +126,13 @@ export function saveLocation(index,next){
 }
 
 const yearKey=e=>Number((/\d{4}/.exec(e.year)||[])[0])||0;
-export function saveTimelineEvent(index,next){
+// Se ordena por año; devuelve la posición en que quedó el hito
+export async function saveTimelineEvent(index,next){
   const list=[...timelineEvents];
   index<0?list.push(next):list[index]=next;
-  return setData({timelineEvents:list.sort((a,b)=>yearKey(a)-yearKey(b))});
+  const sorted=list.sort((a,b)=>yearKey(a)-yearKey(b));
+  await setData({timelineEvents:sorted});
+  return sorted.indexOf(next);
 }
 
 export function saveListItem(name,index,next){
