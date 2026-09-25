@@ -93,7 +93,32 @@ async function fileStore(){
   };
 }
 
+// Si MySQL no responde (por ejemplo, falta DB_PASSWORD), el sitio sigue en pie con el contenido
+// original y el gestor avisa; se vuelve a intentar la conexión cada 30 segundos.
+function retryingStore(){
+  let store=null, lastTry=0, lastError=null;
+  const connect=async()=>{
+    if(store)return store;
+    if(Date.now()-lastTry<30e3)throw unavailable(lastError);
+    lastTry=Date.now();
+    try{store=await mysqlStore();console.log('[cineteca] conectado a MySQL');return store}
+    catch(err){lastError=err;console.error('[cineteca] MySQL no disponible:',err.code||err.message);throw unavailable(err)}
+  };
+  const unavailable=err=>Object.assign(new Error(`La base de datos no está disponible${err?.code?` (${err.code})`:''}. Revisa las variables DB_ en Hostinger.`),{status:503});
+  return new Proxy({kind:'mysql'},{get:(target,name)=>{
+    if(name==='kind')return 'mysql';
+    if(name==='then')return undefined;
+    // Sin base de datos, el sitio público se muestra con su contenido original
+    if(name==='content')return async()=>{try{return await (await connect()).content()}catch{return null}};
+    return async(...args)=>(await connect())[name](...args);
+  }});
+}
+
 export async function openStore(){
-  if(process.env.DB_NAME&&process.env.DB_USER)return mysqlStore();
+  if(process.env.DB_NAME&&process.env.DB_USER){
+    const store=retryingStore();
+    await store.countUsers().catch(()=>{});// primer intento al arrancar
+    return store;
+  }
   return fileStore();
 }

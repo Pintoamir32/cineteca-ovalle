@@ -1,6 +1,7 @@
 /* Servidor de la Cineteca: entrega el sitio y la API del gestor (cuentas, contenido e imágenes).
    En desarrollo (npm run dev) monta Vite para recargar al instante; en producción sirve dist/. */
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -189,13 +190,18 @@ app.use('/api',api);
 app.use('/api',(req,res)=>res.status(404).json({error:'No existe.'}));
 app.use('/api',(err,req,res,next)=>{// eslint-disable-line no-unused-vars
   console.error('[cineteca] error en la API',err);
-  res.status(err.status||500).json({error:err.type==='entity.too.large'?'El archivo es demasiado grande.':'Error en el servidor. Inténtalo de nuevo.'});
+  res.status(err.status||500).json({error:err.type==='entity.too.large'?'El archivo es demasiado grande.':err.status===503?err.message:'Error en el servidor. Inténtalo de nuevo.'});
 });
 
 /* ---------- Sitio ---------- */
 
 if(PROD){
   const dist=path.join(ROOT,'dist');
+  // Si el sitio no está compilado (por ejemplo, tras un despliegue nuevo), se compila antes de abrir
+  if(!fs.existsSync(path.join(dist,'index.html'))){
+    console.log('[cineteca] compilando el sitio…');
+    await (await import('vite')).build({root:ROOT,logLevel:'warn'});
+  }
   // Un archivo de assets/ que no existe es un 404 (no la página), para que el navegador no lo guarde por error
   app.use('/assets',express.static(path.join(dist,'assets'),{immutable:true,maxAge:'1y',fallthrough:false}));
   app.use(express.static(dist,{index:false,maxAge:0}));
