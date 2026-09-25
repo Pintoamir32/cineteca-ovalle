@@ -1,5 +1,5 @@
 import { collections } from './data';
-import { getAllRecords } from './repository';
+import { getAllRecords, recordPath } from './repository';
 
 const staticPages = [
   { title:'Inicio', group:'Página', path:'/' },
@@ -18,7 +18,7 @@ const staticPages = [
 
 export function buildSearchIndex(){
   const pages = staticPages.map(p=>({ ...p, key:`page-${p.path}` }));
-  const recordItems = getAllRecords().map(r=>({ title:r.title, subtitle:`${r.type} · ${r.year}`, group:r.type, path:`/ficha/${r.id}`, key:`record-${r.id}` }));
+  const recordItems = getAllRecords().map(r=>({ title:r.title, subtitle:`${r.type} · ${r.year}`, group:r.type, path:recordPath(r), key:`record-${r.id}` }));
   const collectionItems = collections.map(c=>({ title:c.title, subtitle:'Colección', group:'Colección', path:`/archivo?collection=${encodeURIComponent(c.title)}`, key:`collection-${c.slug}` }));
   return [...pages, ...recordItems, ...collectionItems];
 }

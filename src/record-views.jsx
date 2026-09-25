@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, BookOpen, ChevronLeft, ChevronRight, CirclePlay, Download, FileText, Headphones, MapPin, Maximize2, X } from 'lucide-react';
 import { sections } from './data';
-import { placesOf } from './repository';
+import { placesOf, recordPath } from './repository';
 import { useEdit } from './edit-context';
 import { tagStyle } from './color';
 import './record-views.css';
@@ -34,7 +34,7 @@ function Facts({rows}){
 function PeopleCards({people,title='Personas mencionadas',number}){
   return <section className="doc-people">
     <div className="ficha-filmography-head"><div className="ficha-section-label">{number&&<span>{number}</span>} {title.toUpperCase()}</div><span>{String(people.length).padStart(2,'0')} {people.length===1?'PERSONA':'PERSONAS'}</span></div>
-    {people.length?<div className="ficha-people-grid">{people.map(({person,roles})=><Link key={person.id} to={`/ficha/${person.id}`} className="ficha-person-card">
+    {people.length?<div className="ficha-people-grid">{people.map(({person,roles})=><Link key={person.id} to={recordPath(person)} className="ficha-person-card">
       <img src={person.image} alt="" loading="lazy" decoding="async"/>
       <div><h3>{person.title}</h3><small>{person.subtitle}</small><div className="ficha-filmography-roles">{roles.map(r=><span key={r}>{r}</span>)}</div></div>
       <ArrowRight/>
@@ -47,7 +47,7 @@ function RelatedList({related}){
   if(!related.length)return null;
   return <section className="doc-related">
     <header><h3>Ver también</h3><span>{String(related.length).padStart(2,'0')} registros</span></header>
-    <ol>{related.map((r,i)=><li key={r.id}><Link to={`/ficha/${r.id}`}>
+    <ol>{related.map((r,i)=><li key={r.id}><Link to={recordPath(r)}>
       <span className="doc-related-num">{String(i+1).padStart(2,'0')}</span>
       <span className="doc-related-thumb"><img src={r.image} alt="" loading="lazy" decoding="async"/></span>
       <span className="doc-related-text"><small>{r.type} · {r.year}</small><strong>{r.title}</strong><em>{r.subtitle}</em></span>
@@ -104,7 +104,7 @@ export function DocumentView({item,extra,related,people}){
   const gallery=useMemo(()=>[
     {src:item.image,caption:cfg.caption,kind:'Imagen principal'},
     ...(extra.gallery||[]).map((src,i)=>({src,caption:`Material asociado ${i+1}`,kind:'Material asociado'})),
-    ...related.map(r=>({src:r.image,caption:r.title,kind:`Ver también · ${r.type}`,to:`/ficha/${r.id}`}))
+    ...related.map(r=>({src:r.image,caption:r.title,kind:`Ver también · ${r.type}`,to:recordPath(r)}))
   ],[item,extra,related,cfg.caption]);
   const [zoom,setZoom]=useState(null);
   const open=zoom!==null, shown=open?gallery[zoom]:null;

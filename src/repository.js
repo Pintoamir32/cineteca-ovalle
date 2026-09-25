@@ -60,3 +60,35 @@ export function getRecordPeople(record,extra=recordExtras[record.id]){
 export function countByLocation(name){
   return getAllRecords().filter(r=>getLocations(r.id).includes(name)).length;
 }
+
+/* ---------- Direcciones legibles: /ficha/canto-a-la-tierra ----------
+   Se calculan a partir del título. Si dos fichas se llaman igual se agrega el año y, si
+   aun así coinciden, el número. Los enlaces antiguos (/ficha/12) siguen funcionando. */
+const slugify=s=>String(s||'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'ficha';
+let slugs=null;
+// El almacén avisa cuando cambian las fichas (ver store.js) y la tabla se vuelve a calcular
+export const invalidateSlugs=()=>{slugs=null};
+function slugTable(){
+  if(slugs)return slugs;
+  const groups=new Map();
+  for(const r of records){const base=slugify(r.title);groups.set(base,[...(groups.get(base)||[]),r])}
+  const byId=new Map(), bySlug=new Map();
+  for(const [base,list] of groups){
+    const years=list.map(r=>(/\d{4}/.exec(r.year)||[''])[0]);
+    list.forEach((r,i)=>{
+      const year=years[i], yearUnique=year&&years.filter(y=>y===year).length===1;
+      const slug=list.length===1?base:yearUnique?`${base}-${year}`:`${base}-${r.id}`;
+      byId.set(r.id,slug);bySlug.set(slug,r);
+    });
+  }
+  slugs={byId,bySlug};
+  return slugs;
+}
+export const recordSlug=r=>slugTable().byId.get(r.id)||String(r.id);
+export const recordPath=r=>`/ficha/${recordSlug(r)}`;
+// Busca por dirección legible o por número (enlaces antiguos)
+export function findRecordByParam(param){
+  const p=String(param||'');
+  if(/^\d+$/.test(p))return records.find(r=>r.id===Number(p))||null;
+  return slugTable().bySlug.get(p.toLowerCase())||null;
+}

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowDownRight, ArrowRight, BookOpen, ChevronLeft, ChevronRight, CirclePlay, FileText, Film, Grid2X2, Layers, MapPin, Mic2, Search, Settings2, Sparkles, UserRound } from 'lucide-react';
 import { Counter, RecordCard, SearchResults } from './components';
 import { collections, locations, sections, site } from './data';
-import { countByType, getAllRecords } from './repository';
+import { countByType, getAllRecords, recordPath } from './repository';
 import { buildSearchIndex, matchIndex } from './search-index';
 import { SearchSelect } from './SearchSelect';
 import { useSiteText } from './site-text';
@@ -121,5 +121,5 @@ function Spotlight({t,c,edit,featuredId,number,extraClass,tag}){
   const [genre,,support]=(item.format||'').split(' · ');
   const kicker=[genre,item.year,support].filter(Boolean).join(' · ').toUpperCase();
   const image=c.spotlightImage||item.image;
-  return <section className={`spotlight${extraClass}`} data-reveal {...tag}><div className="spotlight-copy"><div className="section-label light"><span>{number}</span> {t('spotlightLabel')}</div><span className="spot-kicker">{kicker}</span><h2>{words.slice(0,cut).join(' ')}{words.length>1&&<><br/><i>{words.slice(cut).join(' ')}</i></>}</h2><p>{item.description}</p><dl><div><dt>{item.type==='Película'?'Dirección':'Autoría'}</dt><dd>{item.subtitle}</dd></div><div><dt>Colección</dt><dd>{item.collection}</dd></div></dl><Link to={`/ficha/${item.id}`}>{t('spotlightCta')} <ArrowRight/></Link></div><div className="spotlight-image"><img src={image} alt={item.title} loading="lazy" decoding="async"/>{edit&&edit.image('spotlightImage',{label:c.spotlightImage?'Cambiar imagen':'Usar otra imagen',fallback:item.image,className:'home-edit-spot-img'})}<div className="film-code">CDO · {String(item.id).padStart(4,'0')}</div><span className="restore-tag"><Sparkles/> {t('spotlightTag')}</span><Link className="spot-play" to={`/ficha/${item.id}`}><CirclePlay/></Link></div></section>;
+  return <section className={`spotlight${extraClass}`} data-reveal {...tag}><div className="spotlight-copy"><div className="section-label light"><span>{number}</span> {t('spotlightLabel')}</div><span className="spot-kicker">{kicker}</span><h2>{words.slice(0,cut).join(' ')}{words.length>1&&<><br/><i>{words.slice(cut).join(' ')}</i></>}</h2><p>{item.description}</p><dl><div><dt>{item.type==='Película'?'Dirección':'Autoría'}</dt><dd>{item.subtitle}</dd></div><div><dt>Colección</dt><dd>{item.collection}</dd></div></dl><Link to={recordPath(item)}>{t('spotlightCta')} <ArrowRight/></Link></div><div className="spotlight-image"><img src={image} alt={item.title} loading="lazy" decoding="async"/>{edit&&edit.image('spotlightImage',{label:c.spotlightImage?'Cambiar imagen':'Usar otra imagen',fallback:item.image,className:'home-edit-spot-img'})}<div className="film-code">CDO · {String(item.id).padStart(4,'0')}</div><span className="restore-tag"><Sparkles/> {t('spotlightTag')}</span><Link className="spot-play" to={recordPath(item)}><CirclePlay/></Link></div></section>;
 }

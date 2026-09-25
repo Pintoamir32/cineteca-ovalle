@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { collections, heroSlides, homeContent, locations, recordExtras, records, site, theme, timelineEvents } from './data';
+import { invalidateSlugs } from './repository';
 
 // Los arreglos de data.js son la fuente viva: el gestor los reemplaza "en el lugar"
 // para que todas las páginas que ya los importan vean los cambios sin tocar sus imports.
@@ -15,6 +16,7 @@ export function applyTheme(t=theme){
 
 function apply(name,value){
   const target=LIVE[name];
+  if(name==='records')invalidateSlugs();
   if(Array.isArray(target)){const copy=[...value];target.splice(0,target.length,...copy);return}
   const copy={...value};
   for(const k of Object.keys(target))delete target[k];

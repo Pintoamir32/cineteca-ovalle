@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-r
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpDown, CalendarDays, CirclePlay, Clapperboard, Clock, Film, Grid2X2, List, MapPin, Search, Settings2, Table2, X } from 'lucide-react';
 import { Counter, RecordCard, RecordRow } from './components';
 import { collections, locations, recordExtras, sections, timelineEvents } from './data';
-import { countByCollection, countByLocation, countByType, getAllRecords, getFilmPeople, getFilmography, getLocations, getRecordPeople, placesOf } from './repository';
+import { countByCollection, countByLocation, countByType, getAllRecords, getFilmPeople, getFilmography, getLocations, getRecordPeople, placesOf, findRecordByParam, recordPath, recordSlug } from './repository';
 import { useEdit } from './edit-context';
 import { SearchSelect } from './SearchSelect';
 import { BackLink, DocumentView, MediaViewer } from './record-views';
@@ -115,9 +115,9 @@ export function ArchivePage({kind='archivo'}){
         <thead><tr><th className="is-thumb" aria-label="Imagen"/>{columns.map(c=>{const on=sortKey===c.key;return <th key={c.key} aria-sort={on?(sortDir==='asc'?'ascending':'descending'):'none'} className={c.num?'is-num':undefined}>
           <button type="button" onClick={()=>sortBy(c.key)} title={`Ordenar por ${c.label.toLowerCase()}`}>{c.label}{on?(sortDir==='asc'?<ArrowUp/>:<ArrowDown/>):<ArrowUpDown className="is-idle"/>}</button>
         </th>})}</tr></thead>
-        <tbody>{pagedList.map(r=><tr key={r.id} onClick={()=>navigate(`/ficha/${r.id}`)}>
+        <tbody>{pagedList.map(r=><tr key={r.id} onClick={()=>navigate(recordPath(r))}>
           <td className="is-thumb"><img src={r.image} alt="" loading="lazy" decoding="async"/></td>
-          {columns.map((c,i)=><td key={c.key} className={c.num?'is-num':undefined}>{i===0?<Link to={`/ficha/${r.id}`} onClick={e=>e.stopPropagation()}>{c.get(r)}</Link>:c.key==='type'?<span className="record-table-tag" style={tagStyle(r.color)}>{c.get(r)}</span>:(c.get(r)||'—')}</td>)}
+          {columns.map((c,i)=><td key={c.key} className={c.num?'is-num':undefined}>{i===0?<Link to={recordPath(r)} onClick={e=>e.stopPropagation()}>{c.get(r)}</Link>:c.key==='type'?<span className="record-table-tag" style={tagStyle(r.color)}>{c.get(r)}</span>:(c.get(r)||'—')}</td>)}
         </tr>)}</tbody>
       </table></div>}
     {!list.length&&<div className="no-results"><Search/><h3>No encontramos coincidencias.</h3><p>Prueba con otro término de búsqueda.</p><button onClick={()=>setParams({})}>Limpiar búsqueda</button></div>}
@@ -159,7 +159,10 @@ export function AboutPage(){
 const DEFAULT_EXTRA={credits:[['Estado','Catalogado'],['Origen','Archivo CDO']],relations:[],location:'Ovalle',mediaType:'image'};
 
 export function RichDetailPage(){
-  const {id}=useParams(), item=getAllRecords().find(r=>r.id===Number(id)); if(!item)return <Navigate to="/archivo"/>;
+  // La dirección lleva el nombre (/ficha/canto-a-la-tierra); los enlaces antiguos por número también sirven
+  const {id}=useParams(), found=findRecordByParam(id), item=found&&getAllRecords().includes(found)?found:null;
+  if(!item)return <Navigate to="/archivo" replace/>;
+  if(id!==recordSlug(item))return <Navigate to={recordPath(item)} replace/>;
   return <RecordDetail key={item.id} item={item} extra={recordExtras[item.id]||DEFAULT_EXTRA}/>;
 }
 
@@ -220,7 +223,7 @@ export function RecordDetail({item,extra}){
               <h3>{film.title}</h3>
               <div className="ficha-filmography-roles">{roles.map(r=><span key={r}>{r}</span>)}</div>
             </div>
-            <Link className="ficha-filmography-btn" to={`/ficha/${film.id}`}>Ver ficha <ArrowRight/></Link>
+            <Link className="ficha-filmography-btn" to={recordPath(film)}>Ver ficha <ArrowRight/></Link>
           </li>})}</ol>:<p className="ficha-filmography-empty">Aún no hay películas vinculadas a esta persona en el archivo.</p>}
         </div>:<div className="ficha-media" id="media">
           <div className="ficha-section-label"><span>02</span> ARCHIVO DIGITAL</div>
@@ -229,7 +232,7 @@ export function RecordDetail({item,extra}){
         </div>}
         {isFilm&&<div className="ficha-people" id="personas">
           <div className="ficha-filmography-head"><div className="ficha-section-label"><span>03</span> PERSONAS MENCIONADAS</div><span>{String(people.length).padStart(2,'0')} {people.length===1?'PERSONA':'PERSONAS'}</span></div>
-          {people.length?<div className="ficha-people-grid">{people.map(({person,roles})=><Link key={person.id} to={`/ficha/${person.id}`} className="ficha-person-card">
+          {people.length?<div className="ficha-people-grid">{people.map(({person,roles})=><Link key={person.id} to={recordPath(person)} className="ficha-person-card">
             <img src={person.image} alt="" loading="lazy" decoding="async"/>
             <div><h3>{person.title}</h3><small>{person.subtitle}</small><div className="ficha-filmography-roles">{roles.map(r=><span key={r}>{r}</span>)}</div></div>
             <ArrowRight/>
@@ -244,7 +247,7 @@ export function RecordDetail({item,extra}){
       <aside className="ficha-aside ficha-film-aside">
         {isFilm&&<figure className="ficha-poster"><img src={item.image} alt={`Imagen de ${item.title}`} decoding="async"/>{slot('image')}<figcaption><span>{item.collection}</span><span>{item.year}</span></figcaption></figure>}
         <a className="ficha-cta" href={ctaHref}><CtaIcon/> {ctaText}</a>
-        {related.length>0&&<><div className="ficha-aside-label">Relacionados</div><div className="ficha-film-related">{related.map(r=><Link to={`/ficha/${r.id}`} key={r.id}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><small>{r.type}</small><strong>{r.title}</strong></div><ArrowRight/></Link>)}</div>{slot('relations')}</>}
+        {related.length>0&&<><div className="ficha-aside-label">Relacionados</div><div className="ficha-film-related">{related.map(r=><Link to={recordPath(r)} key={r.id}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><small>{r.type}</small><strong>{r.title}</strong></div><ArrowRight/></Link>)}</div>{slot('relations')}</>}
         <div className="ficha-aside-label">{view.label}</div>
         <dl className="ficha-film-facts">{view.facts.map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>
         <div className="ficha-aside-label">{placeList.length>1?`${isFilm?'Locaciones':'Territorios'} · ${placeList.length}`:view.places}</div>
