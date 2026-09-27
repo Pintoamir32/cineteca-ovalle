@@ -10,7 +10,7 @@ const LABELS={
   collectionsKicker:'Página de colecciones · antetítulo',collectionsTitle:'Página de colecciones · título',collectionsIntro:'Página de colecciones · introducción',
   timelineKicker:'Línea de tiempo · antetítulo',timelineTitle:'Línea de tiempo · título',timelineIntro:'Línea de tiempo · introducción'
 };
-const labelOf=path=>LABELS[path]||(path.startsWith('footer')?'Pie de página · común a todo el sitio':'Texto común del sitio');
+const labelOf=path=>LABELS[path];
 const MULTILINE=/(Intro|Note|footerTitle)$/;
 // Copia el objeto solo a lo largo de la ruta modificada («footerLinks.0»)
 function setPath(obj,path,value){
@@ -28,7 +28,9 @@ export function useSharedTexts(onChange){
   const changed=useRef(new Set());
   const context={
     content:texts,
-    text:(path,{as='span',vars,em}={})=><Editable key={path} as={as} value={getPath(texts,path)} multiline={MULTILINE.test(path)} wrap
+    // Solo los textos propios de la página se editan aquí; el pie de página y los demás
+    // textos comunes se muestran tal cual (se editan en «Inicio»)
+    text:(path,{as='span',vars,em}={})=>!LABELS[path]?rich(getPath(texts,path),{vars,em}):<Editable key={path} as={as} value={getPath(texts,path)} multiline={MULTILINE.test(path)} wrap
       onChange={v=>{setTexts(t=>setPath(t,path,v));changed.current.add(path.split('.')[0]);onChange()}}
       render={v=>rich(v,{vars,em})} placeholder="Escribe aquí…" label={labelOf(path)}/>
   };
