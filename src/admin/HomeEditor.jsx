@@ -18,7 +18,10 @@ function setPath(obj,path,value){
   return copy;
 }
 const ORIGINAL=originalHome();
-const BLANK_SLIDE={eyebrow:'NUEVA SECCIÓN',title:'Escribe aquí\nel título',em:'destacado.',desc:'',image:'',alt:'',link:'/archivo'};
+// Diapositiva nueva vacía: cada texto muestra en gris qué escribir
+const BLANK_SLIDE={eyebrow:'',title:'',em:'',desc:'',image:'',alt:'',link:'/archivo'};
+const SLIDE_FIELDS={eyebrow:['Antetítulo','Escribe el antetítulo (ej. DOCUMENTAL · 1972)'],title:['Título','Escribe el título'],em:['Parte destacada','Escribe la parte destacada del título'],desc:['Descripción','Escribe una descripción breve']};
+const fieldOf=path=>/^slides\.\d+\./.test(path)?SLIDE_FIELDS[path.split('.').pop()]:null;
 const isMultiline=(path,value)=>/\n/.test(String(getPath(ORIGINAL,path)??value??''))||/(Title|Text|desc|title|text)$/.test(path);
 
 function HomeImageButton({label,className,value,fallback,onChange,aspect}){
@@ -43,7 +46,7 @@ export function HomeEditor(){
     text:(path,{as='span',vars,em}={})=>{
       const value=getPath(draft,path);
       return <Editable key={path} as={as} value={value} onChange={v=>set(path,v)} multiline={isMultiline(path,value)}
-        render={v=>rich(v,{vars,em})} placeholder="Escribe aquí…" label="Texto"/>;
+        render={v=>rich(v,{vars,em})} placeholder={fieldOf(path)?.[1]||'Escribe aquí…'} label={fieldOf(path)?.[0]||'Texto'}/>;
     },
     image:(path,{label,className,fallback,aspect})=><HomeImageButton key={path} label={label} className={className} value={getPath(draft,path)} fallback={fallback} aspect={aspect} onChange={v=>set(path,v)}/>
   };
@@ -75,7 +78,7 @@ export function HomeEditor(){
   const moveSlide=d=>{const l=[...draft.slides],to=current+d;[l[current],l[to]]=[l[to],l[current]];set('slides',l);setSlide(to)};
   const removeSlide=async()=>{
     if(draft.slides.length<=1)return toast('El carrusel necesita al menos una diapositiva.','error');
-    if(!await confirm({title:'¿Quitar esta diapositiva?',text:`“${cs.title.replace(/\n/g,' ')}” dejará de mostrarse al guardar.`,ok:'Quitar',danger:true}))return;
+    if(!await confirm({title:'¿Quitar esta diapositiva?',text:`“${cs.title.replace(/\n/g,' ').trim()||'Diapositiva sin título'}” dejará de mostrarse al guardar.`,ok:'Quitar',danger:true}))return;
     set('slides',draft.slides.filter((_,i)=>i!==current));setSlide(Math.max(0,current-1));
   };
   const linked=records.find(r=>r.id===cs.recordId);

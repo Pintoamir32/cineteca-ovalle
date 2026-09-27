@@ -18,8 +18,9 @@ const TYPE_ICONS={Película:Film,Persona:UserRound,Prensa:FileText,Entrevista:Mi
 function blankDraft(type){
   const meta=TYPE_META[type];
   return {
-    record:{id:nextId(),type,slug:meta.slug,title:'',subtitle:'',year:String(new Date().getFullYear()),format:'',collection:'',color:typeColor(type),image:'',description:''},
-    extra:{credits:meta.credits.map(k=>[k,'']),relations:[],locations:['Ovalle'],mediaType:meta.media,media:'',gallery:[]}
+    // Todo vacío: cada campo muestra en gris cómo completarlo
+    record:{id:nextId(),type,slug:meta.slug,title:'',subtitle:'',year:'',format:'',collection:'',color:typeColor(type),image:'',description:''},
+    extra:{credits:meta.credits.map(k=>[k,'']),relations:[],locations:[],mediaType:meta.media,media:'',gallery:[]}
   };
 }
 
@@ -138,6 +139,13 @@ function RecordEditorInner(){
 
 const BLANK='data:image/gif;base64,R0lGODlhAQABAAAAACw=';
 
+// «el título», «la dirección», «los roles», «las obras vinculadas»: según la primera palabra
+function withArticle(label){
+  const text=label.toLowerCase(), w=text.split(' ')[0];
+  const art=w.endsWith('as')?'las':w.endsWith('s')?'los':/(a|ión|dad)$/.test(w)?'la':'el';
+  return `${art} ${text}`;
+}
+
 /* ---------- Vista previa: la ficha pública real, editable ---------- */
 
 // Conecta los campos de la ficha pública (ver edit-context) con el borrador del gestor
@@ -145,14 +153,14 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
   const [picker,setPicker]=useState(null);
   const credits=e.credits||[], gallery=e.gallery||[], places=e.locations||[];
   const setCredit=(i,j,v)=>setE({credits:credits.map((c,k)=>k===i?(j===0?[v,c[1]]:[c[0],v]):c)});
-  // Clave del campo en la página pública → valor, cómo cambiarlo y cómo se llama
+  // Clave del campo en la página pública → valor, cómo cambiarlo, cómo se llama y un ejemplo
   const field=key=>{
     const [name,i]=key.split('.'), n=Number(i);
-    if(name==='format')return [parts[n]??'',v=>setPart(n,v),meta.format[n]||'Formato'];
+    if(name==='format')return [parts[n]??'',v=>setPart(n,v),meta.format[n]||'Formato',meta.formatHint?.[n]];
     if(name==='credits')return [credits[n]?.[1]??'',v=>setCredit(n,1,v),credits[n]?.[0]||'Dato'];
     if(name==='creditKey')return [credits[n]?.[0]??'',v=>setCredit(n,0,v),'Nombre del dato'];
-    const labels={title:'Título',subtitle:meta.subtitle,year:meta.year,description:'Descripción'};
-    return [r[name]??'',v=>setR({[name]:v}),labels[name]||name];
+    const labels={title:r.type==='Persona'?'Nombre':'Título',subtitle:meta.subtitle,year:meta.year,description:'Descripción'};
+    return [r[name]??'',v=>setR({[name]:v}),labels[name]||name,name==='year'?(r.type==='Persona'?'1931—2010':'1972'):undefined];
   };
   const cfg=MEDIA_TYPES.find(m=>m.value===e.mediaType)||MEDIA_TYPES[3], MediaIcon=cfg.icon;
   const needsFile=['video','audio','document'].includes(e.mediaType);
@@ -162,9 +170,10 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     media:()=>slotBtn('media',()=>setPicker('media'),MediaIcon,`${cfg.label} · ${needsFile?(e.media?'cambiar archivo':'subir archivo'):'cambiar tipo'}`)
   };
   const context={
-    text:(key,{multiline=false,placeholder}={})=>{
-      const [value,onChange,label]=field(key);
-      return <Editable key={key} value={value} onChange={onChange} multiline={multiline} wrap={key==='title'} placeholder={placeholder||`Escribe ${label.toLowerCase()}`} label={label}/>;
+    text:(key,{multiline=false}={})=>{
+      // La indicación siempre dice qué escribir (la página solo aporta la clave del campo)
+      const [value,onChange,label,example]=field(key);
+      return <Editable key={key} value={value} onChange={onChange} multiline={multiline} wrap={key==='title'} placeholder={`Escribe ${withArticle(label)}${example?` (ej. ${example})`:''}`} label={label}/>;
     },
     slot:name=>slots[name]?.()
   };

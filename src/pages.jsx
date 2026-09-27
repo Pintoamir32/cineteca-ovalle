@@ -214,7 +214,8 @@ export function RecordDetail({item,extra}){
         </header>}
         <div className="ficha-section-label"><span>01</span> DESCRIPCIÓN</div>
         <h2>{t('fichaLeadTitle')}</h2>
-        <p>{f('description',item.description,{multiline:true})} {t('fichaArchiveNote')}</p>
+        <p>{f('description',item.description,{multiline:true})}</p>
+        <p className="ficha-archive-note">{t('fichaArchiveNote')}</p>
         <div className="ficha-credits">{credits.map(([k,v],i)=><div key={`${k}-${i}`} className="stagger-item" style={{transitionDelay:`${i*60}ms`}}><small>{f(`creditKey.${i}`,k,{placeholder:'Dato'})}</small><strong>{f(`credits.${i}`,v,{placeholder:'Completar…'})}</strong></div>)}{slot('credits')}</div>
         {isPerson?<div className="ficha-media ficha-filmography" id="filmografia">
           <div className="ficha-filmography-head"><div className="ficha-section-label"><span>02</span> FILMOGRAFÍA</div><span>{String(filmography.length).padStart(2,'0')} {filmography.length===1?'PELÍCULA':'PELÍCULAS'}</span></div>

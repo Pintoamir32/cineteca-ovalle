@@ -62,8 +62,9 @@ function useListEdit({draft,set,fields,items,index,count,imageLabel,aspect,pick}
   const [picking,setPicking]=useState(false);
   const context={
     items,index,count,pick,
-    text:(key,{multiline=false,placeholder}={})=><Editable key={key} value={draft[key]} onChange={v=>set({[key]:v})} multiline={multiline} wrap={!multiline}
-      placeholder={placeholder||fields[key]} label={fields[key]||key}/>,
+    // fields: clave → [nombre del campo, indicación en gris de qué escribir]
+    text:(key,{multiline=false}={})=><Editable key={key} value={draft[key]} onChange={v=>set({[key]:v})} multiline={multiline} wrap={!multiline}
+      placeholder={fields[key]?.[1]||'Escribe aquí…'} label={fields[key]?.[0]||key}/>,
     slot:name=>name==='image'?<button key="image" type="button" className="cms-slot-btn is-image" onClick={e=>{e.preventDefault();e.stopPropagation();setPicking(true)}}><ImagePlus/> {draft.image?imageLabel:'Añadir imagen'}</button>:null
   };
   const modals=picking&&<ImagePicker value={draft.image} aspect={aspect} onPick={image=>set({image})} onClose={()=>setPicking(false)} title={imageLabel}/>;
@@ -100,7 +101,7 @@ export const CollectionEditor=keyed(function CollectionEditor(){
     remove:()=>removeListItem('collections',item.i),removeText:count?`Tiene ${count} registros. Las fichas conservarán el nombre de la colección, pero esta dejará de aparecer en la página de colecciones.`:'Dejará de aparecer en la página de colecciones.'});
   const members=item.existing?records.filter(r=>r.collection===item.existing.title):[];
   const edit=useListEdit({draft:c,set,items:withDraft(collections,item),index:item.isNew?collections.length:item.i,count,pick:i=>i<collections.length&&go(`/admin/colecciones/${i}`),
-    fields:{years:'Período',title:'Nombre de la colección',description:'De qué trata este recorrido…'},imageLabel:'Cambiar portada',aspect:3/4});
+    fields:{years:['Período','Escribe el período (ej. 1968—1990)'],title:['Nombre de la colección','Escribe el nombre de la colección'],description:['Descripción','Escribe de qué trata este recorrido']},imageLabel:'Cambiar portada',aspect:3/4});
   if(!item.isNew&&!item.existing)return <NotFound back="/admin/colecciones"/>;
   return <EditorShell crumb={`Colecciones · ${item.isNew?'Nueva':pad(item.i+1)}`} title={c.title} isNew={item.isNew} dirty={item.dirty}
     onBack={()=>go('/admin/colecciones')} viewHref="/colecciones" {...actions}
@@ -146,7 +147,7 @@ export function TimelineList(){
 export const TimelineEditor=keyed(function TimelineEditor(){
   useStoreVersion();
   const [params]=useSearchParams();
-  const item=useItemDraft(timelineEvents,()=>({year:params.get('anio')||String(new Date().getFullYear()),title:'',text:'',type:'Hito',image:''}));
+  const item=useItemDraft(timelineEvents,()=>({year:params.get('anio')||'',title:'',text:'',type:'Hito',image:''}));
   const {draft:e,set}=item, {go}=useAdminNav(), shared=useSharedTexts(()=>item.setDirty(true));
   const year=String(e.year||'').trim();
   const yearError=!year?'Escribe el año del hito.':!/^\d{4}(\s*[-–—]\s*\d{4})?$/.test(year)?'Usa un año de cuatro cifras (1972) o un período (1968—1973).':null;
@@ -161,7 +162,7 @@ export const TimelineEditor=keyed(function TimelineEditor(){
   const pos=ordered.findIndex(x=>x.i===self), before=ordered[pos-1], after=ordered[pos+1];
   const sameYear=timelineEvents.filter((x,j)=>j!==item.i&&yearOf(x)===yearOf(e)&&yearOf(e));
   const edit=useListEdit({draft:e,set,items:ordered.map(x=>x.ev),index:pos,pick:k=>ordered[k].i!==self&&go(`/admin/linea-de-tiempo/${ordered[k].i}`),
-    fields:{year:'Año',title:'Título del hito',text:'Qué ocurrió y por qué importa…'},imageLabel:'Cambiar imagen',aspect:16/9});
+    fields:{year:['Año','Escribe el año (ej. 1972)'],title:['Título del hito','Escribe el título del hito'],text:['Texto','Escribe qué ocurrió y por qué importa']},imageLabel:'Cambiar imagen',aspect:16/9});
   // Vecinos guardados (no el borrador) para saltar entre hitos
   const saved=timelineEvents.map((ev,i)=>({ev,i})), cur=saved.findIndex(x=>x.i===item.i);
   const prev=!item.isNew&&saved[cur-1], next=!item.isNew&&saved[cur+1];
@@ -172,8 +173,8 @@ export const TimelineEditor=keyed(function TimelineEditor(){
     hint="Es la página real de la línea de tiempo con este hito seleccionado: clic en el título o el texto para reescribirlos. Al guardar se ordena por año."
     panel={<>
       <PanelBlock title="Año">
-        <label className="cms-field"><input value={e.year} onChange={ev=>set({year:ev.target.value})} inputMode="numeric" placeholder="1972" aria-label="Año del hito" aria-invalid={!!yearError}/></label>
-        {yearError?<p className="cms-help is-error">{yearError}</p>
+        <label className="cms-field"><input value={e.year} onChange={ev=>set({year:ev.target.value})} inputMode="numeric" placeholder="Escribe el año (ej. 1972)" aria-label="Año del hito" aria-invalid={!!yearError}/></label>
+        {!year?<p className="cms-help">Con el año, el hito se ordena solo en la línea.</p>:yearError?<p className="cms-help is-error">{yearError}</p>
           :<p className="cms-help is-text">{before&&after?<>Quedará entre {neighbor(before)} y {neighbor(after)}.</>:before?<>Quedará al final, después de {neighbor(before)}.</>:after?<>Quedará al comienzo, antes de {neighbor(after)}.</>:'Es el único hito.'}</p>}
         {!yearError&&sameYear.length>0&&<p className="cms-help is-text">También en {yearOf(e)}: {sameYear.map(x=>x.title).join(', ')}.</p>}
       </PanelBlock>
@@ -238,7 +239,7 @@ export const LocationEditor=keyed(function LocationEditor(){
         onPick={(pos,place)=>set({...pos,...(place&&!l.name.trim()&&{name:place.name})})}/>
       <aside>
         <span>LOCALIDAD SELECCIONADA</span>
-        <Editable as="h2" wrap value={l.name} onChange={name=>set({name})} placeholder="Nombre de la comuna" label="Nombre"/>
+        <Editable as="h2" wrap value={l.name} onChange={name=>set({name})} placeholder="Escribe el nombre de la comuna" label="Nombre"/>
         <strong>{count}</strong><small>REGISTROS VINCULADOS</small>
       </aside>
     </div>

@@ -195,3 +195,6 @@ a.back-link.back-link:hover .back-link-icon{background:var(--acid);color:var(--b
 .ficha-person-card:hover{border-color:var(--forest);box-shadow:0 10px 24px -14px color-mix(in srgb,var(--forest) 40%,transparent)}
 .ficha-person-card:hover img{filter:none}
 .ficha-person-card:hover>svg{opacity:1;transform:translateX(3px)}
+
+/* Nota común del archivo: separada de la descripción de cada ficha */
+.ficha-archive-note{font-size:.9em;color:var(--muted,#6b716c);margin-top:.6em}
