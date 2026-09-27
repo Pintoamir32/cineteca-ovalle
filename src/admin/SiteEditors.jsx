@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ImagePlus, MapPin, Pencil, Plus } from 'lucide-react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, ImagePlus, MapPin, Pencil, Plus, X } from 'lucide-react';
 import { collections, locations, records, timelineEvents } from '../data';
 import { EditContext } from '../edit-context';
 import { CollectionsPage, TimelinePage } from '../pages';
@@ -63,7 +63,7 @@ function useListEdit({draft,set,fields,items,index,count,imageLabel,aspect,pick}
     slot:name=>name==='image'?<button key="image" type="button" className="cms-slot-btn is-image" onClick={e=>{e.preventDefault();e.stopPropagation();setPicking(true)}}><ImagePlus/> {draft.image?imageLabel:'Añadir imagen'}</button>:null
   };
   const modals=picking&&<ImagePicker value={draft.image} aspect={aspect} onPick={image=>set({image})} onClose={()=>setPicking(false)} title={imageLabel}/>;
-  return {context,modals};
+  return {context,modals,pickImage:()=>setPicking(true)};
 }
 const yearOf=e=>Number((/\d{4}/.exec(e.year)||[])[0])||0;
 // La lista con el borrador en su lugar (o al final si es nuevo)
@@ -116,35 +116,74 @@ export const CollectionEditor=keyed(function CollectionEditor(){
 
 /* ================= Línea de tiempo ================= */
 
+const decadeOf=e=>{const y=yearOf(e);return y?`${Math.floor(y/10)*10}s`:'Sin año'};
+
 export function TimelineList(){
   useStoreVersion();
   const {go}=useAdminNav();
+  // Agrupados por década; el índice real se conserva para abrir el editor
+  const groups=[];
+  timelineEvents.forEach((e,i)=>{const d=decadeOf(e), last=groups[groups.length-1];last&&last.decade===d?last.items.push({e,i}):groups.push({decade:d,items:[{e,i}]})});
+  const add=year=>go(`/admin/linea-de-tiempo/nuevo${year?`?anio=${year}`:''}`);
   return <div className="cms-page">
-    <PageHead eyebrow="SITIO" title="Línea de tiempo" desc="Hitos de la historia audiovisual. Se ordenan solos por año."><button type="button" className="cms-btn is-primary" onClick={()=>go('/admin/linea-de-tiempo/nuevo')}><Plus/> Nuevo hito</button></PageHead>
-    <ol className="cms-timeline">{timelineEvents.map((e,i)=><li key={`${e.year}-${i}`}><button type="button" onClick={()=>go(`/admin/linea-de-tiempo/${i}`)}>
-      <b>{e.year}</b><i/><img src={e.image} alt=""/><span><small>{e.type}</small><strong>{e.title}</strong><em>{e.text}</em></span><Pencil/>
-    </button></li>)}</ol>
+    <PageHead eyebrow="SITIO" title="Línea de tiempo" desc={`${timelineEvents.length} hitos de la historia audiovisual. Se ordenan solos por año.`}><button type="button" className="cms-btn is-primary" onClick={()=>add()}><Plus/> Nuevo hito</button></PageHead>
+    {timelineEvents.length?groups.map(g=><section key={g.decade} className="cms-timeline-group">
+      <header><h2>{g.decade==='Sin año'?g.decade:`Década de ${g.decade.slice(0,-1)}`}</h2><small>{g.items.length} {g.items.length===1?'hito':'hitos'}</small>
+        {g.decade!=='Sin año'&&<button type="button" className="cms-btn is-ghost is-small" onClick={()=>add(g.decade.slice(0,-1))}><Plus/> Agregar aquí</button>}</header>
+      <ol className="cms-timeline">{g.items.map(({e,i})=><li key={`${e.year}-${i}`}><button type="button" onClick={()=>go(`/admin/linea-de-tiempo/${i}`)}>
+        <b>{e.year}</b><i/>{e.image?<img src={e.image} alt=""/>:<span className="cms-timeline-noimg"><ImagePlus/></span>}<span><small>{e.type}</small><strong>{e.title||'Sin título'}</strong><em>{e.text||'Sin descripción'}</em></span><Pencil/>
+      </button></li>)}</ol>
+    </section>):<p className="cms-empty">Todavía no hay hitos. <button type="button" className="cms-btn is-primary" onClick={()=>add()}><Plus/> Crear el primero</button></p>}
   </div>;
 }
 
 export const TimelineEditor=keyed(function TimelineEditor(){
   useStoreVersion();
-  const item=useItemDraft(timelineEvents,()=>({year:String(new Date().getFullYear()),title:'',text:'',type:'Hito',image:''}));
+  const [params]=useSearchParams();
+  const item=useItemDraft(timelineEvents,()=>({year:params.get('anio')||String(new Date().getFullYear()),title:'',text:'',type:'Hito',image:''}));
   const {draft:e,set}=item, {go}=useAdminNav();
+  const year=String(e.year||'').trim();
+  const yearError=!year?'Escribe el año del hito.':!/^\d{4}(\s*[-–—]\s*\d{4})?$/.test(year)?'Usa un año de cuatro cifras (1972) o un período (1968—1973).':null;
   const actions=useItemActions({base:'/admin/linea-de-tiempo',item,label:'Hito',male:true,
-    save:{validate:()=>!e.title.trim()?'Escribe un título para el hito.':!/\d{4}/.test(e.year)?'Indica un año de cuatro cifras.':null,run:()=>saveTimelineEvent(item.i,e),next:i=>`/admin/linea-de-tiempo/${i}`},
+    save:{validate:()=>!e.title.trim()?'Escribe un título para el hito.':yearError,
+      run:()=>saveTimelineEvent(item.i,{...e,year,title:e.title.trim(),text:(e.text||'').trim()}),next:i=>`/admin/linea-de-tiempo/${i}`},
     remove:()=>removeListItem('timelineEvents',item.i),removeText:'Dejará de mostrarse en la línea de tiempo.'});
   const types=[...new Set(['Hito','Exhibición','Película','Memoria','Preservación','Acceso',...timelineEvents.map(x=>x.type)])];
   // La vista previa muestra el hito en su lugar según el año, igual que al guardar
   const self=item.isNew?timelineEvents.length:item.i;
   const ordered=withDraft(timelineEvents,item).map((ev,i)=>({ev,i})).sort((a,b)=>yearOf(a.ev)-yearOf(b.ev));
-  const edit=useListEdit({draft:e,set,items:ordered.map(x=>x.ev),index:ordered.findIndex(x=>x.i===self),pick:k=>ordered[k].i!==self&&go(`/admin/linea-de-tiempo/${ordered[k].i}`),
+  const pos=ordered.findIndex(x=>x.i===self), before=ordered[pos-1], after=ordered[pos+1];
+  const sameYear=timelineEvents.filter((x,j)=>j!==item.i&&yearOf(x)===yearOf(e)&&yearOf(e));
+  const edit=useListEdit({draft:e,set,items:ordered.map(x=>x.ev),index:pos,pick:k=>ordered[k].i!==self&&go(`/admin/linea-de-tiempo/${ordered[k].i}`),
     fields:{year:'Año',title:'Título del hito',text:'Qué ocurrió y por qué importa…'},imageLabel:'Cambiar imagen',aspect:16/9});
+  // Vecinos guardados (no el borrador) para saltar entre hitos
+  const saved=timelineEvents.map((ev,i)=>({ev,i})), cur=saved.findIndex(x=>x.i===item.i);
+  const prev=!item.isNew&&saved[cur-1], next=!item.isNew&&saved[cur+1];
+  const neighbor=x=>x&&<span><b>{x.ev.year}</b> {x.ev.title}</span>;
   if(!item.isNew&&!item.existing)return <NotFound back="/admin/linea-de-tiempo"/>;
   return <EditorShell crumb={`Línea de tiempo · ${item.isNew?'Nuevo hito':e.year}`} title={e.title} isNew={item.isNew} dirty={item.dirty}
     onBack={()=>go('/admin/linea-de-tiempo')} viewHref="/linea-de-tiempo" {...actions}
-    hint="Es la página real de la línea de tiempo con este hito seleccionado: clic en sus textos para reescribirlos. Al guardar se ordena por año."
-    panel={<PanelBlock title="Categoría"><Choice value={e.type} options={types} onChange={type=>set({type})} allowNew newLabel="Nueva categoría"/></PanelBlock>}>
+    hint="Es la página real de la línea de tiempo con este hito seleccionado: clic en el título o el texto para reescribirlos. Al guardar se ordena por año."
+    panel={<>
+      <PanelBlock title="Año">
+        <label className="cms-field"><input value={e.year} onChange={ev=>set({year:ev.target.value})} inputMode="numeric" placeholder="1972" aria-label="Año del hito" aria-invalid={!!yearError}/></label>
+        {yearError?<p className="cms-help is-error">{yearError}</p>
+          :<p className="cms-help">{before&&after?<>Quedará entre {neighbor(before)} y {neighbor(after)}.</>:before?<>Quedará al final, después de {neighbor(before)}.</>:after?<>Quedará al comienzo, antes de {neighbor(after)}.</>:'Es el único hito.'}</p>}
+        {!yearError&&sameYear.length>0&&<p className="cms-help">También en {yearOf(e)}: {sameYear.map(x=>x.title).join(', ')}.</p>}
+      </PanelBlock>
+      <PanelBlock title="Categoría"><Choice value={e.type} options={types} onChange={type=>set({type})} allowNew newLabel="Nueva categoría"/></PanelBlock>
+      <PanelBlock title="Imagen · opcional">
+        {e.image?<img className="cms-timeline-thumb" src={e.image} alt=""/>:<p className="cms-help">Sin imagen: en el sitio se muestra un fondo liso.</p>}
+        <button type="button" className="cms-btn is-block" onClick={edit.pickImage}><ImagePlus/> {e.image?'Cambiar imagen':'Añadir imagen'}</button>
+        {e.image&&<button type="button" className="cms-btn is-block is-ghost" onClick={()=>set({image:''})}><X/> Quitar imagen</button>}
+      </PanelBlock>
+      {(prev||next)&&<PanelBlock title="Otros hitos">
+        <div className="cms-timeline-nav">
+          {prev&&<button type="button" className="cms-btn is-ghost" onClick={()=>go(`/admin/linea-de-tiempo/${prev.i}`)}><ChevronLeft/>{neighbor(prev)}</button>}
+          {next&&<button type="button" className="cms-btn is-ghost" onClick={()=>go(`/admin/linea-de-tiempo/${next.i}`)}>{neighbor(next)}<ChevronRight/></button>}
+        </div>
+      </PanelBlock>}
+    </>}>
     <EditContext.Provider value={edit.context}>
       <SiteFrame className="is-list" path="/linea-de-tiempo"><TimelinePage/></SiteFrame>
     </EditContext.Provider>

@@ -270,13 +270,14 @@ export function CollectionsPage(){
 export function TimelinePage(){
   const {edit,f,slot}=useEdit();
   const list=edit?.items||timelineEvents;
-  const [picked,setActive]=useState(list[0]);
-  const active=edit?list[edit.index]:picked, isActive=(e,i)=>edit?i===edit.index:active.year===e.year;
+  // Por posición: dos hitos del mismo año no quedan marcados a la vez
+  const [picked,setPicked]=useState(0);
+  const current=edit?edit.index:Math.min(picked,list.length-1), active=list[current]||{}, isActive=(e,i)=>i===current;
   return <main className="timeline-page">
     <section className="discovery-hero"><img src="https://images.unsplash.com/photo-1586899028174-e7098604235b?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>HISTORIA AUDIOVISUAL</span><h1>Línea de tiempo</h1><p>Ochenta años de imágenes, encuentros y memoria en movimiento.</p></section>
     <section className="timeline-layout" data-reveal>
       <div className="timeline-spine">
-        {list.map((e,i)=><button key={`${e.year}-${i}`} className={`timeline-entry${isActive(e,i)?' active':''} stagger-item`} style={{transitionDelay:`${(i%8)*50}ms`}} onClick={()=>edit?(i!==edit.index&&edit.pick?.(i)):setActive(e)}>
+        {list.map((e,i)=><button key={`${e.year}-${i}`} className={`timeline-entry${isActive(e,i)?' active':''} stagger-item`} style={{transitionDelay:`${(i%8)*50}ms`}} onClick={()=>edit?(i!==edit.index&&edit.pick?.(i)):setPicked(i)}>
           <span className="timeline-entry-year">{e.year}</span>
           <span className="timeline-entry-line"><span className="timeline-entry-dot"/></span>
           <span className="timeline-entry-body"><small>{e.type}</small><strong>{e.title}</strong></span>
