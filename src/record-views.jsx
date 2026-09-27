@@ -5,6 +5,7 @@ import { sections } from './data';
 import { placesOf, recordPath } from './repository';
 import { useEdit } from './edit-context';
 import { tagStyle } from './color';
+import { videoSource } from './video-links';
 import './record-views.css';
 
 const code=item=>`FICHA CDO—${String(item.id).padStart(4,'0')}`;
@@ -15,8 +16,16 @@ export function BackLink({item}){
   return <Link className="back-link" to={`/${item.slug||'archivo'}`}><span className="back-link-icon"><ArrowLeft/></span><span>Volver a <b>{label}</b></span></Link>;
 }
 
+// Película o video: reproductor incrustado (YouTube, Vimeo, Drive…), archivo de video, o enlace para abrirlo
+export function VideoPlayer({url,poster,title='Película'}){
+  const v=videoSource(url);
+  if(v?.kind==='iframe')return <div className="media-embed"><iframe src={v.src} title={title} loading="lazy" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowFullScreen referrerPolicy="strict-origin-when-cross-origin"/></div>;
+  if(v?.kind==='link')return <div className="media-embed media-external">{poster&&<img src={poster} alt="" loading="lazy" decoding="async"/>}<a href={v.src} target="_blank" rel="noreferrer"><CirclePlay/> Ver en {v.provider}</a></div>;
+  return <video controls poster={poster} preload="none" src={v?.src||undefined}/>;
+}
+
 export function MediaViewer({item,extra}){
-  if(extra?.mediaType==='video')return <div className="media-viewer"><video controls poster={item.image} preload="none">{extra.media&&<source src={extra.media} type="video/mp4"/>}</video><span>VERSIÓN DE CONSULTA · ARCHIVO CDO</span></div>;
+  if(extra?.mediaType==='video')return <div className="media-viewer"><VideoPlayer url={extra.media} poster={item.image} title={item.title}/><span>VERSIÓN DE CONSULTA · ARCHIVO CDO</span></div>;
   if(extra?.mediaType==='audio')return <div className="media-viewer audio-viewer"><img src={item.image} alt="" loading="lazy" decoding="async"/><div><Headphones/><h3>Escuchar entrevista</h3><audio controls preload="none" src={extra.media||undefined}/></div></div>;
   if(extra?.mediaType==='document')return <div className="media-viewer document-viewer"><FileText/><span>DOCUMENTO DIGITALIZADO</span><h3>{item.title}</h3><p>Vista previa del documento · {item.format}</p>{extra.media?<a className="doc-download" href={extra.media} download={`${item.title}.pdf`} target="_blank" rel="noreferrer"><Download/> Descargar PDF</a>:<button disabled><Download/> Descargar PDF</button>}</div>;
   return <div className="media-viewer"><img src={item.image} alt={item.title} loading="lazy" decoding="async"/><span>IMAGEN DIGITALIZADA · ARCHIVO CDO</span></div>;

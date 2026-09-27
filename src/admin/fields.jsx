@@ -4,6 +4,8 @@ import { Check, ChevronDown, FileText, Film, Headphones, ImagePlus, Images, Link
 import { collections, heroSlides, recordExtras, records, theme, timelineEvents } from '../data';
 import { ImageEditor } from './ImageEditor';
 import { inkOn, isHex, tagStyle } from '../color';
+import { VideoPlayer } from '../record-views';
+import { VIDEO_SERVICES, videoSource } from '../video-links';
 
 // Colores de etiqueta: vienen del tema elegido en «Colores»
 export const palette=()=>theme.palette;
@@ -275,7 +277,7 @@ export function EditableImage({src,onChange,className='',label='Cambiar imagen',
 /* ---------- Archivo digital (video, audio, documento…) ---------- */
 
 export const MEDIA_TYPES=[
-  {value:'video',label:'Video',icon:Film,accept:'video/*',hint:'MP4 o WEBM'},
+  {value:'video',label:'Video',icon:Film,accept:'video/*',hint:'La película se agrega con un enlace (YouTube, Vimeo, Drive, OneDrive…). Un video corto también se puede subir.'},
   {value:'audio',label:'Audio',icon:Headphones,accept:'audio/*',hint:'MP3, M4A u OGG'},
   {value:'document',label:'Documento',icon:FileText,accept:'application/pdf',hint:'PDF'},
   {value:'image',label:'Imagen',icon:ImagePlus,accept:'image/*',hint:'Se muestra la imagen principal'},
@@ -284,24 +286,36 @@ export const MEDIA_TYPES=[
 const MAX_MEDIA=40*1048576;
 
 export function MediaPicker({mediaType,media,onChange,onClose}){
-  const [type,setType]=useState(mediaType||'image'), [url,setUrl]=useState(isUploaded(media)?'':media||''), [uploaded,setUploaded]=useState(isUploaded(media)?media:''), [error,setError]=useState(''), [busy,setBusy]=useState(false);
+  // El tipo de archivo lo fija la ficha (película → video, entrevista → audio, prensa → documento)
+  const type=mediaType||'image';
+  const [url,setUrl]=useState(isUploaded(media)?'':media||''), [uploaded,setUploaded]=useState(isUploaded(media)?media:''), [error,setError]=useState(''), [busy,setBusy]=useState(false);
   const cfg=MEDIA_TYPES.find(m=>m.value===type), needsFile=['video','audio','document'].includes(type);
-  const src=uploaded||url;
+  const src=uploaded||url.trim(), video=type==='video'&&url.trim()?videoSource(url):null;
   const take=async file=>{
     if(!file)return;
-    if(file.size>MAX_MEDIA)return setError(`El archivo pesa ${formatBytes(file.size)}. Para archivos de más de 40 MB, súbelo a un servicio externo y pega el enlace.`);
+    if(file.size>MAX_MEDIA)return setError(type==='video'
+      ?`El video pesa ${formatBytes(file.size)}. Las películas completas se agregan con un enlace: súbela a YouTube, Vimeo, Google Drive u OneDrive y pega el enlace arriba.`
+      :`El archivo pesa ${formatBytes(file.size)}. Para archivos de más de 40 MB, súbelo a un servicio externo y pega el enlace.`);
     setBusy(true);setError('');
     try{setUploaded(await readFile(file));setUrl('')}catch{setError('No se pudo leer el archivo.')}finally{setBusy(false)}
   };
-  return <Modal onClose={onClose} title="Archivo digital" className="cms-picker">
-    <div className="cms-segment">{MEDIA_TYPES.map(({value,label,icon:Icon})=><button key={value} type="button" className={type===value?'active':''} onClick={()=>{setType(value);setError('')}}><Icon/>{label}</button>)}</div>
+  return <Modal onClose={onClose} title={{video:'Película o video',audio:'Audio',document:'Documento'}[type]||'Archivo digital'} className="cms-picker">
     <p className="cms-help">{cfg.hint}</p>
+    {/* Películas: primero el enlace (YouTube, Vimeo, Drive…); subir archivo queda para videos cortos */}
+    {type==='video'&&<>
+      <label className="cms-field"><span>Enlace de la película</span><input autoFocus value={url} onChange={e=>{setUrl(e.target.value);setUploaded('')}} placeholder="https://youtube.com/…  ·  https://vimeo.com/…  ·  https://drive.google.com/…"/></label>
+      <p className={`cms-help${url&&!video?' is-error':''}`}>{!url?`Pega el enlace de ${VIDEO_SERVICES}.`:!video?'Ese enlace no parece válido: debe empezar con https://':video.kind==='link'?`No se puede reproducir dentro de la ficha: se mostrará un botón «Ver en ${video.provider}».`:`✓ ${video.provider}: se reproducirá dentro de la ficha.`}</p>
+      {video?.provider==='Google Drive'&&<p className="cms-help">En Drive, comparte el archivo con «Cualquier persona con el enlace».</p>}
+      <label className="cms-drop is-compact"><Upload/><strong>{busy?'Leyendo archivo…':uploaded?'Video cargado · clic para reemplazar':'o sube un video corto desde el equipo'}</strong><small>Hasta 40 MB · para películas completas usa un enlace</small><input type="file" accept={cfg.accept} hidden onChange={e=>take(e.target.files[0])}/></label>
+    </>}
     {needsFile&&<>
-      <label className="cms-drop is-compact"><Upload/><strong>{busy?'Leyendo archivo…':uploaded?'Archivo cargado · clic para reemplazar':'Subir archivo desde el equipo'}</strong><small>Hasta 40 MB</small><input type="file" accept={cfg.accept} hidden onChange={e=>take(e.target.files[0])}/></label>
-      <label className="cms-field"><span>o pega un enlace</span><input value={url} onChange={e=>{setUrl(e.target.value);setUploaded('')}} placeholder="https://…"/></label>
+      {type!=='video'&&<>
+        <label className="cms-drop is-compact"><Upload/><strong>{busy?'Leyendo archivo…':uploaded?'Archivo cargado · clic para reemplazar':'Subir archivo desde el equipo'}</strong><small>Hasta 40 MB</small><input type="file" accept={cfg.accept} hidden onChange={e=>take(e.target.files[0])}/></label>
+        <label className="cms-field"><span>o pega un enlace</span><input value={url} onChange={e=>{setUrl(e.target.value);setUploaded('')}} placeholder="https://…"/></label>
+      </>}
       <div className="cms-media-preview">
         {!src&&<span>Sin archivo asignado</span>}
-        {src&&type==='video'&&<video src={src} controls preload="metadata"/>}
+        {src&&type==='video'&&<VideoPlayer url={src}/>}
         {src&&type==='audio'&&<audio src={src} controls preload="metadata"/>}
         {src&&type==='document'&&<a href={src} target="_blank" rel="noreferrer"><FileText/> Abrir documento</a>}
       </div>

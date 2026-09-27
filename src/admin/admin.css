@@ -159,9 +159,6 @@
 .cms-count-warn,.cms-count-ok{font:600 10px 'IBM Plex Mono';padding:3px 8px;border-radius:999px}
 .cms-count-warn{background:#fff3d6;color:var(--warn)}
 .cms-count-ok{background:#dfeee6;color:var(--forest)}
-.cms-type-pick{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.cms-type-pick button{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:transparent;padding:9px 10px;border-radius:var(--r-sm);font-size:12px;font-weight:700}
-.cms-type-pick button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
 .cms-checklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
 .cms-checklist li{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:var(--warn)}
 .cms-checklist li small{font-weight:500;color:var(--muted);margin-left:auto;font-size:11px}
@@ -906,3 +903,8 @@ html:has(.cms-preview-doc){overflow:hidden}
 .cms-cargos input[data-cargo]{font-weight:700}
 .cms-cargos input:focus{border-color:var(--forest);box-shadow:0 0 0 3px rgba(18,60,47,.12)}
 .cms-cargos .cms-icon-btn{width:30px;height:30px}
+
+/* Vista previa de la película en el selector: el mismo reproductor del sitio */
+.cms-media-preview .media-embed{position:relative;width:100%;aspect-ratio:16/9;background:#050605}
+.cms-media-preview .media-embed iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.cms-media-preview .media-external a{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:inline-flex;align-items:center;gap:8px;background:var(--acid);color:var(--ink);padding:10px 16px;border-radius:999px;font-weight:800}

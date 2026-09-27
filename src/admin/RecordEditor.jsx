@@ -161,7 +161,7 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
   const slots={
     // El recorte parte con la forma del lugar donde está la imagen (póster, portada…)
     image:()=>slotBtn('image',ev=>{setPickAspect(aspectNear(ev.currentTarget));setPicker('image')},ImagePlus,r.image?'Cambiar imagen principal':'Añadir imagen principal'),
-    media:()=>slotBtn('media',()=>setPicker('media'),MediaIcon,`${cfg.label} · ${needsFile?(e.media?'cambiar archivo':'subir archivo'):'cambiar tipo'}`)
+    media:()=>needsFile&&slotBtn('media',()=>setPicker('media'),MediaIcon,`${cfg.label} · ${e.mediaType==='video'?(e.media?'cambiar película':'agregar enlace de la película'):needsFile?(e.media?'cambiar archivo':'subir archivo'):'cambiar tipo'}`)
   };
   // Campos que se eligen de una lista con buscador (y aceptan un valor nuevo): la dirección y la
   // persona entrevistada salen de las personas del archivo; formato y colección, de lo ya usado
@@ -220,8 +220,8 @@ function RecordPanelBlocks({r,e,meta,setE,openPicker}){
       </li>)}</ul>}
       <button type="button" className="cms-btn is-block" onClick={addCredit}><Plus/> Añadir cargo</button>
       <p className="cms-help">{credits.length?'Ej.: Fotografía · María Cortés. Si falta el cargo o el nombre, esa fila no se guarda.':'Agrega cada cargo (fotografía, montaje…) y quién lo ocupó.'}</p>
-      <label className="cms-panel-label">Archivo digital</label>
-      <button type="button" className="cms-btn is-block" onClick={()=>openPicker('media')}><MediaIcon/> {media.label}{needsFile?(e.media?' · cambiar archivo':' · subir archivo'):' · cambiar tipo'}</button>
+      {needsFile&&<><label className="cms-panel-label">Archivo digital</label>
+      <button type="button" className="cms-btn is-block" onClick={()=>openPicker('media')}><MediaIcon/> {media.label}{e.mediaType==='video'?(e.media?' · cambiar película':' · agregar enlace'):needsFile?(e.media?' · cambiar archivo':' · subir archivo'):' · cambiar tipo'}</button></>}
       <label className="cms-panel-label">Galería · {gallery.length}</label>
       {gallery.length>0&&<div className="cms-gallery-mini">{gallery.map((src,i)=><div key={i}>
         <button type="button" className="cms-gallery-thumb" onClick={()=>openPicker({gallery:i})} title="Editar o cambiar"><img src={thumb(src,160)} alt={`Imagen ${i+1}`}/></button>
