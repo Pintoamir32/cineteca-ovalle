@@ -48,10 +48,12 @@ function RecordEditorInner(){
 
   const wasPublished=!!existing&&!existing.draft;
   const save=async()=>{
-    // Entrevista: el título sale de la persona entrevistada; la imagen, si no se sube una, es su fotografía
+    // Entrevista: la persona se vincula a su ficha o se escribe a mano; de ella sale el título y, si no se
+    // sube una imagen, la fotografía (solo cuando está vinculada)
     const person=isInterview?records.find(x=>x.id===e.interviewee&&x.type==='Persona'):null;
-    if(isInterview&&!person)return toast('Elige a la persona entrevistada antes de guardar.','error');
-    const base=person?{...r,subtitle:person.title,title:`Entrevista a ${person.title}`,image:r.image||person.image}:r;
+    const name=person?.title||r.subtitle.trim();
+    if(isInterview&&!name)return toast('Elige o escribe a la persona entrevistada antes de guardar.','error');
+    const base=isInterview?{...r,subtitle:name,title:`Entrevista a ${name}`,image:r.image||person?.image||''}:r;
     if(!base.title.trim())return toast('Escribe un título antes de guardar.','error');
     if(!base.image)return toast('Añade una imagen principal antes de guardar.','error');
     const {draft:isDraft,...rest}=base;
@@ -71,7 +73,7 @@ function RecordEditorInner(){
     // Entrevista: entrevistado(a), fecha, formato, texto (opcional), archivo adjunto (audio o video), imagen y galería
     if(isInterview){
       record={...record,format:interviewFormat(extra),collection:''};
-      extra={...extra,credits:[],locations:[],relations:[],media:extra.mediaType==='text'?'':extra.media,interviewee:person.id};
+      extra={...extra,credits:[],locations:[],relations:[],media:extra.mediaType==='text'?'':extra.media,interviewee:person?.id||null};
     }
     try{
       await saveRecord(record,extra);
@@ -298,11 +300,19 @@ function InterviewPanel({r,e,setR,setE,openPicker}){
   const isText=e.mediaType==='text';
   return <>
     <PanelBlock title="Entrevistado(a)">
-      {person?<ul className="cms-mini-list"><li>
-        <img src={thumb(person.image,120)} alt=""/><span>{person.title}<small>{person.subtitle}</small></span>
-        <button type="button" className="cms-icon-btn is-danger-text" onClick={()=>{setE({interviewee:null});setR({subtitle:'',title:''})}} aria-label={`Quitar ${person.title}`} title="Quitar"><X/></button>
-      </li></ul>:<p className="cms-help">Elige a la persona desde las fichas de persona del archivo.</p>}
-      <button type="button" className="cms-btn is-block" onClick={()=>openPicker('interviewee')}><Plus/> {person?'Cambiar persona':'Elegir persona'}</button>
+      {person?<>
+        <ul className="cms-mini-list"><li>
+          <img src={thumb(person.image,120)} alt=""/><span>{person.title}<small>Con enlace a su ficha</small></span>
+          <button type="button" className="cms-icon-btn is-danger-text" onClick={()=>{setE({interviewee:null});setR({subtitle:'',title:''})}} aria-label={`Quitar ${person.title}`} title="Quitar"><X/></button>
+        </li></ul>
+        <button type="button" className="cms-btn is-block" onClick={()=>openPicker('interviewee')}><Plus/> Cambiar persona</button>
+      </>:<>
+        <label className="cms-panel-label">Del archivo · con enlace a su ficha</label>
+        <button type="button" className="cms-btn is-block" onClick={()=>openPicker('interviewee')}><Plus/> Vincular persona del archivo</button>
+        <label className="cms-panel-label">O escrito a mano · sin enlace</label>
+        <label className="cms-field"><input value={r.subtitle||''} onChange={ev=>setR({subtitle:ev.target.value,title:ev.target.value.trim()?`Entrevista a ${ev.target.value.trim()}`:''})} placeholder="Nombre de la persona entrevistada" aria-label="Nombre de la persona entrevistada"/></label>
+        <p className="cms-help">Para quien no tiene ficha de persona. Sin fotografía de la persona, sube una imagen principal.</p>
+      </>}
     </PanelBlock>
     <PanelBlock title="Formato y contenido">
       <div className="cms-segment is-small cms-seg-block">{INTERVIEW_FORMATS.map(([v,l])=><button key={v} type="button" className={e.mediaType===v?'active':''} onClick={()=>setE({mediaType:v,...(v!==e.mediaType&&{media:''})})}>{l}</button>)}</div>
