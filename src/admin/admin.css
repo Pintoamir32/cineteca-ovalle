@@ -915,3 +915,8 @@ html:has(.cms-preview-doc){overflow:hidden}
 /* Vista previa: el menú de arriba se muestra tal cual, sin buscador ni enlaces activos */
 .cms-preview-doc .topbar{pointer-events:none}
 .cms-written li{grid-template-columns:minmax(0,1fr) 64px 30px}
+
+/* Botón de archivo con su «Quitar» al lado */
+.cms-file-row{display:flex;gap:8px;align-items:center}
+.cms-file-row .cms-btn{flex:1;min-width:0}
+.cms-media-preview{gap:10px}

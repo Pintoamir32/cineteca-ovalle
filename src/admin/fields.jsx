@@ -223,7 +223,7 @@ export function ImagePicker({value,onPick,onPickMany,multiple=false,onClose,titl
       <img src={thumb(value,200)} alt=""/>
       <span><strong>Imagen actual</strong><small>Puedes recortarla, girarla o ajustar su luz sin reemplazarla.</small></span>
       <button type="button" className="cms-btn" onClick={()=>edit([{src:value}])}><SlidersHorizontal/> Editar</button>
-      {onRemove&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>{onRemove();onClose()}} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}
+      {onRemove&&<button type="button" className="cms-btn is-danger-text" onClick={()=>{onRemove();onClose()}} title="Quitar esta imagen"><Trash2/> Quitar</button>}
     </div>}
     <div className="cms-tabs" role="tablist">
       {[['upload',Upload,'Subir desde el equipo'],['url',Link2,multiple?'Pegar enlaces':'Pegar enlace'],['library',ImagePlus,`Biblioteca · ${library.length}`]].map(([k,Icon,l])=><button key={k} type="button" role="tab" aria-selected={tab===k} className={tab===k?'active':''} onClick={()=>{setTab(k);setError('')}}><Icon/>{l}</button>)}
@@ -259,7 +259,7 @@ export function ImagePicker({value,onPick,onPickMany,multiple=false,onClose,titl
 }
 
 // Imagen de la vista previa: se puede editar la actual o reemplazarla
-export function EditableImage({src,onChange,className='',label='Cambiar imagen',children,alt='',aspect=null}){
+export function EditableImage({src,onChange,className='',label='Cambiar imagen',children,alt='',aspect=null,removable=true}){
   const [open,setOpen]=useState(null);
   return <div className={`cms-image ${src?'':'is-empty'} ${className}`}>
     {src?<img src={src} alt={alt} onClick={()=>setOpen('pick')}/>:<button type="button" className="cms-image-empty" onClick={()=>setOpen('pick')}><ImagePlus/><span>Añadir imagen</span></button>}
@@ -267,8 +267,9 @@ export function EditableImage({src,onChange,className='',label='Cambiar imagen',
     {src&&<div className="cms-image-tools">
       <button type="button" className="cms-image-btn" onClick={()=>setOpen('edit')}><SlidersHorizontal/> Editar</button>
       <button type="button" className="cms-image-btn" onClick={()=>setOpen('pick')}><ImagePlus/> {label}</button>
+      {removable&&<button type="button" className="cms-image-btn" onClick={()=>onChange('')} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}
     </div>}
-    {open==='pick'&&<ImagePicker value={src} aspect={aspect} onPick={onChange} onClose={()=>setOpen(null)}/>}
+    {open==='pick'&&<ImagePicker value={src} aspect={aspect} onPick={onChange} onRemove={removable?()=>onChange(''):undefined} onClose={()=>setOpen(null)}/>}
     {open==='edit'&&<ImageEditor sources={[{src}]} aspect={aspect} onDone={([out])=>{onChange(out);setOpen(null)}} onClose={()=>setOpen(null)}/>}
   </div>;
 }
@@ -318,6 +319,7 @@ export function MediaPicker({mediaType,media,onChange,onClose}){
         {src&&type==='video'&&<VideoPlayer url={src}/>}
         {src&&type==='audio'&&<audio src={src} controls preload="metadata"/>}
         {src&&type==='document'&&<a href={src} target="_blank" rel="noreferrer"><FileText/> Abrir documento</a>}
+        {src&&<button type="button" className="cms-btn is-danger-text" onClick={()=>{setUploaded('');setUrl('')}}><Trash2/> Quitar {type==='video'?'película':'archivo'}</button>}
       </div>
     </>}
     {error&&<p className="cms-error">{error}</p>}

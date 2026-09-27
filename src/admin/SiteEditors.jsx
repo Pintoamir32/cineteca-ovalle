@@ -67,7 +67,7 @@ function useListEdit({draft,set,fields,items,index,count,imageLabel,aspect,pick}
       placeholder={fields[key]?.[1]||'Escribe aquí…'} label={fields[key]?.[0]||key}/>,
     slot:name=>name==='image'?<button key="image" type="button" className="cms-slot-btn is-image" onClick={e=>{e.preventDefault();e.stopPropagation();setPicking({aspect:aspectNear(e.currentTarget)||aspect})}}><ImagePlus/> {draft.image?imageLabel:'Añadir imagen'}</button>:null
   };
-  const modals=picking&&<ImagePicker value={draft.image} aspect={picking.aspect} onPick={image=>set({image})} onClose={()=>setPicking(false)} title={imageLabel}/>;
+  const modals=picking&&<ImagePicker value={draft.image} aspect={picking.aspect} onPick={image=>set({image})} onRemove={draft.image?()=>set({image:''}):undefined} onClose={()=>setPicking(false)} title={imageLabel}/>;
   return {context,modals,pickImage:()=>setPicking(true)};
 }
 const yearOf=e=>Number((/\d{4}/.exec(e.year)||[])[0])||0;

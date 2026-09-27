@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, Circle, Eye, EyeOff, FileText, ImagePlus, Images, MapPin, Plus, Star, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Circle, Eye, EyeOff, FileText, ImagePlus, Images, MapPin, Plus, Star, Trash2, X } from 'lucide-react';
 import { RecordCard, RecordRow } from '../components';
 import { collections, locations, records, site } from '../data';
 import { EditContext } from '../edit-context';
@@ -113,7 +113,7 @@ function RecordEditorInner(){
     <PanelBlock title="Estado de la ficha" aside={<b className={miss.length?'cms-count-warn':'cms-count-ok'}>{miss.length?`${miss.length} pendiente${miss.length>1?'s':''}`:'Completa'}</b>}>
       <ul className="cms-checklist">{checklist.map(k=><li key={k} className={miss.includes(k)?'':'done'}>{miss.includes(k)?<Circle/>:<Check/>}{checkName(k)}{REQUIRED.includes(k)&&miss.includes(k)&&<small>obligatorio para guardar</small>}{k==='Descripción'&&miss.includes(k)&&<small>mín. 40 caracteres</small>}</li>)}</ul>
     </PanelBlock>
-    {isPerson?<PersonWorks r={r} e={e} setE={setE} openPicker={edit.open}/>:isPress?<PressPanel r={r} e={e} setE={setE} openPicker={edit.open}/>:<>
+    {isPerson?<PersonWorks r={r} e={e} setE={setE} openPicker={edit.open}/>:isPress?<PressPanel r={r} e={e} setR={setR} setE={setE} openPicker={edit.open}/>:<>
     <PanelBlock title="Clasificación">
       <label className="cms-panel-label">Colección</label>
       {collectionOptions.length?<Choice value={r.collection} options={collectionOptions} onChange={collection=>setR({collection})} placeholder="Elegir colección…"/>
@@ -204,7 +204,7 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     slot:name=>slots[name]?.()
   };
   const modals=<>
-    {picker==='image'&&<ImagePicker value={r.image} aspect={pickAspect} onPick={image=>setR({image})} onClose={()=>setPicker(null)} title="Imagen principal"/>}
+    {picker==='image'&&<ImagePicker value={r.image} aspect={pickAspect} onPick={image=>setR({image})} onRemove={r.image?()=>setR({image:''}):undefined} onClose={()=>setPicker(null)} title="Imagen principal"/>}
     {picker==='media'&&<MediaPicker mediaType={e.mediaType} media={e.media} onChange={(mediaType,media)=>setE({mediaType,media})} onClose={()=>setPicker(null)}/>}
     {picker==='work'&&<RecordPicker title="Vincular una película" types={['Película']} exclude={e.relations||[]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
     {picker==='link'&&<RecordPicker title="Vincular película o persona" types={['Película','Persona']} exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
@@ -245,14 +245,16 @@ function PersonWorks({r,e,setE,openPicker}){
 }
 
 // Prensa: el documento digitalizado (imagen principal y PDF opcional) y sus vínculos a películas y personas
-function PressPanel({r,e,setE,openPicker}){
+function PressPanel({r,e,setR,setE,openPicker}){
   const linked=(e.relations||[]).map(id=>records.find(x=>x.id===id)).filter(x=>x&&['Película','Persona'].includes(x.type));
   return <>
     <PanelBlock title="Documento digitalizado">
       <label className="cms-panel-label">Imagen</label>
-      <button type="button" className="cms-btn is-block" onClick={()=>openPicker('image')}><ImagePlus/> {r.image?'Cambiar imagen':'Subir imagen'}</button>
+      <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('image')}><ImagePlus/> {r.image?'Cambiar imagen':'Subir imagen'}</button>
+        {r.image&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setR({image:''})} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}</div>
       <label className="cms-panel-label">PDF · opcional</label>
-      <button type="button" className="cms-btn is-block" onClick={()=>openPicker('media')}><FileText/> {e.media?'Cambiar PDF':'Subir PDF'}</button>
+      <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('media')}><FileText/> {e.media?'Cambiar PDF':'Subir PDF'}</button>
+        {e.media&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({media:''})} aria-label="Quitar PDF" title="Quitar PDF"><Trash2/></button>}</div>
       <p className="cms-help">La imagen se muestra en el sitio y en los listados; el PDF, si lo hay, se puede abrir y descargar.</p>
     </PanelBlock>
     <PanelBlock title={`Películas y personas · ${linked.length}`}>
@@ -290,7 +292,8 @@ function RecordPanelBlocks({r,e,meta,setE,openPicker}){
       <button type="button" className="cms-btn is-block" onClick={addCredit}><Plus/> Añadir cargo</button>
       <p className="cms-help">{credits.length?'Ej.: Fotografía · María Cortés. Si falta el cargo o el nombre, esa fila no se guarda.':'Agrega cada cargo (fotografía, montaje…) y quién lo ocupó.'}</p>
       {needsFile&&<><label className="cms-panel-label">Archivo digital</label>
-      <button type="button" className="cms-btn is-block" onClick={()=>openPicker('media')}><MediaIcon/> {media.label}{e.mediaType==='video'?(e.media?' · cambiar película':' · agregar enlace'):needsFile?(e.media?' · cambiar archivo':' · subir archivo'):' · cambiar tipo'}</button></>}
+      <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('media')}><MediaIcon/> {media.label}{e.mediaType==='video'?(e.media?' · cambiar película':' · agregar enlace'):needsFile?(e.media?' · cambiar archivo':' · subir archivo'):' · cambiar tipo'}</button>
+        {e.media&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({media:''})} aria-label="Quitar archivo" title="Quitar archivo"><Trash2/></button>}</div></>}
       <label className="cms-panel-label">Galería · {gallery.length}</label>
       {gallery.length>0&&<div className="cms-gallery-mini">{gallery.map((src,i)=><div key={i}>
         <button type="button" className="cms-gallery-thumb" onClick={()=>openPicker({gallery:i})} title="Editar o cambiar"><img src={thumb(src,160)} alt={`Imagen ${i+1}`}/></button>

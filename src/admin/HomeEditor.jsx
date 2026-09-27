@@ -28,7 +28,7 @@ function HomeImageButton({label,className,value,fallback,onChange,aspect}){
   const [open,setOpen]=useState(false);
   return <>
     <button type="button" className={`home-edit-img ${className||''}`} onClick={e=>{e.preventDefault();e.stopPropagation();setOpen({aspect:aspectNear(e.currentTarget)||aspect})}}><ImagePlus/> {label}</button>
-    {open&&<ImagePicker value={value||fallback} aspect={open.aspect} onPick={onChange} onRemove={fallback&&value?()=>onChange(''):undefined} onClose={()=>setOpen(false)}/>}
+    {open&&<ImagePicker value={value||fallback} aspect={open.aspect} onPick={onChange} onRemove={value?()=>onChange(''):undefined} onClose={()=>setOpen(false)}/>}
   </>;
 }
 
