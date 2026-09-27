@@ -17,6 +17,7 @@ export const setupAccount=({name,user,password,remember})=>call('/api/auth/setup
 export const login=(user,password,remember)=>call('/api/auth/login',{user,password,remember}).then(r=>r.user);
 export const logout=()=>call('/api/auth/logout',{}).catch(()=>{});
 export const changePassword=(current,next)=>call('/api/auth/password',{current,next});
+export const markTutorials=views=>call('/api/tutorials',{views});
 export const listUsers=()=>call('/api/users').then(r=>r.users);
 export const createUser=({name,user,password})=>call('/api/users',{name,user,password}).then(r=>r.user);
 

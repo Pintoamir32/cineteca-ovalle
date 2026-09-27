@@ -5,7 +5,7 @@ import { collections, heroSlides, locations, recordExtras, records, timelineEven
 import { exportData, getLastSaved, hydrate, importData, resetData, setRecordPublished, useStoreVersion } from '../store';
 import { tagStyle } from '../color';
 import { Modal, UiProvider, thumb, useUi } from './fields';
-import { authStatus, changePassword, logout as endSession } from './auth';
+import { authStatus, changePassword, logout as endSession, markTutorials } from './auth';
 import { UsersPage } from './Users';
 import { LoginScreen, PasswordField } from './Login';
 import { TYPE_META, TYPES, code, extraOf, missingFields, typeBySlug, typeColor } from './meta';
@@ -13,7 +13,7 @@ import { RecordEditor } from './RecordEditor';
 import { LogoMark } from '../Logo';
 import { CollectionEditor, CollectionList, LocationEditor, LocationList, TimelineEditor, TimelineList } from './SiteEditors';
 import { HomeEditor } from './HomeEditor';
-import { TOURS, Tour, markTourSeen, tourSeen, tourViewOf } from './Tour';
+import { TOURS, Tour, takeLegacySeen, tourViewOf } from './Tour';
 import { ThemeEditor } from './ThemeEditor';
 import './admin.css';
 
@@ -77,19 +77,29 @@ function AdminShell({session,onLogout}){
   const path=location.pathname.replace(/^\/admin\/?/,'');
   // La sección activa siempre queda a la vista dentro de la lista del menú
   useEffect(()=>{document.querySelector('.cms-side-nav [aria-current="page"]')?.scrollIntoView({block:'nearest'})},[path,menu]);
-  // Tutorial: se abre solo la primera vez en cada pantalla; el botón «Tutorial» lo repite
+  // Tutorial: se abre solo la primera vez en cada pantalla; el botón «Tutorial» lo repite.
+  // Las pantallas vistas se guardan en la base de datos, por cuenta
   const view=tourViewOf(path), [tour,setTour]=useState(null);
+  const seenTours=useRef(null);
+  if(!seenTours.current){
+    seenTours.current=new Set(session.tutorials||[]);
+    const legacy=takeLegacySeen(session.id).filter(v=>!seenTours.current.has(v));
+    if(legacy.length){legacy.forEach(v=>seenTours.current.add(v));markTutorials(legacy).catch(()=>{})}
+  }
+  const markTourSeen=v=>{if(seenTours.current.has(v))return;seenTours.current.add(v);markTutorials([v]).catch(()=>{})};
   const openTour=v=>{
     const steps=(TOURS[v]||[]).filter(st=>!st.target||document.querySelector(st.target));
     if(steps.length)setTour({view:v,steps});
+    return steps.length>0;
   };
   useEffect(()=>{
     setTour(null);
-    if(tourSeen(view,session.id))return;
-    const t=setTimeout(()=>{if(!document.querySelector('.cms-modal-layer'))openTour(view)},900);
+    if(seenTours.current.has(view))return;
+    // Queda marcado al mostrarse, aunque se salga de la pantalla sin cerrarlo
+    const t=setTimeout(()=>{if(!document.querySelector('.cms-modal-layer')&&openTour(view))markTourSeen(view)},900);
     return()=>clearTimeout(t);
   },[view,session.id]);// eslint-disable-line react-hooks/exhaustive-deps
-  const closeTour=()=>{markTourSeen(tour.view,session.id);setTour(null)};
+  const closeTour=()=>{markTourSeen(tour.view);setTour(null)};
   const helpBtn=cls=><button type="button" className={cls} onClick={()=>{setMenu(false);openTour(view)}} title="Ver el tutorial de esta pantalla"><CircleHelp/><span>Tutorial</span></button>;
   const item=(to,Icon,label,count)=>{
     const active=to===''?path==='':path===to||path.startsWith(`${to}/`);

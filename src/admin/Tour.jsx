@@ -19,12 +19,10 @@ export function tourViewOf(path){
   return {inicio:'inicio',colores:'colores',respaldo:'respaldo',usuarios:'usuarios'}[a]||'dashboard';
 }
 
-// Pantallas ya vistas por cada cuenta: cada persona ve el tutorial en su primer inicio de sesión
-const seenKey=uid=>`cms-tutorial-visto:${uid}`;
-const readSeen=uid=>{try{return JSON.parse(localStorage.getItem(seenKey(uid))||'[]')}catch{return []}};
-export const tourSeen=(view,uid)=>readSeen(uid).includes(view);
-export function markTourSeen(view,uid){
-  try{const seen=readSeen(uid);if(!seen.includes(view))localStorage.setItem(seenKey(uid),JSON.stringify([...seen,view]))}catch{/* sin almacenamiento: se volverá a mostrar */}
+// Antes las pantallas vistas se guardaban en el navegador; se leen una vez para pasarlas a la base de datos
+const legacyKey=uid=>`cms-tutorial-visto:${uid}`;
+export function takeLegacySeen(uid){
+  try{const seen=JSON.parse(localStorage.getItem(legacyKey(uid))||'[]');localStorage.removeItem(legacyKey(uid));return Array.isArray(seen)?seen:[]}catch{return []}
 }
 
 // Pasos comunes a todos los editores

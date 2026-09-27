@@ -17,6 +17,9 @@ const TABLES=[
   `CREATE TABLE IF NOT EXISTS cms_content(
     id TINYINT PRIMARY KEY, data LONGTEXT NOT NULL, version INT NOT NULL, updated_at DATETIME NOT NULL, updated_by VARCHAR(32)
   ) CHARACTER SET utf8mb4`,
+  `CREATE TABLE IF NOT EXISTS cms_tutorials(
+    user_id VARCHAR(32) NOT NULL, screen VARCHAR(40) NOT NULL, seen_at DATETIME NOT NULL, PRIMARY KEY(user_id,screen)
+  ) CHARACTER SET utf8mb4`,
   `CREATE TABLE IF NOT EXISTS cms_media(
     id CHAR(32) PRIMARY KEY, mime VARCHAR(80) NOT NULL, size INT NOT NULL, data LONGBLOB NOT NULL, created_at DATETIME NOT NULL
   )`
@@ -40,7 +43,9 @@ async function mysqlStore(){
     insertUser:u=>pool.query('INSERT INTO cms_users(id,name,username,salt,hash,created_at) VALUES(?,?,?,?,?,?)',[u.id,u.name,u.username,u.salt,u.hash,new Date()]),
     setPassword:(id,salt,hash)=>pool.query('UPDATE cms_users SET salt=?,hash=? WHERE id=?',[salt,hash,id]),
     updateUser:(id,name,username)=>pool.query('UPDATE cms_users SET name=?,username=? WHERE id=?',[name,username,id]),
-    deleteUser:async id=>{await pool.query('DELETE FROM cms_sessions WHERE user_id=?',[id]);await pool.query('DELETE FROM cms_users WHERE id=?',[id])},
+    deleteUser:async id=>{await pool.query('DELETE FROM cms_sessions WHERE user_id=?',[id]);await pool.query('DELETE FROM cms_tutorials WHERE user_id=?',[id]);await pool.query('DELETE FROM cms_users WHERE id=?',[id])},
+    tutorials:async userId=>(await pool.query('SELECT screen FROM cms_tutorials WHERE user_id=?',[userId]))[0].map(r=>r.screen),
+    markTutorial:(userId,view)=>pool.query('INSERT IGNORE INTO cms_tutorials(user_id,screen,seen_at) VALUES(?,?,?)',[userId,view,new Date()]),
     createSession:(token,userId,expires)=>pool.query('INSERT INTO cms_sessions(token,user_id,expires_at) VALUES(?,?,?)',[token,userId,expires]),
     session:token=>one('SELECT * FROM cms_sessions WHERE token=? AND expires_at>NOW()',[token]),
     deleteSession:token=>pool.query('DELETE FROM cms_sessions WHERE token=?',[token]),
@@ -78,7 +83,9 @@ async function fileStore(){
     insertUser:async u=>write('users',[...await read('users',[]),{...u,createdAt:new Date().toISOString()}]),
     setPassword:async(id,salt,hash)=>write('users',(await read('users',[])).map(u=>u.id===id?{...u,salt,hash}:u)),
     updateUser:async(id,name,username)=>write('users',(await read('users',[])).map(u=>u.id===id?{...u,name,username}:u)),
-    deleteUser:async id=>{await write('sessions',(await read('sessions',[])).filter(x=>x.user_id!==id));await write('users',(await read('users',[])).filter(u=>u.id!==id))},
+    deleteUser:async id=>{await write('sessions',(await read('sessions',[])).filter(x=>x.user_id!==id));const t=await read('tutorials',{});delete t[id];await write('tutorials',t);await write('users',(await read('users',[])).filter(u=>u.id!==id))},
+    tutorials:async userId=>(await read('tutorials',{}))[userId]||[],
+    markTutorial:async(userId,view)=>{const t=await read('tutorials',{}), seen=t[userId]||[];if(!seen.includes(view))await write('tutorials',{...t,[userId]:[...seen,view]})},
     createSession:async(token,userId,expires)=>write('sessions',[...(await read('sessions',[])).filter(alive),{token,user_id:userId,expiresAt:expires.toISOString()}]),
     session:async token=>(await read('sessions',[])).find(s=>s.token===token&&alive(s))||null,
     deleteSession:async token=>write('sessions',(await read('sessions',[])).filter(s=>s.token!==token)),

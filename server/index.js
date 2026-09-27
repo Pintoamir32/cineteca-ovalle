@@ -24,6 +24,8 @@ const hashPassword=async(password,salt)=>(await scrypt(String(password),salt,64)
 const passwordProblem=pw=>String(pw||'').length<8?'La contraseña debe tener al menos 8 caracteres.':null;
 const normUser=u=>String(u||'').trim().toLowerCase();
 const publicUser=u=>u&&{id:u.id,name:u.name,user:u.username};
+// Quien inicia sesión recibe además las pantallas cuyo tutorial ya vio
+const sessionInfo=async u=>u&&{...publicUser(u),tutorials:await db.tutorials(u.id)};
 
 function readCookie(req,name){
   for(const part of String(req.headers.cookie||'').split(';')){
@@ -78,7 +80,7 @@ api.use((req,res,next)=>{res.setHeader('Cache-Control','no-store');next()});
 
 api.get('/auth/status',async(req,res)=>{
   const user=await sessionUser(req);
-  res.json({hasUsers:(await db.countUsers())>0,user:publicUser(user)});
+  res.json({hasUsers:(await db.countUsers())>0,user:await sessionInfo(user)});
 });
 
 // La primera cuenta solo se puede crear mientras no exista ninguna
@@ -87,7 +89,7 @@ api.post('/auth/setup',async(req,res)=>{
   const user=await newUser(req.body);
   if(user.error)return res.status(400).json(user);
   await startSession(req,res,user,!!req.body.remember);
-  res.json({user:publicUser(user)});
+  res.json({user:await sessionInfo(user)});
 });
 
 api.post('/auth/login',async(req,res)=>{
@@ -101,7 +103,7 @@ api.post('/auth/login',async(req,res)=>{
   }
   fails.delete(ip);
   await startSession(req,res,user,!!req.body.remember);
-  res.json({user:publicUser(user)});
+  res.json({user:await sessionInfo(user)});
 });
 
 api.post('/auth/logout',async(req,res)=>{
@@ -118,6 +120,13 @@ api.post('/auth/password',needUser,async(req,res)=>{
   await db.setPassword(req.user.id,salt,await hashPassword(next,salt));
   // Las demás sesiones abiertas de esta cuenta se cierran
   await db.deleteUserSessions(req.user.id,req.sessionToken);
+  res.json({ok:true});
+});
+
+// Tutoriales vistos: uno por pantalla del gestor
+api.post('/tutorials',needUser,async(req,res)=>{
+  const views=[].concat(req.body.views||[]).map(String).filter(v=>/^[a-z-]{1,40}$/.test(v)).slice(0,50);
+  for(const v of views)await db.markTutorial(req.user.id,v);
   res.json({ok:true});
 });
 
