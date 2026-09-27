@@ -7,7 +7,7 @@ import { EditContext } from '../edit-context';
 import { RecordDetail } from '../pages';
 import { deleteRecord, nextId, saveError, saveRecord, setData, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
-import { Choice, ColorSwatches, Editable, EditableChoice, EditableImage, ImagePicker, MEDIA_TYPES, MediaPicker, RecordPicker, thumb, useUi } from './fields';
+import { aspectNear, Choice, ColorSwatches, Editable, EditableChoice, EditableImage, ImagePicker, MEDIA_TYPES, MediaPicker, RecordPicker, thumb, useUi } from './fields';
 import { SiteFrame } from './SiteFrame';
 import { HomeEditContext } from '../site-text';
 import { useSharedTexts } from './shared-text';
@@ -142,7 +142,7 @@ function withArticle(label){
 
 // Conecta los campos de la ficha pública (ver edit-context) con el borrador del gestor
 function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
-  const [picker,setPicker]=useState(null);
+  const [picker,setPicker]=useState(null), [pickAspect,setPickAspect]=useState(null);
   const credits=e.credits||[], gallery=e.gallery||[], places=e.locations||[];
   const setCredit=(i,j,v)=>setE({credits:credits.map((c,k)=>k===i?(j===0?[v,c[1]]:[c[0],v]):c)});
   // Clave del campo en la página pública → valor, cómo cambiarlo, cómo se llama y un ejemplo
@@ -157,9 +157,10 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
   };
   const cfg=MEDIA_TYPES.find(m=>m.value===e.mediaType)||MEDIA_TYPES[3], MediaIcon=cfg.icon;
   const needsFile=['video','audio','document'].includes(e.mediaType);
-  const slotBtn=(key,onClick,Icon,label)=><button key={key} type="button" className={`cms-slot-btn is-${key}`} onClick={ev=>{ev.preventDefault();ev.stopPropagation();onClick()}}><Icon/> {label}</button>;
+  const slotBtn=(key,onClick,Icon,label)=><button key={key} type="button" className={`cms-slot-btn is-${key}`} onClick={ev=>{ev.preventDefault();ev.stopPropagation();onClick(ev)}}><Icon/> {label}</button>;
   const slots={
-    image:()=>slotBtn('image',()=>setPicker('image'),ImagePlus,r.image?'Cambiar imagen principal':'Añadir imagen principal'),
+    // El recorte parte con la forma del lugar donde está la imagen (póster, portada…)
+    image:()=>slotBtn('image',ev=>{setPickAspect(aspectNear(ev.currentTarget));setPicker('image')},ImagePlus,r.image?'Cambiar imagen principal':'Añadir imagen principal'),
     media:()=>slotBtn('media',()=>setPicker('media'),MediaIcon,`${cfg.label} · ${needsFile?(e.media?'cambiar archivo':'subir archivo'):'cambiar tipo'}`)
   };
   // Campos que se eligen de una lista con buscador (y aceptan un valor nuevo): la dirección y la
@@ -183,7 +184,7 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     slot:name=>slots[name]?.()
   };
   const modals=<>
-    {picker==='image'&&<ImagePicker value={r.image} onPick={image=>setR({image})} onClose={()=>setPicker(null)} title="Imagen principal"/>}
+    {picker==='image'&&<ImagePicker value={r.image} aspect={pickAspect} onPick={image=>setR({image})} onClose={()=>setPicker(null)} title="Imagen principal"/>}
     {picker==='media'&&<MediaPicker mediaType={e.mediaType} media={e.media} onChange={(mediaType,media)=>setE({mediaType,media})} onClose={()=>setPicker(null)}/>}
     {picker==='relation'&&<RecordPicker exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
     {picker?.gallery!==undefined&&<ImagePicker title={picker.gallery<0?'Añadir a la galería':'Imagen de la galería'} value={gallery[picker.gallery]} multiple={picker.gallery<0}

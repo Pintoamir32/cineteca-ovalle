@@ -182,6 +182,17 @@ const toSource=f=>({src:URL.createObjectURL(f),name:f.name,type:f.type==='image/
 const revoke=list=>list?.forEach(s=>s.src.startsWith('blob:')&&URL.revokeObjectURL(s.src));
 
 // Toda imagen pasa por el editor antes de guardarse. Con `multiple` se pueden cargar varias de una vez.
+/* Proporción (ancho ÷ alto) del contenedor donde se muestra la imagen, medida en la vista previa
+   a partir del botón que abre el editor: así el recorte parte con la forma exacta de ese lugar. */
+export function aspectNear(el){
+  for(let n=el?.parentElement,i=0;n&&i<6;n=n.parentElement,i++){
+    const boxes=[...n.querySelectorAll('img,[class*="noimg"]')].filter(x=>!x.closest('button'))
+      .map(x=>x.getBoundingClientRect()).filter(r=>r.width>20&&r.height>20);
+    if(boxes.length){const r=boxes.sort((a,b)=>b.width*b.height-a.width*a.height)[0];return r.width/r.height}
+  }
+  return null;
+}
+
 export function ImagePicker({value,onPick,onPickMany,multiple=false,onClose,title,onRemove,aspect=null}){
   const [tab,setTab]=useState('upload'), [urls,setUrls]=useState(isUploaded(value)||multiple?'':value||''), [error,setError]=useState(''), [over,setOver]=useState(false);
   const [editing,setEditing]=useState(null), [selected,setSelected]=useState([]);

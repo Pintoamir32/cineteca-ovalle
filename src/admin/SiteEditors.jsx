@@ -8,7 +8,7 @@ import { countByCollection, countByLocation } from '../repository';
 import { removeListItem, saveCollection, saveError, saveLocation, saveTimelineEvent, useStoreVersion } from '../store';
 import { tagStyle } from '../color';
 import { EditorShell, PageHead, PanelBlock, useAdminNav } from './AdminApp';
-import { Choice, ColorSwatches, Editable, ImagePicker, palette, useUi } from './fields';
+import { aspectNear, Choice, ColorSwatches, Editable, ImagePicker, palette, useUi } from './fields';
 import { SiteFrame } from './SiteFrame';
 import { LocationPicker } from './LocationPicker';
 import { HomeEditContext } from '../site-text';
@@ -65,9 +65,9 @@ function useListEdit({draft,set,fields,items,index,count,imageLabel,aspect,pick}
     // fields: clave → [nombre del campo, indicación en gris de qué escribir]
     text:(key,{multiline=false}={})=><Editable key={key} value={draft[key]} onChange={v=>set({[key]:v})} multiline={multiline} wrap={!multiline}
       placeholder={fields[key]?.[1]||'Escribe aquí…'} label={fields[key]?.[0]||key}/>,
-    slot:name=>name==='image'?<button key="image" type="button" className="cms-slot-btn is-image" onClick={e=>{e.preventDefault();e.stopPropagation();setPicking(true)}}><ImagePlus/> {draft.image?imageLabel:'Añadir imagen'}</button>:null
+    slot:name=>name==='image'?<button key="image" type="button" className="cms-slot-btn is-image" onClick={e=>{e.preventDefault();e.stopPropagation();setPicking({aspect:aspectNear(e.currentTarget)||aspect})}}><ImagePlus/> {draft.image?imageLabel:'Añadir imagen'}</button>:null
   };
-  const modals=picking&&<ImagePicker value={draft.image} aspect={aspect} onPick={image=>set({image})} onClose={()=>setPicking(false)} title={imageLabel}/>;
+  const modals=picking&&<ImagePicker value={draft.image} aspect={picking.aspect} onPick={image=>set({image})} onClose={()=>setPicking(false)} title={imageLabel}/>;
   return {context,modals,pickImage:()=>setPicking(true)};
 }
 const yearOf=e=>Number((/\d{4}/.exec(e.year)||[])[0])||0;

@@ -5,7 +5,7 @@ import { HOME_SECTIONS, HomeEditContext, rich } from '../home';
 import { getPath } from '../site-text';
 import { originalHome, saveError, setData, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
-import { Choice, Editable, ImagePicker, RecordPicker, thumb, useUi } from './fields';
+import { aspectNear, Choice, Editable, ImagePicker, RecordPicker, thumb, useUi } from './fields';
 import { SiteFrame } from './SiteFrame';
 import { slideFromRecord, slideLinkOptions } from './meta';
 import { newestRecords } from '../repository';
@@ -27,8 +27,8 @@ const isMultiline=(path,value)=>/\n/.test(String(getPath(ORIGINAL,path)??value??
 function HomeImageButton({label,className,value,fallback,onChange,aspect}){
   const [open,setOpen]=useState(false);
   return <>
-    <button type="button" className={`home-edit-img ${className||''}`} onClick={e=>{e.preventDefault();e.stopPropagation();setOpen(true)}}><ImagePlus/> {label}</button>
-    {open&&<ImagePicker value={value||fallback} aspect={aspect} onPick={onChange} onRemove={fallback&&value?()=>onChange(''):undefined} onClose={()=>setOpen(false)}/>}
+    <button type="button" className={`home-edit-img ${className||''}`} onClick={e=>{e.preventDefault();e.stopPropagation();setOpen({aspect:aspectNear(e.currentTarget)||aspect})}}><ImagePlus/> {label}</button>
+    {open&&<ImagePicker value={value||fallback} aspect={open.aspect} onPick={onChange} onRemove={fallback&&value?()=>onChange(''):undefined} onClose={()=>setOpen(false)}/>}
   </>;
 }
 

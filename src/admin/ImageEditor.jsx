@@ -72,7 +72,13 @@ export function renderImage(img,st,type='image/jpeg'){
 }
 
 /* sources: [{src,name,type}] · onDone recibe las imágenes listas, en el mismo orden */
-export function ImageEditor({sources,onDone,onClose,aspect=null}){
+// La proporción medida en el sitio se ajusta a una estándar si está a menos de un 2 %
+const snapAspect=a=>{if(a==null||a==='orig')return a;const hit=ASPECTS.find(([,x])=>typeof x==='number'&&Math.abs(x-a)/a<.02);return hit?hit[1]:a};
+
+export function ImageEditor({sources,onDone,onClose,aspect:siteAspect=null}){
+  const aspect=snapAspect(siteAspect);
+  // Si la forma del lugar no es una estándar, se ofrece como primera opción
+  const aspects=aspect!=null&&!ASPECTS.some(([,a])=>a===aspect)?[['Como en el sitio',aspect],...ASPECTS]:ASPECTS;
   const [items,setItems]=useState(()=>sources.map(s=>({...s,st:fresh(aspect)})));
   const [i,setI]=useState(0), [img,setImg]=useState(null), [error,setError]=useState(''), [busy,setBusy]=useState(false);
   const cache=useRef(new Map()), stageRef=useRef(null), canvasRef=useRef(null);
@@ -166,8 +172,8 @@ export function ImageEditor({sources,onDone,onClose,aspect=null}){
         {img?.tainted&&<p className="ie-note">El sitio de origen no permite editar esta imagen. Se usará tal cual; para editarla, descárgala y súbela desde tu equipo.</p>}
         <fieldset disabled={!img||img.tainted}>
           <div className="ie-group"><span>Recorte</span>
-            <div className="ie-chips">{ASPECTS.map(([label,a])=><button key={label} type="button" className={st.aspect===a?'active':''} onClick={()=>setAspect(a)}>{label}{aspect!=null&&a===aspect?' · sitio':''}</button>)}</div>
-            <p className="ie-help">{aspect!=null?`En el sitio esta imagen se ve en ${ASPECTS.find(([,a])=>a===aspect)?.[0]||'una proporción fija'}; «Libre» deja recortar a mano.`:'«Libre» deja recortar a mano; las proporciones fijan la forma del recuadro.'}{cropped(st)?'':' Ahora se usa la foto completa.'}</p>
+            <div className="ie-chips">{aspects.map(([label,a])=><button key={label} type="button" className={st.aspect===a?'active':''} onClick={()=>setAspect(a)}>{label}{aspect!=null&&a===aspect&&label!=='Como en el sitio'?' · sitio':''}</button>)}</div>
+            <p className="ie-help">{aspect!=null?`El recuadro tiene la forma del lugar donde va la imagen${aspects[0][0]==='Como en el sitio'?'':` (${aspects.find(([,a])=>a===aspect)[0]})`}: lo que queda dentro es lo que se verá. «Libre» deja recortar a mano.`:'«Libre» deja recortar a mano; las proporciones fijan la forma del recuadro.'}{cropped(st)?'':' Ahora se usa la foto completa.'}</p>
             {cropped(st)&&<button type="button" className="cms-btn is-ghost ie-reset" onClick={()=>update({crop:{x:0,y:0,w:1,h:1},aspect:null})}><Undo2/> Quitar recorte</button>}
           </div>
           <div className="ie-group"><span>Orientación</span>
