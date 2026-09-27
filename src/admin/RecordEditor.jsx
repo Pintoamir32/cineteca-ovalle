@@ -48,10 +48,10 @@ function RecordEditorInner(){
 
   const wasPublished=!!existing&&!existing.draft;
   const save=async()=>{
-    // Entrevista: el título y la imagen salen de la persona entrevistada
+    // Entrevista: el título sale de la persona entrevistada; la imagen, si no se sube una, es su fotografía
     const person=isInterview?records.find(x=>x.id===e.interviewee&&x.type==='Persona'):null;
     if(isInterview&&!person)return toast('Elige a la persona entrevistada antes de guardar.','error');
-    const base=person?{...r,subtitle:person.title,title:`Entrevista a ${person.title}`,image:person.image||r.image}:r;
+    const base=person?{...r,subtitle:person.title,title:`Entrevista a ${person.title}`,image:r.image||person.image}:r;
     if(!base.title.trim())return toast('Escribe un título antes de guardar.','error');
     if(!base.image)return toast('Añade una imagen principal antes de guardar.','error');
     const {draft:isDraft,...rest}=base;
@@ -68,11 +68,10 @@ function RecordEditorInner(){
       record={...record,format:'',collection:'',description:''};
       extra={...extra,credits:[],gallery:[],locations:[],mediaType:'document',relations:(extra.relations||[]).filter(id=>records.some(x=>x.id===id&&['Película','Persona'].includes(x.type)))};
     }
-    // Entrevista: entrevistado(a), fecha, formato y contenido (texto) o archivo adjunto (audio o video)
+    // Entrevista: entrevistado(a), fecha, formato, texto (opcional), archivo adjunto (audio o video), imagen y galería
     if(isInterview){
-      const isText=extra.mediaType==='text';
-      record={...record,format:interviewFormat(extra),collection:'',description:isText?record.description:''};
-      extra={...extra,credits:[],gallery:[],locations:[],relations:[],media:isText?'':extra.media,interviewee:person.id};
+      record={...record,format:interviewFormat(extra),collection:''};
+      extra={...extra,credits:[],locations:[],relations:[],media:extra.mediaType==='text'?'':extra.media,interviewee:person.id};
     }
     try{
       await saveRecord(record,extra);
@@ -168,7 +167,7 @@ function asInterview(d){
   if(d.record.type!=='Entrevista')return d;
   const extra={...d.extra,mediaType:INTERVIEW_FORMATS.some(([v])=>v===d.extra.mediaType)?d.extra.mediaType:'video'};
   const p=getInterviewee(d.record,extra,records);
-  return p?{record:{...d.record,subtitle:p.title,title:`Entrevista a ${p.title}`,image:p.image},extra:{...extra,interviewee:p.id}}:{...d,extra};
+  return p?{record:{...d.record,subtitle:p.title,title:`Entrevista a ${p.title}`,image:d.record.image||p.image},extra:{...extra,interviewee:p.id}}:{...d,extra};
 }
 
 // «el título», «la dirección», «los roles», «las obras vinculadas»: según la primera palabra
@@ -229,7 +228,7 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     {picker==='media'&&<MediaPicker mediaType={e.mediaType} media={e.media} onChange={(mediaType,media)=>setE({mediaType,media})} onClose={()=>setPicker(null)}/>}
     {picker==='work'&&<RecordPicker title="Vincular una película" types={['Película']} exclude={e.relations||[]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
     {picker==='interviewee'&&<RecordPicker title="Elegir persona entrevistada" types={['Persona']} action="Elegir" exclude={e.interviewee?[e.interviewee]:[]}
-      onPick={x=>{setE({interviewee:x.id});setR({subtitle:x.title,title:`Entrevista a ${x.title}`,image:x.image})}} onClose={()=>setPicker(null)}/>}
+      onPick={x=>{setE({interviewee:x.id});setR({subtitle:x.title,title:`Entrevista a ${x.title}`,...(!r.image&&{image:x.image})})}} onClose={()=>setPicker(null)}/>}
     {picker==='link'&&<RecordPicker title="Vincular película o persona" types={['Película','Persona']} exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
     {picker==='relation'&&<RecordPicker exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
     {picker?.gallery!==undefined&&<ImagePicker title={picker.gallery<0?'Añadir a la galería':'Imagen de la galería'} value={gallery[picker.gallery]} multiple={picker.gallery<0}
@@ -298,30 +297,54 @@ function InterviewPanel({r,e,setR,setE,openPicker}){
     <PanelBlock title="Entrevistado(a)">
       {person?<ul className="cms-mini-list"><li>
         <img src={thumb(person.image,120)} alt=""/><span>{person.title}<small>{person.subtitle}</small></span>
-        <button type="button" className="cms-icon-btn is-danger-text" onClick={()=>{setE({interviewee:null});setR({subtitle:'',title:'',image:''})}} aria-label={`Quitar ${person.title}`} title="Quitar"><X/></button>
+        <button type="button" className="cms-icon-btn is-danger-text" onClick={()=>{setE({interviewee:null});setR({subtitle:'',title:''})}} aria-label={`Quitar ${person.title}`} title="Quitar"><X/></button>
       </li></ul>:<p className="cms-help">Elige a la persona desde las fichas de persona del archivo.</p>}
       <button type="button" className="cms-btn is-block" onClick={()=>openPicker('interviewee')}><Plus/> {person?'Cambiar persona':'Elegir persona'}</button>
     </PanelBlock>
     <PanelBlock title="Formato y contenido">
       <div className="cms-segment is-small cms-seg-block">{INTERVIEW_FORMATS.map(([v,l])=><button key={v} type="button" className={e.mediaType===v?'active':''} onClick={()=>setE({mediaType:v,...(v!==e.mediaType&&{media:''})})}>{l}</button>)}</div>
-      {isText?<p className="cms-help">Escribe el contenido de la entrevista en la ficha, en «Contenido».</p>
-        :<><label className="cms-panel-label">Archivo adjunto</label>
+      {!isText&&<><label className="cms-panel-label">Archivo adjunto</label>
         <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('media')}>{e.media?`Cambiar ${e.mediaType==='audio'?'audio':'video'}`:`Agregar ${e.mediaType==='audio'?'audio':'video'}`}</button>
           {e.media&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({media:''})} aria-label="Quitar archivo" title="Quitar archivo"><Trash2/></button>}</div></>}
+      <p className="cms-help">{isText?'Escribe la entrevista en la ficha, en «Contenido».':'El texto es opcional: escríbelo en la ficha, en «Contenido». Si queda vacío, no aparece en el sitio.'}</p>
     </PanelBlock>
+    <PanelBlock title="Imagen y galería">
+      <label className="cms-panel-label">Imagen principal</label>
+      <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('image')}><ImagePlus/> {r.image?'Cambiar imagen':'Subir imagen'}</button>
+        {r.image&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setR({image:''})} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}</div>
+      {!r.image&&person&&<p className="cms-help">Sin imagen propia se usa la fotografía de {person.title}.</p>}
+      <GalleryEditor e={e} setE={setE} openPicker={openPicker}/>
+    </PanelBlock>
+  </>;
+}
+
+// Galería de la ficha: miniaturas para editar, reordenar o quitar, y botón para añadir
+function GalleryEditor({e,setE,openPicker}){
+  const gallery=e.gallery||[];
+  const move=(i,d)=>{const g=[...gallery];[g[i],g[i+d]]=[g[i+d],g[i]];setE({gallery:g})};
+  return <>
+    <label className="cms-panel-label">Galería · {gallery.length}</label>
+    {gallery.length>0&&<div className="cms-gallery-mini">{gallery.map((src,i)=><div key={i}>
+      <button type="button" className="cms-gallery-thumb" onClick={()=>openPicker({gallery:i})} title="Editar o cambiar"><img src={thumb(src,160)} alt={`Imagen ${i+1}`}/></button>
+      <span>
+        <button type="button" disabled={i===0} onClick={()=>move(i,-1)} aria-label="Mover antes"><ArrowLeft/></button>
+        <button type="button" disabled={i===gallery.length-1} onClick={()=>move(i,1)} aria-label="Mover después"><ArrowRight/></button>
+        <button type="button" onClick={()=>setE({gallery:gallery.filter((_,j)=>j!==i)})} aria-label="Quitar"><X/></button>
+      </span>
+    </div>)}</div>}
+    <button type="button" className="cms-btn is-block" onClick={()=>openPicker({gallery:-1})}><Images/> Añadir imágenes</button>
   </>;
 }
 
 // Contenido y conexiones de la ficha: aquí se agregan, ordenan y quitan todas sus listas
 function RecordPanelBlocks({r,e,meta,setE,openPicker}){
-  const credits=e.credits||[], gallery=e.gallery||[], places=e.locations||[];
+  const credits=e.credits||[], places=e.locations||[];
   const related=(e.relations||[]).map(id=>records.find(x=>x.id===id)).filter(Boolean);
   const setCredit=(i,j,v)=>setE({credits:credits.map((c,k)=>k===i?(j===0?[v,c[1]]:[c[0],v]):c)});
   // Al agregar un cargo, el cursor queda en su primer campo
   const listRef=useRef(null), focusNew=useRef(false);
   const addCredit=()=>{focusNew.current=true;setE({credits:[...credits,['','']]})};
   useEffect(()=>{if(focusNew.current){focusNew.current=false;[...(listRef.current?.querySelectorAll('input[data-cargo]')||[])].pop()?.focus()}},[credits.length]);
-  const moveGallery=(i,d)=>{const g=[...gallery];[g[i],g[i+d]]=[g[i+d],g[i]];setE({gallery:g})};
   const free=locations.map(l=>l.name).filter(n=>!places.includes(n));
   const media=MEDIA_TYPES.find(m=>m.value===e.mediaType)||MEDIA_TYPES[3], MediaIcon=media.icon;
   const needsFile=['video','audio','document'].includes(e.mediaType);
@@ -339,16 +362,7 @@ function RecordPanelBlocks({r,e,meta,setE,openPicker}){
       {needsFile&&<><label className="cms-panel-label">Archivo digital</label>
       <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('media')}><MediaIcon/> {media.label}{e.mediaType==='video'?(e.media?' · cambiar película':' · agregar enlace'):needsFile?(e.media?' · cambiar archivo':' · subir archivo'):' · cambiar tipo'}</button>
         {e.media&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({media:''})} aria-label="Quitar archivo" title="Quitar archivo"><Trash2/></button>}</div></>}
-      <label className="cms-panel-label">Galería · {gallery.length}</label>
-      {gallery.length>0&&<div className="cms-gallery-mini">{gallery.map((src,i)=><div key={i}>
-        <button type="button" className="cms-gallery-thumb" onClick={()=>openPicker({gallery:i})} title="Editar o cambiar"><img src={thumb(src,160)} alt={`Imagen ${i+1}`}/></button>
-        <span>
-          <button type="button" disabled={i===0} onClick={()=>moveGallery(i,-1)} aria-label="Mover antes"><ArrowLeft/></button>
-          <button type="button" disabled={i===gallery.length-1} onClick={()=>moveGallery(i,1)} aria-label="Mover después"><ArrowRight/></button>
-          <button type="button" onClick={()=>setE({gallery:gallery.filter((_,j)=>j!==i)})} aria-label="Quitar"><X/></button>
-        </span>
-      </div>)}</div>}
-      <button type="button" className="cms-btn is-block" onClick={()=>openPicker({gallery:-1})}><Images/> Añadir imágenes</button>
+      <GalleryEditor e={e} setE={setE} openPicker={openPicker}/>
       {r.type==='Persona'&&<><label className="cms-panel-label">Filmografía</label><p className="cms-help">Se arma sola: aparecen las películas cuyo director o créditos coinciden con el nombre de esta persona, o que están en «Relacionados».</p></>}
     </PanelBlock>
     <PanelBlock title="Conexiones">
