@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, BookOpen, ChevronLeft, ChevronRight, CirclePlay, Download, FileText, Headphones, MapPin, Maximize2, X } from 'lucide-react';
 import { sections } from './data';
-import { placesOf, recordPath } from './repository';
+import { getInterviewee, interviewFormat, placesOf, recordPath } from './repository';
 import { useEdit } from './edit-context';
 import { tagStyle } from './color';
 import { videoSource } from './video-links';
@@ -93,15 +93,18 @@ function docConfig(item,extra){
   const [kind,extent]=(item.format||'').split(' · ');
   const credit=k=>extra.credits?.find(([key])=>key===k)?.[1];
   const others=skip=>(extra.credits||[]).filter(([k])=>!skip.includes(k));
-  const isVideo=/video/i.test(kind);
-  if(item.type==='Entrevista')return {
-    source:`Entrevista a ${item.subtitle}`,
-    meta:[item.year,kind,extent],
-    caption:'Registro de memoria oral · Archivo CDO',
-    cta:[isVideo?CirclePlay:Headphones,isVideo?'Ver entrevista':'Escuchar entrevista','#media'],
-    facts:[['Persona entrevistada',item.subtitle,true,'subtitle'],['Año',item.year,false,'year'],['Formato',kind,false,'format.0'],['Duración',extent,false,'format.1'],...others(['Duración']),['Colección',item.collection,true]],
-    factsLabel:'Ficha de la entrevista',textLabel:'RESUMEN DE LA ENTREVISTA',player:true
-  };
+  // Entrevista: entrevistado(a) (con enlace a su ficha), fecha, formato y contenido o archivo adjunto
+  if(item.type==='Entrevista'){
+    const person=getInterviewee(item,extra), name=person?.title||item.subtitle, format=interviewFormat(extra);
+    return {
+      interview:true,person,title:name?`Entrevista a ${name}`:item.title,image:person?.image||item.image,
+      source:name&&`Entrevista a ${name}`,
+      meta:[item.year,format],
+      caption:'Registro de memoria oral · Archivo CDO',
+      facts:[['Entrevistado(a)',person?<Link to={recordPath(person)}>{name}</Link>:name,true],['Fecha',item.year,false,'year'],['Formato',format]],
+      factsLabel:'Ficha de la entrevista',textLabel:'CONTENIDO',player:extra.mediaType!=='text',text:extra.mediaType==='text'
+    };
+  }
   if(item.type==='Artículo')return {
     source:credit('Edición')||credit('Revista')||item.collection,
     meta:[item.year,kind,extent],
@@ -125,10 +128,10 @@ export function DocumentView({item,extra,related,people}){
   const cfg=docConfig(item,extra);
   // Galería: imagen principal, material propio del registro e imágenes de sus relacionados
   const gallery=useMemo(()=>[
-    {src:item.image,caption:cfg.caption,kind:'Imagen principal'},
+    {src:cfg.image||item.image,caption:cfg.caption,kind:'Imagen principal'},
     ...(extra.gallery||[]).map((src,i)=>({src,caption:`Material asociado ${i+1}`,kind:'Material asociado'})),
     ...related.map(r=>({src:r.image,caption:r.title,kind:`Ver también · ${r.type}`,to:recordPath(r)}))
-  ],[item,extra,related,cfg.caption]);
+  ],[item,extra,related,cfg.caption,cfg.image]);
   const [zoom,setZoom]=useState(null);
   const open=zoom!==null, shown=open?gallery[zoom]:null;
   const step=d=>setZoom(z=>(z+d+gallery.length)%gallery.length);
@@ -151,25 +154,25 @@ export function DocumentView({item,extra,related,people}){
         <div className="press-side">
           <figure className="press-clipping">
             <button type="button" onClick={()=>setZoom(0)} aria-label="Ampliar imagen">
-              <img src={item.image} alt={item.title} decoding="async"/>
+              <img src={cfg.image||item.image} alt={item.title} decoding="async"/>
               <span className="press-zoom"><Maximize2/> Ampliar</span>
             </button>
-            {slot('image')}
+            {!cfg.interview&&slot('image')}
             <figcaption>{cfg.caption}</figcaption>
           </figure>
-          {cfg.player&&<div className="press-player" id="media"><MediaViewer item={item} extra={extra}/>{slot('media')}</div>}
+          {cfg.player&&<div className="press-player" id="media"><MediaViewer item={{...item,image:cfg.image||item.image}} extra={extra}/>{slot('media')}</div>}
         </div>
         <article className="press-article">
           <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
-          <h1>{f('title',item.title)}</h1>
-          {!cfg.press&&<p className="press-dek">{f('description',item.description,{multiline:true})}</p>}
+          <h1>{cfg.interview?cfg.title:f('title',item.title)}</h1>
+          {!cfg.press&&!cfg.interview&&<p className="press-dek">{f('description',item.description,{multiline:true})}</p>}
           {(CtaIcon||slot('media'))&&<div className="press-actions">
             {CtaIcon&&(ctaHref?<a className="ficha-cta" href={ctaHref}><CtaIcon/> {ctaText}</a>:<button type="button" className="ficha-cta" onClick={()=>setZoom(0)}><CtaIcon/> {ctaText}</button>)}
             {!cfg.player&&slot('media')}
           </div>}
           <div className="ficha-aside-label">{cfg.factsLabel}</div>
           <Facts rows={cfg.facts}/>
-          {!cfg.press&&<><div className="ficha-section-label" id="texto"><span>01</span> {cfg.textLabel}</div>
+          {!cfg.press&&(!cfg.interview||cfg.text)&&<><div className="ficha-section-label" id="texto"><span>01</span> {cfg.textLabel}</div>
           <div className="press-transcript"><p>{f('description',item.description,{multiline:true})}</p></div></>}
         </article>
       </div>
@@ -178,7 +181,7 @@ export function DocumentView({item,extra,related,people}){
       <div className="ficha-filmography-head"><div className="ficha-section-label">DOCUMENTO DIGITALIZADO</div><div className="press-pdf-links"><a href={extra.media} download={`${item.title}.pdf`} target="_blank" rel="noreferrer"><Download/> Descargar PDF</a><a href={extra.media} target="_blank" rel="noreferrer">Abrir en otra pestaña <ArrowRight/></a></div></div>
       <PdfViewer url={extra.media} title={item.title}/>
     </section>}
-    {!cfg.press&&<section className="doc-gallery" data-reveal>
+    {!cfg.press&&!cfg.interview&&<section className="doc-gallery" data-reveal>
       <div className="ficha-filmography-head"><div className="ficha-section-label"><span>02</span> GALERÍA</div><span>{String(gallery.length).padStart(2,'0')} IMÁGENES</span></div>
       {slot('gallery')}
       <div className="doc-gallery-grid">{gallery.map((g,i)=><figure key={g.src+i} className={i===0?'is-main':undefined}>
@@ -186,11 +189,11 @@ export function DocumentView({item,extra,related,people}){
         <figcaption><small>{String(i+1).padStart(2,'0')} · {g.kind}</small>{g.to?<Link to={g.to}>{g.caption}</Link>:<span>{g.caption}</span>}</figcaption>
       </figure>)}</div>
     </section>}
-    <section className="doc-footer" data-reveal>
+    {!cfg.interview&&<section className="doc-footer" data-reveal>
       <div className="doc-footer-main"><PeopleCards people={people} number={cfg.press?'01':'03'} title={cfg.press?'Personas vinculadas':undefined}/></div>
       <aside className="doc-footer-side">{cfg.press?<RelatedList related={related.filter(r=>r.type==='Película')} title="Películas vinculadas"/>
         :<><RelatedList related={related}/>{slot('relations')}<Places item={item} places={placesOf(extra)} slot={slot}/></>}</aside>
-    </section>
+    </section>}
     {open&&<div className="press-lightbox" role="dialog" aria-modal="true" aria-label={shown.caption} onClick={()=>setZoom(null)}>
       <figure onClick={e=>e.stopPropagation()}>
         <img src={shown.src} alt={shown.caption}/>

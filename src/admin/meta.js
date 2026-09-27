@@ -8,7 +8,8 @@ export const TYPE_META={
   Persona:{slug:'personas',label:'Personas',one:'persona',newLabel:'Nueva persona',subtitle:'Rol(es)',year:'',format:[],formatHint:[],media:'image',credits:[],colorIndex:2,only:['Imagen','Título','Rol(es)','Descripción']},
   // Prensa: título/fuente, fecha, medio de origen, documento digitalizado (imagen o PDF) y vínculos a películas y personas
   Prensa:{slug:'prensa',label:'Prensa',one:'documento de prensa',newLabel:'Nuevo documento',subtitle:'Medio de origen',year:'Fecha',format:[],formatHint:[],media:'document',credits:[],colorIndex:3,only:['Imagen','Título','Medio de origen','Año']},
-  Entrevista:{slug:'entrevistas',label:'Entrevistas',one:'entrevista',newLabel:'Nueva entrevista',subtitle:'Persona entrevistada',year:'Año',format:['Formato','Duración'],formatHint:['Audio','30 min'],media:'audio',credits:['Entrevista','Sonido','Duración'],colorIndex:0},
+  // Entrevista: entrevistado(a) (vínculo a una persona), fecha, formato (texto, audio o video) y contenido o archivo
+  Entrevista:{slug:'entrevistas',label:'Entrevistas',one:'entrevista',newLabel:'Nueva entrevista',subtitle:'Entrevistado(a)',year:'Fecha',format:[],formatHint:[],media:'video',credits:[],colorIndex:0,only:['Entrevistado(a)','Año','Contenido']},
   Artículo:{slug:'articulos',label:'Artículos',one:'artículo',newLabel:'Nuevo artículo',subtitle:'Autoría',year:'Año',format:['Tipo','Lectura'],formatHint:['Ensayo','12 min lectura'],media:'text',credits:['Edición','Extensión','Licencia'],colorIndex:4}
 };
 export const TYPES=Object.keys(TYPE_META);
@@ -23,6 +24,13 @@ export const extraOf=id=>{
 // Lo que le falta a una ficha para estar completa
 export function missingFields(record,extra=extraOf(record.id)){
   const out=[], only=TYPE_META[record.type]?.only;
+  // Entrevista: el contenido es el texto o el archivo, según el formato
+  if(record.type==='Entrevista'){
+    if(!record.subtitle?.trim())out.push('Entrevistado(a)');
+    if(!record.year?.trim())out.push('Año');
+    if(extra.mediaType==='text'?!(record.description||'').trim():!extra.media)out.push('Contenido');
+    return out;
+  }
   if(!record.image)out.push('Imagen');
   if(!record.title?.trim())out.push('Título');
   if(!record.subtitle?.trim())out.push(TYPE_META[record.type]?.subtitle||'Autoría');

@@ -5,7 +5,7 @@ import { RecordCard, RecordRow } from '../components';
 import { collections, locations, records, site } from '../data';
 import { EditContext } from '../edit-context';
 import { RecordDetail } from '../pages';
-import { getFilmography } from '../repository';
+import { getFilmography, getInterviewee, INTERVIEW_FORMATS, interviewFormat } from '../repository';
 import { deleteRecord, nextId, saveError, saveRecord, setData, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
 import { aspectNear, Choice, ColorSwatches, Editable, EditableChoice, EditableImage, ImagePicker, MEDIA_TYPES, MediaPicker, RecordPicker, thumb, useUi } from './fields';
@@ -34,13 +34,13 @@ function RecordEditorInner(){
   useStoreVersion();
   const {slug,id}=useParams(), navigate=useNavigate(), {go,setDirty:setNavDirty}=useAdminNav(), {toast,confirm}=useUi();
   const isNew=id==='nuevo', existing=isNew?null:records.find(r=>r.id===Number(id));
-  const load=()=>existing?{record:{...existing},extra:structuredClone(extraOf(existing.id))}:blankDraft(typeBySlug(slug)||'Película');
+  const load=()=>asInterview(existing?{record:{...existing},extra:structuredClone(extraOf(existing.id))}:blankDraft(typeBySlug(slug)||'Película'));
   const [draft,setDraft]=useState(load), [dirty,setDirty]=useState(false), [mode,setMode]=useState('ficha');
   // Destacar en el inicio también espera a «Guardar», como todo lo demás
   const isFeatured=()=>!isNew&&site.featuredId===Number(id);
   const [featured,setFeatured]=useState(isFeatured);
 
-  const {record:r,extra:e}=draft, meta=TYPE_META[r.type], isPerson=r.type==='Persona', isPress=r.type==='Prensa';
+  const {record:r,extra:e}=draft, meta=TYPE_META[r.type], isPerson=r.type==='Persona', isPress=r.type==='Prensa', isInterview=r.type==='Entrevista';
   const setR=patch=>{setDraft(d=>({...d,record:{...d.record,...patch}}));setDirty(true)};
   const setE=patch=>{setDraft(d=>({...d,extra:{...d.extra,...patch}}));setDirty(true)};
   const parts=meta.format.map((_,i)=>(r.format||'').split(' · ')[i]||'');
@@ -48,10 +48,14 @@ function RecordEditorInner(){
 
   const wasPublished=!!existing&&!existing.draft;
   const save=async()=>{
-    if(!r.title.trim())return toast('Escribe un título antes de guardar.','error');
-    if(!r.image)return toast('Añade una imagen principal antes de guardar.','error');
-    const {draft:isDraft,...rest}=r;
-    let record={...rest,...(isDraft&&{draft:true}),title:r.title.trim(),format:parts.map(p=>p.trim()).filter(Boolean).join(' · ')};
+    // Entrevista: el título y la imagen salen de la persona entrevistada
+    const person=isInterview?records.find(x=>x.id===e.interviewee&&x.type==='Persona'):null;
+    if(isInterview&&!person)return toast('Elige a la persona entrevistada antes de guardar.','error');
+    const base=person?{...r,subtitle:person.title,title:`Entrevista a ${person.title}`,image:person.image||r.image}:r;
+    if(!base.title.trim())return toast('Escribe un título antes de guardar.','error');
+    if(!base.image)return toast('Añade una imagen principal antes de guardar.','error');
+    const {draft:isDraft,...rest}=base;
+    let record={...rest,...(isDraft&&{draft:true}),title:base.title.trim(),format:parts.map(p=>p.trim()).filter(Boolean).join(' · ')};
     let {location,...extra}={...e,credits:e.credits.filter(([k,v])=>k.trim()&&v.trim()),gallery:e.gallery.filter(Boolean)};// eslint-disable-line no-unused-vars,prefer-const
     // Persona: solo nombre, biografía, rol(es), fotografía y obras (películas vinculadas); lo demás no se guarda
     if(isPerson){
@@ -63,6 +67,12 @@ function RecordEditorInner(){
     if(isPress){
       record={...record,format:'',collection:'',description:''};
       extra={...extra,credits:[],gallery:[],locations:[],mediaType:'document',relations:(extra.relations||[]).filter(id=>records.some(x=>x.id===id&&['Película','Persona'].includes(x.type)))};
+    }
+    // Entrevista: entrevistado(a), fecha, formato y contenido (texto) o archivo adjunto (audio o video)
+    if(isInterview){
+      const isText=extra.mediaType==='text';
+      record={...record,format:interviewFormat(extra),collection:'',description:isText?record.description:''};
+      extra={...extra,credits:[],gallery:[],locations:[],relations:[],media:isText?'':extra.media,interviewee:person.id};
     }
     try{
       await saveRecord(record,extra);
@@ -94,11 +104,12 @@ function RecordEditorInner(){
   const shared=useSharedTexts(()=>setDirty(true));
   // Después de todos los hooks: si la ficha se elimina mientras está abierta, React no pierde la cuenta
   if(!isNew&&!existing)return <div className="cms-page"><p className="cms-empty">Esta ficha no existe o fue eliminada. <button type="button" className="cms-btn" onClick={()=>go(`/admin/registros/${slug}`)}>Volver al listado</button></p></div>;
-  const REQUIRED=['Imagen','Título'];
+  const REQUIRED=['Imagen','Título','Entrevistado(a)'];
   const checklist=meta.only||['Imagen','Título',meta.subtitle,'Año','Descripción','Colección',...(['video','audio'].includes(e.mediaType)?['Archivo digital']:[])];
   // Cómo se llama cada punto de la lista en una ficha de persona
   const checkName=k=>isPerson?({Imagen:'Fotografía',Título:'Nombre',Descripción:'Biografía'}[k]||k)
-    :isPress?({Imagen:'Documento digitalizado',Título:'Título / fuente',Año:'Fecha'}[k]||k):r.type==='Película'&&k==='Descripción'?'Sinopsis':k;
+    :isPress?({Imagen:'Documento digitalizado',Título:'Título / fuente',Año:'Fecha'}[k]||k)
+    :isInterview?({Año:'Fecha',Contenido:e.mediaType==='text'?'Contenido':'Archivo adjunto'}[k]||k):r.type==='Película'&&k==='Descripción'?'Sinopsis':k;
   // Panel en cuatro grupos, de lo que más se mira a lo que menos se cambia
   const panel=<>
     <PanelBlock title="Visibilidad en el sitio">
@@ -113,7 +124,8 @@ function RecordEditorInner(){
     <PanelBlock title="Estado de la ficha" aside={<b className={miss.length?'cms-count-warn':'cms-count-ok'}>{miss.length?`${miss.length} pendiente${miss.length>1?'s':''}`:'Completa'}</b>}>
       <ul className="cms-checklist">{checklist.map(k=><li key={k} className={miss.includes(k)?'':'done'}>{miss.includes(k)?<Circle/>:<Check/>}{checkName(k)}{REQUIRED.includes(k)&&miss.includes(k)&&<small>obligatorio para guardar</small>}{k==='Descripción'&&miss.includes(k)&&<small>mín. 40 caracteres</small>}</li>)}</ul>
     </PanelBlock>
-    {isPerson?<PersonWorks r={r} e={e} setE={setE} openPicker={edit.open}/>:isPress?<PressPanel r={r} e={e} setR={setR} setE={setE} openPicker={edit.open}/>:<>
+    {isPerson?<PersonWorks r={r} e={e} setE={setE} openPicker={edit.open}/>:isPress?<PressPanel r={r} e={e} setR={setR} setE={setE} openPicker={edit.open}/>
+      :isInterview?<InterviewPanel r={r} e={e} setR={setR} setE={setE} openPicker={edit.open}/>:<>
     <PanelBlock title="Clasificación">
       <label className="cms-panel-label">Colección</label>
       {collectionOptions.length?<Choice value={r.collection} options={collectionOptions} onChange={collection=>setR({collection})} placeholder="Elegir colección…"/>
@@ -123,7 +135,7 @@ function RecordEditorInner(){
     </PanelBlock>
     <RecordPanelBlocks r={r} e={e} meta={meta} setE={setE} openPicker={edit.open}/>
     </>}
-    {!isPerson&&<PanelBlock title="Portada del sitio">
+    {!isPerson&&!isInterview&&<PanelBlock title="Portada del sitio">
       {!featured?<button type="button" className="cms-btn is-block" onClick={()=>pickFeatured(true)}><Star/> Destacar en el inicio</button>
         :isFeatured()?<p className="cms-featured is-on"><Star/> Es la pieza destacada del inicio</p>
         :<><p className="cms-featured is-on"><Star/> Será la pieza destacada al guardar</p><button type="button" className="cms-btn is-ghost is-block" onClick={()=>pickFeatured(false)}><X/> No destacar</button></>}
@@ -150,6 +162,15 @@ function RecordEditorInner(){
 
 const BLANK='data:image/gif;base64,R0lGODlhAQABAAAAACw=';
 
+// Entrevista: toma de la persona entrevistada el nombre, el título y la imagen (también en las antiguas,
+// que solo tenían el nombre escrito); el formato es texto, audio o video
+function asInterview(d){
+  if(d.record.type!=='Entrevista')return d;
+  const extra={...d.extra,mediaType:INTERVIEW_FORMATS.some(([v])=>v===d.extra.mediaType)?d.extra.mediaType:'video'};
+  const p=getInterviewee(d.record,extra,records);
+  return p?{record:{...d.record,subtitle:p.title,title:`Entrevista a ${p.title}`,image:p.image},extra:{...extra,interviewee:p.id}}:{...d,extra};
+}
+
 // «el título», «la dirección», «los roles», «las obras vinculadas»: según la primera palabra
 function withArticle(label){
   const text=label.toLowerCase(), w=text.split(' ')[0];
@@ -171,7 +192,7 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     // Cargos: el nombre del cargo y quién lo ocupó (el 5.º valor es la indicación completa)
     if(name==='credits')return [credits[n]?.[1]??'',v=>setCredit(n,1,v),credits[n]?.[0]||'Nombre',undefined,'Escribe el nombre (ej. María Cortés)'];
     if(name==='creditKey')return [credits[n]?.[0]??'',v=>setCredit(n,0,v),'Cargo',undefined,'Escribe el cargo (ej. Fotografía)'];
-    const labels={title:{Persona:'Nombre',Prensa:'Título / fuente'}[r.type]||'Título',subtitle:meta.subtitle,year:meta.year,description:{Persona:'Biografía',Película:'Sinopsis'}[r.type]||'Descripción',collection:'Colección'};
+    const labels={title:{Persona:'Nombre',Prensa:'Título / fuente'}[r.type]||'Título',subtitle:meta.subtitle,year:meta.year,description:{Persona:'Biografía',Película:'Sinopsis',Entrevista:'Contenido'}[r.type]||'Descripción',collection:'Colección'};
     return [r[name]??'',v=>setR({[name]:v}),labels[name]||name,name==='year'?({Persona:'1931—2010',Prensa:'14 de marzo de 1971'}[r.type]||'1972'):undefined];
   };
   const cfg=MEDIA_TYPES.find(m=>m.value===e.mediaType)||MEDIA_TYPES[3], MediaIcon=cfg.icon;
@@ -180,7 +201,7 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
   const slots={
     // El recorte parte con la forma del lugar donde está la imagen (póster, portada…)
     image:()=>slotBtn('image',ev=>{setPickAspect(aspectNear(ev.currentTarget));setPicker('image')},ImagePlus,r.image?'Cambiar imagen principal':'Añadir imagen principal'),
-    media:()=>needsFile&&slotBtn('media',()=>setPicker('media'),MediaIcon,`${cfg.label} · ${e.mediaType==='video'?(e.media?'cambiar película':'agregar enlace de la película'):needsFile?(e.media?'cambiar archivo':'subir archivo'):'cambiar tipo'}`)
+    media:()=>needsFile&&slotBtn('media',()=>setPicker('media'),MediaIcon,`${cfg.label} · ${e.mediaType==='video'?(r.type==='Entrevista'?(e.media?'cambiar video':'agregar video'):e.media?'cambiar película':'agregar enlace de la película'):needsFile?(e.media?'cambiar archivo':'subir archivo'):'cambiar tipo'}`)
   };
   // Campos que se eligen de una lista con buscador (y aceptan un valor nuevo): la dirección y la
   // persona entrevistada salen de las personas del archivo; formato y colección, de lo ya usado
@@ -207,6 +228,8 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     {picker==='image'&&<ImagePicker value={r.image} aspect={pickAspect} onPick={image=>setR({image})} onRemove={r.image?()=>setR({image:''}):undefined} onClose={()=>setPicker(null)} title="Imagen principal"/>}
     {picker==='media'&&<MediaPicker mediaType={e.mediaType} media={e.media} onChange={(mediaType,media)=>setE({mediaType,media})} onClose={()=>setPicker(null)}/>}
     {picker==='work'&&<RecordPicker title="Vincular una película" types={['Película']} exclude={e.relations||[]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
+    {picker==='interviewee'&&<RecordPicker title="Elegir persona entrevistada" types={['Persona']} action="Elegir" exclude={e.interviewee?[e.interviewee]:[]}
+      onPick={x=>{setE({interviewee:x.id});setR({subtitle:x.title,title:`Entrevista a ${x.title}`,image:x.image})}} onClose={()=>setPicker(null)}/>}
     {picker==='link'&&<RecordPicker title="Vincular película o persona" types={['Película','Persona']} exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
     {picker==='relation'&&<RecordPicker exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
     {picker?.gallery!==undefined&&<ImagePicker title={picker.gallery<0?'Añadir a la galería':'Imagen de la galería'} value={gallery[picker.gallery]} multiple={picker.gallery<0}
@@ -263,6 +286,28 @@ function PressPanel({r,e,setR,setE,openPicker}){
         <button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({relations:e.relations.filter(id=>id!==x.id)})} aria-label={`Quitar ${x.title}`} title="Quitar vínculo"><X/></button>
       </li>)}</ul>:<p className="cms-help">Ninguna todavía.</p>}
       <button type="button" className="cms-btn is-block" onClick={()=>openPicker('link')}><Plus/> Vincular película o persona</button>
+    </PanelBlock>
+  </>;
+}
+
+// Entrevista: la persona entrevistada (de las fichas de persona), el formato y el contenido o archivo
+function InterviewPanel({r,e,setR,setE,openPicker}){
+  const person=records.find(x=>x.id===e.interviewee&&x.type==='Persona');
+  const isText=e.mediaType==='text';
+  return <>
+    <PanelBlock title="Entrevistado(a)">
+      {person?<ul className="cms-mini-list"><li>
+        <img src={thumb(person.image,120)} alt=""/><span>{person.title}<small>{person.subtitle}</small></span>
+        <button type="button" className="cms-icon-btn is-danger-text" onClick={()=>{setE({interviewee:null});setR({subtitle:'',title:'',image:''})}} aria-label={`Quitar ${person.title}`} title="Quitar"><X/></button>
+      </li></ul>:<p className="cms-help">Elige a la persona desde las fichas de persona del archivo.</p>}
+      <button type="button" className="cms-btn is-block" onClick={()=>openPicker('interviewee')}><Plus/> {person?'Cambiar persona':'Elegir persona'}</button>
+    </PanelBlock>
+    <PanelBlock title="Formato y contenido">
+      <div className="cms-segment is-small cms-seg-block">{INTERVIEW_FORMATS.map(([v,l])=><button key={v} type="button" className={e.mediaType===v?'active':''} onClick={()=>setE({mediaType:v,...(v!==e.mediaType&&{media:''})})}>{l}</button>)}</div>
+      {isText?<p className="cms-help">Escribe el contenido de la entrevista en la ficha, en «Contenido».</p>
+        :<><label className="cms-panel-label">Archivo adjunto</label>
+        <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('media')}>{e.media?`Cambiar ${e.mediaType==='audio'?'audio':'video'}`:`Agregar ${e.mediaType==='audio'?'audio':'video'}`}</button>
+          {e.media&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({media:''})} aria-label="Quitar archivo" title="Quitar archivo"><Trash2/></button>}</div></>}
     </PanelBlock>
   </>;
 }

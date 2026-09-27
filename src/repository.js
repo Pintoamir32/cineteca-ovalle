@@ -17,6 +17,13 @@ export const placesOf=extra=>extra?.locations||[extra?.location||'Ovalle'];
 export function getLocations(id){
   return placesOf(recordExtras[id]);
 }
+// Persona entrevistada: la vinculada en la ficha o, en entrevistas antiguas, la que tiene ese nombre
+export function getInterviewee(record,extra=recordExtras[record.id],pool=getAllRecords()){
+  const people=pool.filter(r=>r.type==='Persona');
+  return people.find(p=>p.id===extra?.interviewee)||people.find(p=>norm(p.title)===norm(record.subtitle))||null;
+}
+export const INTERVIEW_FORMATS=[['text','Texto'],['audio','Audio'],['video','Video']];
+export const interviewFormat=extra=>(INTERVIEW_FORMATS.find(([v])=>v===extra?.mediaType)||[])[1]||'';
 // Filmografía: películas donde la persona aparece en dirección o créditos
 const norm=s=>(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
 // Roles de una persona en una película, según su dirección y sus créditos
