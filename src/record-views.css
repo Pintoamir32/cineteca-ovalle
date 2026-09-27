@@ -177,7 +177,11 @@
 .doc-entrevistas .doc-gallery-grid figcaption span,.doc-entrevistas .doc-gallery-grid figcaption a{font-size:13px}
 @media (max-width:760px){.doc-entrevistas .doc-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 14px}}
 
-/* Artículo: sin imagen principal; ficha en una columna y películas referenciadas a lo ancho */
-.press-layout.is-single{grid-template-columns:minmax(0,1fr);max-width:860px;margin:0 auto}
+/* Artículo: películas referenciadas a lo ancho */
 .doc-footer.is-single{grid-template-columns:1fr}
 .doc-footer.is-single .doc-footer-main{border-right:0;padding:40px 5vw 24px}
+
+/* Artículo: imagen más angosta a la izquierda y ficha a la derecha, como las entrevistas */
+.doc-articulos .press-layout{grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr);gap:5vw;align-items:center}
+.doc-articulos .press-clipping img{aspect-ratio:4/3}
+@media (max-width:1000px){.doc-articulos .press-layout{grid-template-columns:1fr}.doc-articulos .press-clipping{max-width:520px;margin:0 auto}}

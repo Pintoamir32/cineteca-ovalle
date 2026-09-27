@@ -102,9 +102,9 @@ function docConfig(item,extra){
       factsLabel:'Ficha de la entrevista',textLabel:'CONTENIDO',player:extra.mediaType!=='text'
     };
   }
-  // Artículo: título, autor(a), fecha de publicación, películas referenciadas y cuerpo del artículo (más galería)
+  // Artículo: título, autor(a), fecha de publicación, películas referenciadas, cuerpo del artículo, imagen principal y galería
   if(item.type==='Artículo')return {
-    article:true,
+    article:true,caption:'Imagen del artículo · Archivo CDO',
     source:item.subtitle,
     meta:[item.year],
     facts:[['Autor(a)',item.subtitle,true,'subtitle'],['Fecha de publicación',item.year,true,'year']],
@@ -125,7 +125,7 @@ export function DocumentView({item,extra,related,people}){
   const cfg=docConfig(item,extra);
   // Galería: imagen principal, material propio del registro e imágenes de sus relacionados
   const gallery=useMemo(()=>[
-    ...(cfg.article?[]:[{src:cfg.image||item.image,caption:cfg.caption,kind:'Imagen principal'}]),
+    {src:cfg.image||item.image,caption:cfg.caption,kind:'Imagen principal'},
     ...(extra.gallery||[]).map((src,i)=>({src,caption:'',alt:`${item.title} · imagen ${i+1}`})),
     ...(cfg.press||cfg.interview||cfg.article?[]:related).map(r=>({src:r.image,caption:r.title,kind:`Ver también · ${r.type}`,to:recordPath(r)}))
   ],[item,extra,related,cfg.caption,cfg.image,cfg.press,cfg.interview,cfg.article]);
@@ -141,7 +141,7 @@ export function DocumentView({item,extra,related,people}){
   const hasPdf=cfg.press&&!!extra.media;
   const [CtaIcon,ctaText,ctaHref]=cfg.cta||[];
   // Prensa y entrevistas: la galería muestra solo las imágenes subidas, no la principal (que sigue arriba y se amplía igual)
-  const skipMain=cfg.press||cfg.interview?1:0, shownGallery=gallery.slice(skipMain);
+  const skipMain=cfg.press||cfg.interview||cfg.article?1:0, shownGallery=gallery.slice(skipMain);
   // Entrevista: el reproductor va junto a la ficha (columna derecha), no bajo la foto
   const player=cfg.player&&<div className="press-player" id="media"><MediaViewer item={{...item,image:cfg.image||item.image}} extra={extra}/>{slot('media')}</div>;
   return <main className={`ficha-page doc-page doc-press doc-${item.slug}`}>
@@ -151,8 +151,8 @@ export function DocumentView({item,extra,related,people}){
         <h2>La Cineteca de Ovalle</h2>
         <div>{[cfg.source,...cfg.meta].filter(Boolean).map(m=><span key={m}>{m}</span>)}</div>
       </header>
-      <div className={`press-layout${cfg.article?' is-single':''}`}>
-        {!cfg.article&&<div className="press-side">
+      <div className="press-layout">
+        <div className="press-side">
           <figure className="press-clipping">
             <button type="button" onClick={()=>setZoom(0)} aria-label="Ampliar imagen">
               <img src={cfg.image||item.image} alt={item.title} decoding="async"/>
@@ -162,7 +162,7 @@ export function DocumentView({item,extra,related,people}){
             <figcaption>{cfg.caption}</figcaption>
           </figure>
           {!cfg.interview&&player}
-        </div>}
+        </div>
         <article className="press-article">
           <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
           <h1>{cfg.interview?cfg.title:f('title',item.title)}</h1>

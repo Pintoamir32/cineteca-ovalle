@@ -53,9 +53,7 @@ function RecordEditorInner(){
     const person=isInterview?records.find(x=>x.id===e.interviewee&&x.type==='Persona'):null;
     const name=person?.title||r.subtitle.trim();
     if(isInterview&&!name)return toast('Elige o escribe a la persona entrevistada antes de guardar.','error');
-    const base=isInterview?{...r,subtitle:name,title:`Entrevista a ${name}`,image:r.image||person?.image||''}
-      :isArticle?{...r,image:articleImage(e)}:r;
-    if(isArticle&&!base.image)return toast('Añade una imagen a la galería o vincula una película: se usa en los listados del sitio.','error');
+    const base=isInterview?{...r,subtitle:name,title:`Entrevista a ${name}`,image:r.image||person?.image||''}:r;
     if(!base.title.trim())return toast('Escribe un título antes de guardar.','error');
     if(!base.image)return toast('Añade una imagen principal antes de guardar.','error');
     const {draft:isDraft,...rest}=base;
@@ -117,7 +115,7 @@ function RecordEditorInner(){
   // Cómo se llama cada punto de la lista en una ficha de persona
   const checkName=k=>isPerson?({Imagen:'Fotografía',Título:'Nombre',Descripción:'Biografía'}[k]||k)
     :isPress?({Imagen:'Documento digitalizado',Título:'Título / fuente',Año:'Fecha'}[k]||k)
-    :isArticle?({Año:'Fecha de publicación',Descripción:'Cuerpo del artículo'}[k]||k)
+    :isArticle?({Imagen:'Imagen principal',Año:'Fecha de publicación',Descripción:'Cuerpo del artículo'}[k]||k)
     :isInterview?({Año:'Fecha',Contenido:e.mediaType==='text'?'Contenido':'Archivo adjunto'}[k]||k):r.type==='Película'&&k==='Descripción'?'Sinopsis':k;
   // Panel en cuatro grupos, de lo que más se mira a lo que menos se cambia
   const panel=<>
@@ -135,7 +133,7 @@ function RecordEditorInner(){
     </PanelBlock>
     {isPerson?<PersonWorks r={r} e={e} setE={setE} openPicker={edit.open}/>:isPress?<PressPanel r={r} e={e} setR={setR} setE={setE} openPicker={edit.open}/>
       :isInterview?<InterviewPanel r={r} e={e} setR={setR} setE={setE} openPicker={edit.open}/>
-      :isArticle?<ArticlePanel e={e} setE={setE} openPicker={edit.open}/>:<>
+      :isArticle?<ArticlePanel r={r} e={e} setR={setR} setE={setE} openPicker={edit.open}/>:<>
     <PanelBlock title="Clasificación">
       <label className="cms-panel-label">Colección</label>
       {collectionOptions.length?<Choice value={r.collection} options={collectionOptions} onChange={collection=>setR({collection})} placeholder="Elegir colección…"/>
@@ -163,7 +161,7 @@ function RecordEditorInner(){
     </div>
     {mode==='ficha'?<HomeEditContext.Provider value={shared.context}><EditContext.Provider value={edit.context}>
       <SiteFrame className="is-record" path={`/${r.slug}`}>
-        <RecordDetail item={{...r,image:(isArticle?articleImage(e):r.image)||BLANK}} extra={e}/>
+        <RecordDetail item={{...r,image:r.image||BLANK}} extra={e}/>
       </SiteFrame>
     </EditContext.Provider></HomeEditContext.Provider>:<CardPreview r={r} setR={setR}/>}
     {edit.modals}
@@ -342,14 +340,8 @@ function InterviewPanel({r,e,setR,setE,openPicker}){
   </>;
 }
 
-// Artículo: la imagen de los listados es la primera de la galería o, si no hay, la de la primera película referenciada
-function articleImage(e){
-  const film=(e.relations||[]).map(id=>records.find(x=>x.id===id&&x.type==='Película')).find(Boolean);
-  return (e.gallery||[]).find(Boolean)||film?.image||'';
-}
-
-// Artículo: películas referenciadas (con enlace a sus fichas) y galería
-function ArticlePanel({e,setE,openPicker}){
+// Artículo: películas referenciadas (con enlace a sus fichas), imagen principal y galería
+function ArticlePanel({r,e,setR,setE,openPicker}){
   const films=(e.relations||[]).map(id=>records.find(x=>x.id===id&&x.type==='Película')).filter(Boolean);
   return <>
     <PanelBlock title={`Películas referenciadas · ${films.length}`}>
@@ -359,9 +351,11 @@ function ArticlePanel({e,setE,openPicker}){
       </li>)}</ul>:<p className="cms-help">Ninguna todavía.</p>}
       <button type="button" className="cms-btn is-block" onClick={()=>openPicker('film')}><Plus/> Vincular película</button>
     </PanelBlock>
-    <PanelBlock title="Galería">
+    <PanelBlock title="Imagen y galería">
+      <label className="cms-panel-label">Imagen principal</label>
+      <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('image')}><ImagePlus/> {r.image?'Cambiar imagen':'Subir imagen'}</button>
+        {r.image&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setR({image:''})} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}</div>
       <GalleryEditor e={e} setE={setE} openPicker={openPicker}/>
-      <p className="cms-help">La primera imagen de la galería (o, si no hay, la de la primera película) se usa en los listados del sitio.</p>
     </PanelBlock>
   </>;
 }

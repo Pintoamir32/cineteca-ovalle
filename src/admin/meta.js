@@ -10,8 +10,8 @@ export const TYPE_META={
   Prensa:{slug:'prensa',label:'Prensa',one:'documento de prensa',newLabel:'Nuevo documento',subtitle:'Medio de origen',year:'Fecha',format:[],formatHint:[],media:'document',credits:[],colorIndex:3,only:['Imagen','Título','Medio de origen','Año']},
   // Entrevista: entrevistado(a) (vínculo a una persona), fecha, formato (texto, audio o video) y contenido o archivo
   Entrevista:{slug:'entrevistas',label:'Entrevistas',one:'entrevista',newLabel:'Nueva entrevista',subtitle:'Entrevistado(a)',year:'Fecha',format:[],formatHint:[],media:'video',credits:[],colorIndex:0,only:['Entrevistado(a)','Año','Contenido']},
-  // Artículo: título, autor(a), fecha de publicación, películas referenciadas, cuerpo del artículo y galería
-  Artículo:{slug:'articulos',label:'Artículos',one:'artículo',newLabel:'Nuevo artículo',subtitle:'Autor(a)',year:'Fecha de publicación',format:[],formatHint:[],media:'text',credits:[],colorIndex:4,only:['Título','Autor(a)','Año','Descripción']}
+  // Artículo: título, autor(a), fecha de publicación, películas referenciadas, cuerpo del artículo, imagen principal y galería
+  Artículo:{slug:'articulos',label:'Artículos',one:'artículo',newLabel:'Nuevo artículo',subtitle:'Autor(a)',year:'Fecha de publicación',format:[],formatHint:[],media:'text',credits:[],colorIndex:4,only:['Imagen','Título','Autor(a)','Año','Descripción']}
 };
 export const TYPES=Object.keys(TYPE_META);
 export const typeColor=type=>theme.palette[TYPE_META[type]?.colorIndex??0];
@@ -34,6 +34,7 @@ export function missingFields(record,extra=extraOf(record.id)){
   }
   // Artículo: el cuerpo basta con que tenga texto
   if(record.type==='Artículo'){
+    if(!record.image)out.push('Imagen');
     if(!record.title?.trim())out.push('Título');
     if(!record.subtitle?.trim())out.push('Autor(a)');
     if(!record.year?.trim())out.push('Año');
