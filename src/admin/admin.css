@@ -920,3 +920,4 @@ html:has(.cms-preview-doc){overflow:hidden}
 .cms-file-row{display:flex;gap:8px;align-items:center}
 .cms-file-row .cms-btn{flex:1;min-width:0}
 .cms-media-preview{gap:10px}
+.cms-slot-btn.is-gallery{margin:18px 0}

@@ -270,7 +270,7 @@ export function RecordDetail({item,extra}){
             <ArrowRight/>
           </Link>)}</div>:<p className="ficha-filmography-empty">Aún no hay elenco vinculado a esta película en el archivo.</p>}
         </div>}
-        {gallery.length>0&&<div className="ficha-gallery">
+        {(gallery.length>0||(edit&&!isPerson))&&<div className="ficha-gallery">
           <div className="ficha-section-label"><span>{isFilm?'04':'03'}</span> GALERÍA</div>
           <div className="ficha-gallery-grid">{gallery.map((src,i)=><img src={src} alt={`Material asociado ${i+1}`} key={`${i}-${src.slice(-24)}`} loading="lazy" decoding="async"/>)}</div>
           {slot('gallery')}

@@ -200,6 +200,8 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
   const slots={
     // El recorte parte con la forma del lugar donde está la imagen (póster, portada…)
     image:()=>slotBtn('image',ev=>{setPickAspect(aspectNear(ev.currentTarget));setPicker('image')},ImagePlus,r.image?'Cambiar imagen principal':'Añadir imagen principal'),
+    // Galería: añadir varias imágenes a la vez, también desde la vista previa
+    gallery:()=>slotBtn('gallery',()=>setPicker({gallery:-1}),Images,'Añadir imágenes a la galería'),
     media:()=>needsFile&&slotBtn('media',()=>setPicker('media'),MediaIcon,`${cfg.label} · ${e.mediaType==='video'?(r.type==='Entrevista'?(e.media?'cambiar video':'agregar video'):e.media?'cambiar película':'agregar enlace de la película'):needsFile?(e.media?'cambiar archivo':'subir archivo'):'cambiar tipo'}`)
   };
   // Campos que se eligen de una lista con buscador (y aceptan un valor nuevo): la dirección y la
