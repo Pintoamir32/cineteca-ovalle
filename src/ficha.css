@@ -203,3 +203,8 @@ a.back-link.back-link:hover .back-link-icon{background:var(--acid);color:var(--b
 .ficha-person-roles{font-weight:600;letter-spacing:.01em}
 .ficha-person-bio{white-space:pre-line}
 @media(max-width:760px){.ficha-person-body{margin-bottom:14px}}
+
+/* Película escrita a mano en la filmografía: sin imagen ni enlace */
+.ficha-filmography-noimg{display:grid;place-items:center;width:64px;aspect-ratio:2/3;background:#ebe9e1;color:#8b8f89}
+@media(max-width:600px){.ficha-filmography-noimg{width:52px}}
+.ficha-filmography-noimg svg{width:22px;height:22px}

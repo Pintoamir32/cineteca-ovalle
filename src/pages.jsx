@@ -175,6 +175,9 @@ export function RecordDetail({item,extra}){
   if(['Prensa','Entrevista','Artículo'].includes(item.type))return <DocumentView item={item} extra={extra} related={related} people={getRecordPeople(item,extra)}/>;
   const isFilm=item.type==='Película', isPerson=item.type==='Persona', placeList=placesOf(extra);
   const filmography=isPerson?getFilmography(item,extra):[];
+  // Filmografía: películas del archivo (con enlace) y las escritas a mano (sin enlace), por año
+  const yearNum=y=>Number((/\d{4}/.exec(y||'')||[])[0])||9999;
+  const works=isPerson?[...filmography.map(({film})=>({film,year:film.year})),...(extra.works||[]).map((w,i)=>({...w,i})).filter(w=>String(w.title||'').trim())].sort((a,b)=>yearNum(a.year)-yearNum(b.year)):[];
   const people=isPerson?[]:getRecordPeople(item,extra);
   const credits=extra.credits||[], gallery=extra.gallery||[];
   const [genre,duration,medium]=(item.format||'').split(' · ');
@@ -209,15 +212,20 @@ export function RecordDetail({item,extra}){
         <div className="ficha-section-label"><span>01</span> BIOGRAFÍA</div>
         <p className="ficha-person-bio">{f('description',item.description,{multiline:true})}</p>
         <div className="ficha-media ficha-filmography" id="filmografia">
-          <div className="ficha-filmography-head"><div className="ficha-section-label"><span>02</span> FILMOGRAFÍA</div><span>{String(filmography.length).padStart(2,'0')} {filmography.length===1?'PELÍCULA':'PELÍCULAS'}</span></div>
-          {filmography.length?<ol className="ficha-filmography-list">{filmography.map(({film})=>{const [fGenre,fDuration]=(film.format||'').split(' · ');return <li key={film.id}>
+          <div className="ficha-filmography-head"><div className="ficha-section-label"><span>02</span> FILMOGRAFÍA</div><span>{String(works.length).padStart(2,'0')} {works.length===1?'PELÍCULA':'PELÍCULAS'}</span></div>
+          {works.length?<ol className="ficha-filmography-list">{works.map(w=>w.film?(()=>{const film=w.film,[fGenre,fDuration]=(film.format||'').split(' · ');return <li key={`f${film.id}`}>
             <img src={film.image} alt="" loading="lazy" decoding="async"/>
             <div className="ficha-filmography-info">
               <small>{film.year}{fGenre&&` · ${fGenre}`}{fDuration&&` · ${fDuration}`}</small>
               <h3>{film.title}</h3>
             </div>
             <Link className="ficha-filmography-btn" to={recordPath(film)}>Ver ficha <ArrowRight/></Link>
-          </li>})}</ol>:<p className="ficha-filmography-empty">Aún no hay películas vinculadas a esta persona en el archivo.</p>}
+          </li>})()
+            // Escrita a mano: sin ficha en el archivo, por eso sin enlace
+            :<li key={`w${w.i}`} className="is-written">
+            <span className="ficha-filmography-noimg" aria-hidden="true"><Film/></span>
+            <div className="ficha-filmography-info">{w.year&&<small>{w.year}</small>}<h3>{w.title}</h3></div>
+          </li>)}</ol>:<p className="ficha-filmography-empty">Aún no hay películas en la filmografía de esta persona.</p>}
           {slot('works')}
         </div>
       </article>

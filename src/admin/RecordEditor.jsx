@@ -56,7 +56,8 @@ function RecordEditorInner(){
     // Persona: solo nombre, biografía, rol(es), fotografía y obras (películas vinculadas); lo demás no se guarda
     if(isPerson){
       record={...record,year:'',format:'',collection:''};
-      extra={...extra,credits:[],gallery:[],locations:[],media:'',mediaType:'image',relations:(extra.relations||[]).filter(id=>records.some(x=>x.id===id&&x.type==='Película'))};
+      extra={...extra,credits:[],gallery:[],locations:[],media:'',mediaType:'image',relations:(extra.relations||[]).filter(id=>records.some(x=>x.id===id&&x.type==='Película')),
+        works:(extra.works||[]).map(w=>({title:String(w.title||'').trim(),year:String(w.year||'').trim()})).filter(w=>w.title)};
     }
     try{
       await saveRecord(record,extra);
@@ -210,14 +211,26 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
 // Filmografía de una persona: las películas donde figura en dirección o en un cargo con su nombre
 // aparecen solas; otras se vinculan a mano (y solo esas se pueden quitar aquí)
 function PersonWorks({r,e,setE,openPicker}){
-  const works=getFilmography(r,e);
-  return <PanelBlock title={`Filmografía · ${works.length}`}>
-    {works.length>0&&<ul className="cms-mini-list">{works.map(({film,roles})=>{const manual=(e.relations||[]).includes(film.id)&&roles.join()==='Participación';return <li key={film.id}>
+  const works=getFilmography(r,e), written=e.works||[];
+  const setWork=(i,patch)=>setE({works:written.map((w,j)=>j===i?{...w,...patch}:w)});
+  // Al escribir una nueva, el cursor queda en su título
+  const listRef=useRef(null), focusNew=useRef(false);
+  useEffect(()=>{if(focusNew.current){focusNew.current=false;[...(listRef.current?.querySelectorAll('input[data-title]')||[])].pop()?.focus()}},[written.length]);
+  return <PanelBlock title={`Filmografía · ${works.length+written.filter(w=>w.title?.trim()).length}`}>
+    <label className="cms-panel-label">Del archivo · con enlace a su ficha</label>
+    {works.length>0?<ul className="cms-mini-list">{works.map(({film,roles})=>{const manual=(e.relations||[]).includes(film.id)&&roles.join()==='Participación';return <li key={film.id}>
       <img src={thumb(film.image,120)} alt=""/><span>{film.title}<small>{film.year}</small></span>
       {manual&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({relations:e.relations.filter(id=>id!==film.id)})} aria-label={`Quitar ${film.title}`} title="Quitar de su filmografía"><X/></button>}
-    </li>})}</ul>}
-    <button type="button" className="cms-btn is-block" onClick={()=>openPicker('work')}><Plus/> Vincular película</button>
-    <p className="cms-help is-text">Aparecen solas las películas donde figura con este mismo nombre en «Dirigida por» o en un cargo. Con «Vincular película» agregas otras.</p>
+    </li>})}</ul>:<p className="cms-help">Ninguna todavía.</p>}
+    <button type="button" className="cms-btn is-block" onClick={()=>openPicker('work')}><Plus/> Vincular película del archivo</button>
+    <label className="cms-panel-label">Escritas a mano · sin enlace</label>
+    {written.length>0&&<ul className="cms-cargos cms-written" ref={listRef}>{written.map((w,i)=><li key={i}>
+      <input data-title value={w.title||''} onChange={ev=>setWork(i,{title:ev.target.value})} placeholder="Título" aria-label={`Título de la película ${i+1}`}/>
+      <input value={w.year||''} onChange={ev=>setWork(i,{year:ev.target.value})} placeholder="Año" inputMode="numeric" aria-label="Año"/>
+      <button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({works:written.filter((_,j)=>j!==i)})} aria-label="Quitar" title="Quitar"><X/></button>
+    </li>)}</ul>}
+    <button type="button" className="cms-btn is-block" onClick={()=>{focusNew.current=true;setE({works:[...written,{title:'',year:''}]})}}><Plus/> Escribir película</button>
+    <p className="cms-help is-text">Las del archivo aparecen solas cuando figura con este mismo nombre en «Dirigida por» o en un cargo, o al vincularlas. Las escritas a mano se muestran sin enlace, para películas que no tienen ficha.</p>
   </PanelBlock>;
 }
 

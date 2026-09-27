@@ -914,3 +914,4 @@ html:has(.cms-preview-doc){overflow:hidden}
 
 /* Vista previa: el menú de arriba se muestra tal cual, sin buscador ni enlaces activos */
 .cms-preview-doc .topbar{pointer-events:none}
+.cms-written li{grid-template-columns:minmax(0,1fr) 64px 30px}
