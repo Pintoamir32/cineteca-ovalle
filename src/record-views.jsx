@@ -143,6 +143,8 @@ export function DocumentView({item,extra,related,people}){
   },[open,gallery.length]);
   const hasPdf=cfg.press&&!!extra.media;
   const [CtaIcon,ctaText,ctaHref]=cfg.cta||[];
+  // Entrevista: el reproductor va junto a la ficha (columna derecha), no bajo la foto
+  const player=cfg.player&&<div className="press-player" id="media"><MediaViewer item={{...item,image:cfg.image||item.image}} extra={extra}/>{slot('media')}</div>;
   return <main className={`ficha-page doc-page doc-press doc-${item.slug}`}>
     <section className="doc-shell" data-reveal>
       <div className="ficha-film-top"><BackLink item={item}/><span className="ficha-code">{code(item)}</span></div>
@@ -160,7 +162,7 @@ export function DocumentView({item,extra,related,people}){
             {!cfg.interview&&slot('image')}
             <figcaption>{cfg.caption}</figcaption>
           </figure>
-          {cfg.player&&<div className="press-player" id="media"><MediaViewer item={{...item,image:cfg.image||item.image}} extra={extra}/>{slot('media')}</div>}
+          {!cfg.interview&&player}
         </div>
         <article className="press-article">
           <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
@@ -172,6 +174,7 @@ export function DocumentView({item,extra,related,people}){
           </div>}
           <div className="ficha-aside-label">{cfg.factsLabel}</div>
           <Facts rows={cfg.facts}/>
+          {cfg.interview&&player}
           {!cfg.press&&(!cfg.interview||cfg.text)&&<><div className="ficha-section-label" id="texto"><span>01</span> {cfg.textLabel}</div>
           <div className="press-transcript"><p>{f('description',item.description,{multiline:true})}</p></div></>}
         </article>

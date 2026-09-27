@@ -147,3 +147,17 @@
 .press-pdf-fallback{height:100%;display:grid;place-content:center;justify-items:center;gap:14px;padding:24px;text-align:center}
 .press-pdf-fallback svg{width:34px;height:34px}
 @media (max-width:760px){.press-pdf{margin:0 14px;padding:32px 20px 40px}.press-pdf-frame{height:75vh}}
+
+/* Entrevista: retrato más angosto a la izquierda; ficha, reproductor o contenido a la derecha */
+.doc-entrevistas .press-layout{grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);gap:5vw}
+.doc-entrevistas .press-side{position:sticky;top:110px}
+.doc-entrevistas .press-clipping img{aspect-ratio:4/5}
+.doc-entrevistas .press-article .ficha-film-facts{margin-bottom:34px}
+.doc-entrevistas .press-player{margin-bottom:34px}
+.doc-entrevistas .press-player .media-viewer{min-height:0;height:auto;aspect-ratio:16/9}
+.doc-entrevistas .press-player .media-viewer video,.doc-entrevistas .press-player .media-embed{height:100%;min-height:0}
+.doc-entrevistas .press-player .audio-viewer{aspect-ratio:auto;display:block}
+.doc-entrevistas .press-player .audio-viewer>div{width:100%;max-width:none;margin:0;box-sizing:border-box;padding:30px 32px}
+.doc-entrevistas .press-player .audio-viewer h3{font-size:28px;margin:12px 0 0}
+.doc-entrevistas .press-player .audio-viewer audio{margin-top:18px}
+@media (max-width:1000px){.doc-entrevistas .press-layout{grid-template-columns:1fr}.doc-entrevistas .press-side{position:static}.doc-entrevistas .press-clipping{max-width:420px;margin:0 auto}}
