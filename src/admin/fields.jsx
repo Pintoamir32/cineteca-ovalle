@@ -119,6 +119,57 @@ export function Editable({value,onChange,placeholder='Escribe aquí…',multilin
   </Tag>;
 }
 
+/* Campo de la vista previa que se elige de una lista con buscador; si lo escrito no existe,
+   se puede usar como valor nuevo. La lista flota a tamaño normal aunque la vista previa esté achicada. */
+const foldText=s=>String(s).normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
+export function EditableChoice({value,onChange,options,placeholder='Elegir…',label='Valor',as:Tag='span',className=''}){
+  const [open,setOpen]=useState(false), [q,setQ]=useState(''), [hi,setHi]=useState(0), [pos,setPos]=useState(null);
+  const tagRef=useRef(null), boxRef=useRef(null), inputRef=useRef(null);
+  const close=()=>{setOpen(false);setQ('');setHi(0);setPos(null)};
+  const pick=v=>{onChange(v);close()};
+  // Posición en la pantalla del gestor, aunque el campo esté dentro del iframe achicado
+  useLayoutEffect(()=>{
+    if(!open)return;
+    const place=()=>{
+      const el=tagRef.current;if(!el)return;
+      const frame=el.ownerDocument.defaultView.frameElement, fr=frame?.getBoundingClientRect(), scale=frame?.offsetWidth?fr.width/frame.offsetWidth:1;
+      const r=el.getBoundingClientRect(), ox=fr?fr.left:0, oy=fr?fr.top:0, W=window.innerWidth, H=window.innerHeight;
+      const top=oy+r.top*scale, bottom=oy+r.bottom*scale, width=Math.min(W-16,300), below=H-bottom-12, above=top-12, up=below<280&&above>below;
+      setPos({position:'fixed',left:Math.max(8,Math.min(ox+r.left*scale,W-width-8)),right:'auto',width,top:up?'auto':bottom+6,bottom:up?H-top+6:'auto',maxHeight:Math.max(180,(up?above:below)-6)});
+    };
+    place();
+    const docs=[...new Set([document,tagRef.current.ownerDocument])];
+    const onDown=e=>{if(!boxRef.current?.contains(e.target)&&!tagRef.current?.contains(e.target))close()};
+    window.addEventListener('scroll',place,true);window.addEventListener('resize',place);docs.forEach(d=>d.addEventListener('mousedown',onDown));
+    return()=>{window.removeEventListener('scroll',place,true);window.removeEventListener('resize',place);docs.forEach(d=>d.removeEventListener('mousedown',onDown))};
+  },[open]);
+  useEffect(()=>{if(open&&pos)inputRef.current?.focus()},[open,pos!==null]);// eslint-disable-line react-hooks/exhaustive-deps
+  const term=q.trim(), all=[...new Set(options.map(o=>String(o).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+  const items=[...all.filter(o=>foldText(o).includes(foldText(term))).map(v=>({v})),...(term&&!all.some(o=>foldText(o)===foldText(term))?[{v:term,isNew:true}]:[])];
+  const onKey=e=>{
+    if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close()}
+    else if(e.key==='ArrowDown'){e.preventDefault();setHi(i=>Math.min(i+1,items.length-1))}
+    else if(e.key==='ArrowUp'){e.preventDefault();setHi(i=>Math.max(i-1,0))}
+    else if(e.key==='Enter'){e.preventDefault();if(items[hi])pick(items[hi].v)}
+  };
+  const empty=value===undefined||value===null||String(value).trim()==='';
+  return <Tag ref={tagRef} className={`cms-editable cms-editable-choice ${empty?'is-empty':''} ${open?'is-floating':''} ${className}`} role="button" tabIndex={0} title={`Elegir ${label.toLowerCase()}`}
+    onClick={e=>{e.preventDefault();e.stopPropagation();open?close():setOpen(true)}} onKeyDown={e=>{if(!open&&(e.key==='Enter'||e.key===' ')){e.preventDefault();setOpen(true)}}}>
+    {empty?placeholder:value}<ChevronDown className="cms-edit-hint" aria-hidden="true"/>
+    {open&&createPortal(<div ref={boxRef} className="cms-choice-menu cms-float-choice" style={pos||{visibility:'hidden'}}>
+      <span className="cms-float-choice-label">{label}</span>
+      <input ref={inputRef} value={q} onChange={e=>{setQ(e.target.value);setHi(0)}} onKeyDown={onKey} placeholder="Buscar o escribir uno nuevo…" aria-label={`Buscar ${label.toLowerCase()}`}/>
+      <div>
+        {items.map((it,i)=><button type="button" key={`${it.isNew?'+':''}${it.v}`} className={`${!it.isNew&&it.v===value?'active':''}${i===hi?' is-hi':''}${it.isNew?' cms-choice-new':''}`} onMouseEnter={()=>setHi(i)} onClick={()=>pick(it.v)}>
+          {it.isNew?<span><Plus/> Usar «{it.v}»</span>:it.v}{!it.isNew&&it.v===value&&<Check/>}
+        </button>)}
+        {!items.length&&<p className="cms-choice-empty">Aún no hay opciones: escribe una nueva.</p>}
+      </div>
+      {!empty&&<button type="button" className="cms-choice-clear" onClick={()=>pick('')}><X/> Dejar vacío</button>}
+    </div>,document.body)}
+  </Tag>;
+}
+
 /* ---------- Imágenes ---------- */
 
 function libraryImages(){

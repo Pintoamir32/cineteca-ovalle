@@ -183,11 +183,13 @@ export function RecordDetail({item,extra}){
   const filmFormat=edit&&isFilm?parts:duration?parts.filter(([,v])=>v):[['Formato',item.format,'format.0']];
   // Películas y personas comparten sidebar, con sus propios datos y llamada a la acción
   const view={
-    Película:{facts:[['Dirección',item.subtitle,true,'subtitle'],['Año',item.year,false,'year'],...filmFormat.map(([k,v,key])=>[k,v,false,key]),['Colección',item.collection,true]],label:'Ficha técnica',cta:['#media',CirclePlay,'Ver película'],places:'Locación'},
-    Persona:{facts:[['Roles',item.subtitle,true,'subtitle'],['Vida',item.year,false,'year'],['Obras',item.format,false,'format.0'],['Colección',item.collection,true]],label:'Ficha biográfica',cta:['#filmografia',Film,'Ver filmografía'],places:'Territorio'},
-  }[item.type]||{facts:[['Autoría',item.subtitle,true],['Fecha',item.year],['Formato',item.format],['Colección',item.collection,true]],label:'Ficha',cta:['#media',CirclePlay,'Consultar archivo digital'],places:'Territorio'};
+    Película:{facts:[['Dirección',item.subtitle,true,'subtitle'],['Año',item.year,false,'year'],...filmFormat.map(([k,v,key])=>[k,v,false,key]),['Colección',item.collection,true,'collection']],label:'Ficha técnica',cta:['#media',CirclePlay,'Ver película'],places:'Locación'},
+    Persona:{facts:[['Roles',item.subtitle,true,'subtitle'],['Vida',item.year,false,'year'],['Obras',item.format,false,'format.0'],['Colección',item.collection,true,'collection']],label:'Ficha biográfica',cta:['#filmografia',Film,'Ver filmografía'],places:'Territorio'},
+  }[item.type]||{facts:[['Autoría',item.subtitle,true],['Fecha',item.year],['Formato',item.format],['Colección',item.collection,true,'collection']],label:'Ficha',cta:['#media',CirclePlay,'Consultar archivo digital'],places:'Territorio'};
   const [ctaHref,CtaIcon,ctaText]=view.cta;
   const initials=(item.subtitle||'').split(' ').filter(Boolean).map(w=>w[0]).slice(0,2).join('');
+  // «Dirigida por» lleva a la ficha de esa persona si está en el archivo
+  const director=isFilm&&item.subtitle?getAllRecords().find(r=>r.type==='Persona'&&r.title.trim().toLowerCase()===item.subtitle.trim().toLowerCase()):null;
   return <main className={`ficha-page${isFilm?' ficha-film':' ficha-person'}`}>
     {!isFilm&&<section className="ficha-hero">
       <img src={item.image} alt="" loading="lazy" decoding="async"/>
@@ -208,14 +210,13 @@ export function RecordDetail({item,extra}){
           <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
           <h1>{f('title',item.title)}</h1>
           <div className="ficha-film-byline">
-            <Link className="ficha-film-director" to={`/peliculas?director=${encodeURIComponent(item.subtitle)}`} title={`Ver todas las películas de ${item.subtitle}`}><span aria-hidden="true">{initials}</span><div><small>Dirigida por</small><strong>{f('subtitle',item.subtitle)}</strong></div><ArrowRight className="ficha-film-director-arrow" aria-hidden="true"/></Link>
+            <Link className="ficha-film-director" to={director?recordPath(director):`/peliculas?director=${encodeURIComponent(item.subtitle)}`} title={director?`Ver la ficha de ${item.subtitle}`:`Ver todas las películas de ${item.subtitle}`}><span aria-hidden="true">{initials}</span><div><small>Dirigida por</small><strong>{f('subtitle',item.subtitle)}</strong></div><ArrowRight className="ficha-film-director-arrow" aria-hidden="true"/></Link>
             <ul className="ficha-film-specs">{[['Año',item.year,'year'],...filmFormat].map(([k,v,field])=>{const Icon={Año:CalendarDays,Género:Clapperboard,Duración:Clock,Soporte:Film}[k]||Film;const key=FACET_KEY[k];const text=f(field,v,{placeholder:k});return <li key={k}>{key?<Link to={`/peliculas?${key}=${encodeURIComponent(v)}`} title={`Ver películas · ${k}: ${v}`}><Icon aria-hidden="true"/><span className="sr-only">{k}: </span>{text}</Link>:<span><Icon aria-hidden="true"/>{text}</span>}</li>})}</ul>
           </div>
         </header>}
         <div className="ficha-section-label"><span>01</span> DESCRIPCIÓN</div>
         <h2>{t('fichaLeadTitle')}</h2>
         <p>{f('description',item.description,{multiline:true})}</p>
-        <p className="ficha-archive-note">{t('fichaArchiveNote')}</p>
         <div className="ficha-credits">{credits.map(([k,v],i)=><div key={`${k}-${i}`} className="stagger-item" style={{transitionDelay:`${i*60}ms`}}><small>{f(`creditKey.${i}`,k,{placeholder:'Dato'})}</small><strong>{f(`credits.${i}`,v,{placeholder:'Completar…'})}</strong></div>)}{slot('credits')}</div>
         {isPerson?<div className="ficha-media ficha-filmography" id="filmografia">
           <div className="ficha-filmography-head"><div className="ficha-section-label"><span>02</span> FILMOGRAFÍA</div><span>{String(filmography.length).padStart(2,'0')} {filmography.length===1?'PELÍCULA':'PELÍCULAS'}</span></div>

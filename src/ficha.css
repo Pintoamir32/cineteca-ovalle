@@ -196,5 +196,3 @@ a.back-link.back-link:hover .back-link-icon{background:var(--acid);color:var(--b
 .ficha-person-card:hover img{filter:none}
 .ficha-person-card:hover>svg{opacity:1;transform:translateX(3px)}
 
-/* Nota común del archivo: separada de la descripción de cada ficha */
-.ficha-archive-note{font-size:.9em;color:var(--muted,#6b716c);margin-top:.6em}

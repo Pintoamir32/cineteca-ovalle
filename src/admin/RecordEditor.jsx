@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, BookOpen, Check, Circle, Eye, EyeOff, FileText, Film, ImagePlus, Images, MapPin, Mic2, Plus, Star, UserRound, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Circle, Eye, EyeOff, ImagePlus, Images, MapPin, Plus, Star, X } from 'lucide-react';
 import { RecordCard, RecordRow } from '../components';
 import { collections, locations, records, site } from '../data';
 import { EditContext } from '../edit-context';
 import { RecordDetail } from '../pages';
 import { deleteRecord, nextId, saveError, saveRecord, setData, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
-import { Choice, ColorSwatches, Editable, EditableImage, ImagePicker, MEDIA_TYPES, MediaPicker, RecordPicker, thumb, useUi } from './fields';
+import { Choice, ColorSwatches, Editable, EditableChoice, EditableImage, ImagePicker, MEDIA_TYPES, MediaPicker, RecordPicker, thumb, useUi } from './fields';
 import { SiteFrame } from './SiteFrame';
 import { HomeEditContext } from '../site-text';
 import { useSharedTexts } from './shared-text';
-import { TYPE_META, TYPES, code, extraOf, missingFields, typeBySlug, typeColor } from './meta';
+import { TYPE_META, code, extraOf, missingFields, typeBySlug, typeColor } from './meta';
 
-const TYPE_ICONS={Película:Film,Persona:UserRound,Prensa:FileText,Entrevista:Mic2,Artículo:BookOpen};
 
 function blankDraft(type){
   const meta=TYPE_META[type];
@@ -45,11 +44,6 @@ function RecordEditorInner(){
   const setE=patch=>{setDraft(d=>({...d,extra:{...d.extra,...patch}}));setDirty(true)};
   const parts=meta.format.map((_,i)=>(r.format||'').split(' · ')[i]||'');
   const setPart=(i,v)=>{const next=[...parts];next[i]=v;setR({format:next.join(' · ')})};
-  const changeType=type=>{
-    const prev=TYPE_META[r.type], next=TYPE_META[type];
-    setR({type,slug:next.slug,color:r.color===typeColor(r.type)?typeColor(type):r.color});
-    if(e.mediaType===prev.media)setE({mediaType:next.media});
-  };
 
   const wasPublished=!!existing&&!existing.draft;
   const save=async()=>{
@@ -108,8 +102,6 @@ function RecordEditorInner(){
       <Choice value={r.collection} options={collectionOptions} onChange={collection=>setR({collection})} placeholder="Elegir colección…" allowNew newLabel="Nueva colección"/>
       <label className="cms-panel-label">Color de etiqueta</label>
       <ColorSwatches value={r.color} onChange={color=>setR({color})}/>
-      <label className="cms-panel-label">Tipo de ficha</label>
-      <div className="cms-type-pick">{TYPES.map(t=>{const Icon=TYPE_ICONS[t];return <button key={t} type="button" className={r.type===t?'active':''} onClick={()=>changeType(t)}><Icon/>{t}</button>})}</div>
     </PanelBlock>
     <RecordPanelBlocks r={r} e={e} meta={meta} setE={setE} openPicker={edit.open}/>
     <PanelBlock title="Portada del sitio">
@@ -159,7 +151,7 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     if(name==='format')return [parts[n]??'',v=>setPart(n,v),meta.format[n]||'Formato',meta.formatHint?.[n]];
     if(name==='credits')return [credits[n]?.[1]??'',v=>setCredit(n,1,v),credits[n]?.[0]||'Dato'];
     if(name==='creditKey')return [credits[n]?.[0]??'',v=>setCredit(n,0,v),'Nombre del dato'];
-    const labels={title:r.type==='Persona'?'Nombre':'Título',subtitle:meta.subtitle,year:meta.year,description:'Descripción'};
+    const labels={title:r.type==='Persona'?'Nombre':'Título',subtitle:meta.subtitle,year:meta.year,description:'Descripción',collection:'Colección'};
     return [r[name]??'',v=>setR({[name]:v}),labels[name]||name,name==='year'?(r.type==='Persona'?'1931—2010':'1972'):undefined];
   };
   const cfg=MEDIA_TYPES.find(m=>m.value===e.mediaType)||MEDIA_TYPES[3], MediaIcon=cfg.icon;
@@ -169,10 +161,21 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     image:()=>slotBtn('image',()=>setPicker('image'),ImagePlus,r.image?'Cambiar imagen principal':'Añadir imagen principal'),
     media:()=>slotBtn('media',()=>setPicker('media'),MediaIcon,`${cfg.label} · ${needsFile?(e.media?'cambiar archivo':'subir archivo'):'cambiar tipo'}`)
   };
+  // Campos que se eligen de una lista con buscador (y aceptan un valor nuevo): la dirección y la
+  // persona entrevistada salen de las personas del archivo; formato y colección, de lo ya usado
+  const sameType=records.filter(x=>x.type===r.type&&x.id!==r.id);
+  const choices=key=>{
+    const [name,i]=key.split('.');
+    if(name==='subtitle'&&['Película','Entrevista'].includes(r.type))return [...records.filter(x=>x.type==='Persona').map(x=>x.title),...sameType.map(x=>x.subtitle)];
+    if(name==='format')return sameType.map(x=>(x.format||'').split(' · ')[Number(i)]);
+    if(name==='collection')return [...collections.map(c=>c.title),...records.map(x=>x.collection)];
+    return null;
+  };
   const context={
     text:(key,{multiline=false}={})=>{
       // La indicación siempre dice qué escribir (la página solo aporta la clave del campo)
-      const [value,onChange,label,example]=field(key);
+      const [value,onChange,label,example]=field(key), options=choices(key);
+      if(options)return <EditableChoice key={key} value={value} onChange={onChange} options={options} label={label} placeholder={`Elige ${withArticle(label)}${example?` (ej. ${example})`:''}`}/>;
       return <Editable key={key} value={value} onChange={onChange} multiline={multiline} wrap={key==='title'} placeholder={`Escribe ${withArticle(label)}${example?` (ej. ${example})`:''}`} label={label}/>;
     },
     slot:name=>slots[name]?.()

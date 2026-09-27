@@ -7,7 +7,6 @@ import { Editable } from './fields';
 // Nombre que ve quien edita: deja claro que el texto es común y dónde más cambia
 const LABELS={
   fichaLeadTitle:'Común a todas las fichas · título de la descripción',
-  fichaArchiveNote:'Común a todas las fichas · nota del archivo',
   collectionsKicker:'Página de colecciones · antetítulo',collectionsTitle:'Página de colecciones · título',collectionsIntro:'Página de colecciones · introducción',
   timelineKicker:'Línea de tiempo · antetítulo',timelineTitle:'Línea de tiempo · título',timelineIntro:'Línea de tiempo · introducción'
 };

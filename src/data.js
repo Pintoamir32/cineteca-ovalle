@@ -181,7 +181,6 @@ export const homeContent = {
   footerInstagram:'https://www.instagram.com/cinetecadeovalle/', footerEmail:'cinetecadeovalle@gmail.com', footerCopy:'© 2026 CINETECA DE OVALLE', footerPlace:'OVALLE · COQUIMBO · CHILE', footerTop:'INICIO ↑',
   // Textos comunes de otras páginas: se editan con clic en la vista previa de cada editor
   fichaLeadTitle:'Una pieza, múltiples lecturas.',
-  fichaArchiveNote:'Este registro forma parte de un proceso continuo de investigación, preservación y acceso comunitario al patrimonio audiovisual de la Provincia del Limarí.',
   collectionsKicker:'RECORRIDOS CURATORIALES', collectionsTitle:'Colecciones', collectionsIntro:'Entradas temáticas para descubrir conexiones inesperadas dentro del archivo.',
   timelineKicker:'HISTORIA AUDIOVISUAL', timelineTitle:'Línea de tiempo', timelineIntro:'Ochenta años de imágenes, encuentros y memoria en movimiento.',
   hidden:[]
