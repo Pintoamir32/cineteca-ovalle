@@ -14,7 +14,10 @@
 .cms-side-top{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 16px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
 .cms-side-brand{display:flex;flex-direction:column;align-items:flex-start;gap:7px;border:0;background:transparent;padding:6px 8px;border-radius:var(--r-md);cursor:pointer;color:#fff;text-align:left}
 .cms-side-brand:hover{background:rgba(255,255,255,.07)}
-.cms-side-brand .logo-mark{height:auto;width:100%}
+/* El botón ocupa el ancho del menú para que el logo no se encoja */
+.cms-side-brand{flex:1;min-width:0}
+.cms-side-brand .logo-mark{height:auto;width:min(100%,210px)}
+@media(max-width:860px){.cms-side-brand{flex:0 1 auto}.cms-side-brand .logo-mark{width:150px}}
 .cms-side-brand small{font:600 8px/1 'IBM Plex Mono';letter-spacing:.25em;text-transform:uppercase;color:var(--acid)}
 .cms-menu-btn{display:none!important}
 .cms-side-drawer{flex:1;min-height:0;display:flex;flex-direction:column}
