@@ -143,6 +143,8 @@ export function DocumentView({item,extra,related,people}){
   },[open,gallery.length]);
   const hasPdf=cfg.press&&!!extra.media;
   const [CtaIcon,ctaText,ctaHref]=cfg.cta||[];
+  // Prensa y entrevistas: la galería muestra solo las imágenes subidas, no la principal (que sigue arriba y se amplía igual)
+  const skipMain=cfg.press||cfg.interview?1:0, shownGallery=gallery.slice(skipMain);
   // Entrevista: el reproductor va junto a la ficha (columna derecha), no bajo la foto
   const player=cfg.player&&<div className="press-player" id="media"><MediaViewer item={{...item,image:cfg.image||item.image}} extra={extra}/>{slot('media')}</div>;
   return <main className={`ficha-page doc-page doc-press doc-${item.slug}`}>
@@ -190,11 +192,11 @@ export function DocumentView({item,extra,related,people}){
       <PdfViewer url={extra.media} title={item.title}/>
     </section>}
     {(!(cfg.press||cfg.interview)||edit||extra.gallery?.length>0)&&<section className="doc-gallery" data-reveal>
-      <div className="ficha-filmography-head"><div className="ficha-section-label"><span>{cfg.press||(cfg.interview&&!(edit||item.description?.trim()))?'01':'02'}</span> GALERÍA</div><span>{String(gallery.length).padStart(2,'0')} IMÁGENES</span></div>
+      <div className="ficha-filmography-head"><div className="ficha-section-label"><span>{cfg.press||(cfg.interview&&!(edit||item.description?.trim()))?'01':'02'}</span> GALERÍA</div><span>{String(shownGallery.length).padStart(2,'0')} {shownGallery.length===1?'IMAGEN':'IMÁGENES'}</span></div>
       {slot('gallery')}
-      <div className="doc-gallery-grid">{gallery.map((g,i)=><figure key={g.src+i} className={i===0?'is-main':undefined}>
-        <button type="button" onClick={()=>setZoom(i)} aria-label={`Ampliar: ${g.caption}`}><img src={g.src} alt={g.caption} loading="lazy" decoding="async"/><span className="press-zoom"><Maximize2/> Ampliar</span></button>
-        <figcaption><small>{String(i+1).padStart(2,'0')} · {g.kind}</small>{g.to?<Link to={g.to}>{g.caption}</Link>:<span>{g.caption}</span>}</figcaption>
+      <div className="doc-gallery-grid">{shownGallery.map((g,i)=><figure key={g.src+i} className={i===0?'is-main':undefined}>
+        <button type="button" onClick={()=>setZoom(i+skipMain)} aria-label={`Ampliar: ${g.caption}`}><img src={g.src} alt={g.caption} loading="lazy" decoding="async"/><span className="press-zoom"><Maximize2/> Ampliar</span></button>
+        <figcaption><small>{String(i+1).padStart(2,'0')}{skipMain?'':` · ${g.kind}`}</small>{g.to?<Link to={g.to}>{g.caption}</Link>:<span>{g.caption}</span>}</figcaption>
       </figure>)}</div>
     </section>}
     {!cfg.interview&&<section className="doc-footer" data-reveal>
