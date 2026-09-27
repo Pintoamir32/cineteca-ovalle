@@ -61,7 +61,7 @@ function RecordEditorInner(){
     }
     // Prensa: título/fuente, fecha, medio, documento digitalizado (imagen y PDF opcional) y vínculos a películas y personas
     if(isPress){
-      record={...record,format:'',collection:''};
+      record={...record,format:'',collection:'',description:''};
       extra={...extra,credits:[],gallery:[],locations:[],mediaType:'document',relations:(extra.relations||[]).filter(id=>records.some(x=>x.id===id&&['Película','Persona'].includes(x.type)))};
     }
     try{

@@ -117,12 +117,12 @@ function docConfig(item,extra){
     caption:'Documento digitalizado · Archivo CDO',
     cta:[Maximize2,'Ver documento completo',null],
     facts:[['Medio de origen',item.subtitle,true,'subtitle'],['Fecha',item.year,true,'year']],
-    factsLabel:'Ficha del documento',textLabel:'RESUMEN',download:true,press:true
+    factsLabel:'Ficha del documento',download:true,press:true
   };
 }
 
 export function DocumentView({item,extra,related,people}){
-  const {f,slot,edit}=useEdit();
+  const {f,slot}=useEdit();
   const cfg=docConfig(item,extra);
   // Galería: imagen principal, material propio del registro e imágenes de sus relacionados
   const gallery=useMemo(()=>[
@@ -171,7 +171,7 @@ export function DocumentView({item,extra,related,people}){
           </div>
           <div className="ficha-aside-label">{cfg.factsLabel}</div>
           <Facts rows={cfg.facts}/>
-          {(!cfg.press||edit||item.description)&&<><div className="ficha-section-label" id="texto"><span>01</span> {cfg.textLabel}</div>
+          {!cfg.press&&<><div className="ficha-section-label" id="texto"><span>01</span> {cfg.textLabel}</div>
           <div className="press-transcript"><p>{f('description',item.description,{multiline:true})}</p></div></>}
         </article>
       </div>
@@ -189,7 +189,7 @@ export function DocumentView({item,extra,related,people}){
       </figure>)}</div>
     </section>}
     <section className="doc-footer" data-reveal>
-      <div className="doc-footer-main"><PeopleCards people={people} number={cfg.press?'02':'03'} title={cfg.press?'Personas vinculadas':undefined}/></div>
+      <div className="doc-footer-main"><PeopleCards people={people} number={cfg.press?'01':'03'} title={cfg.press?'Personas vinculadas':undefined}/></div>
       <aside className="doc-footer-side">{cfg.press?<RelatedList related={related.filter(r=>r.type==='Película')} title="Películas vinculadas"/>
         :<><RelatedList related={related}/>{slot('relations')}<Places item={item} places={placesOf(extra)} slot={slot}/></>}</aside>
     </section>
