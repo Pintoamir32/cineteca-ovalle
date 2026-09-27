@@ -31,7 +31,7 @@ export function getFilmography(person,extra=recordExtras[person.id]){
   const name=norm(person.title), linked=extra?.relations||[];
   return getAllRecords().filter(r=>r.type==='Película').map(film=>{
     const roles=filmRoles(name,film);
-    if(!roles.size&&linked.includes(film.id))roles.add('Vinculación');
+    if(!roles.size&&linked.includes(film.id))roles.add('Participación');
     return {film,roles:[...roles]};
   }).filter(e=>e.roles.length).sort((a,b)=>String(a.film.year).localeCompare(String(b.film.year)));
 }
