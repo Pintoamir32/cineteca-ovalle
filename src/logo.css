@@ -9,3 +9,9 @@
 footer .brand .logo-mark{height:104px}
 @media(min-width:1400px){.topbar .logo-mark{height:64px}}
 @media(max-width:760px){.topbar .logo-mark{height:44px}footer .brand .logo-mark{height:80px}}
+
+/* Pie de página: el logo no invade la columna del titular */
+footer .footer-main{column-gap:clamp(40px,5vw,96px)}
+footer .footer-main .brand{display:block;width:100%;max-width:320px}
+footer .brand .logo-mark{height:auto;width:100%}
+@media(max-width:760px){footer .footer-main .brand{max-width:260px}}
