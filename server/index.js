@@ -239,8 +239,9 @@ app.get('/api/media/:id',async(req,res,next)=>{
     // El nombre es la huella del archivo: nunca cambia, se puede guardar en caché para siempre
     res.setHeader('Content-Type',m.mime);res.setHeader('Cache-Control','public, max-age=31536000, immutable');
     res.setHeader('X-Content-Type-Options','nosniff');
-    // Un SVG subido no puede ejecutar código aunque se abra directo
-    res.setHeader('Content-Security-Policy',"default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox");
+    // Un SVG subido no puede ejecutar código aunque se abra directo. Los PDF quedan fuera: con «sandbox»
+    // el navegador no los muestra dentro de la ficha
+    if(m.mime!=='application/pdf')res.setHeader('Content-Security-Policy',"default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox");
     res.send(m.data);
   }catch(err){next(err)}
 });

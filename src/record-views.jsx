@@ -31,6 +31,21 @@ export function MediaViewer({item,extra}){
   return <div className="media-viewer"><img src={item.image} alt={item.title} loading="lazy" decoding="async"/><span>IMAGEN DIGITALIZADA · ARCHIVO CDO</span></div>;
 }
 
+// Documento de prensa en pantalla: los de Google Drive por su vista previa; el resto, con el visor del navegador
+function pdfSource(url){
+  const drive=/drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]+)/.exec(url);
+  return drive?{src:`https://drive.google.com/file/d/${drive[1]}/preview`,frame:true}:{src:url,frame:false};
+}
+
+export function PdfViewer({url,title}){
+  const {src,frame}=pdfSource(url);
+  const fallback=<a className="doc-ghost-btn" href={url} target="_blank" rel="noreferrer"><FileText/> Abrir documento</a>;
+  return <div className="press-pdf-frame">
+    {frame?<iframe src={src} title={title} loading="lazy" allow="autoplay"/>
+      :<object data={`${src}#view=FitH`} type="application/pdf" aria-label={title}><div className="press-pdf-fallback"><FileText/><p>Este navegador no puede mostrar el documento aquí.</p>{fallback}</div></object>}
+  </div>;
+}
+
 /* ---------- Piezas compartidas ---------- */
 
 // [etiqueta, valor, ancho, campo editable]: en el gestor los campos editables se muestran aunque estén vacíos
@@ -124,7 +139,8 @@ export function DocumentView({item,extra,related,people}){
     document.addEventListener('keydown',onKey);return()=>document.removeEventListener('keydown',onKey);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[open,gallery.length]);
-  const [CtaIcon,ctaText,ctaHref]=cfg.cta;
+  const hasPdf=cfg.press&&!!extra.media;
+  const [CtaIcon,ctaText,ctaHref]=hasPdf?[FileText,'Ver documento','#documento']:cfg.cta;
   return <main className={`ficha-page doc-page doc-press doc-${item.slug}`}>
     <section className="doc-shell" data-reveal>
       <div className="ficha-film-top"><BackLink item={item}/><span className="ficha-code">{code(item)}</span></div>
@@ -160,6 +176,10 @@ export function DocumentView({item,extra,related,people}){
         </article>
       </div>
     </section>
+    {hasPdf&&<section className="press-pdf" id="documento" data-reveal>
+      <div className="ficha-filmography-head"><div className="ficha-section-label">DOCUMENTO DIGITALIZADO</div><a href={extra.media} target="_blank" rel="noreferrer">Abrir en otra pestaña <ArrowRight/></a></div>
+      <PdfViewer url={extra.media} title={item.title}/>
+    </section>}
     {!cfg.press&&<section className="doc-gallery" data-reveal>
       <div className="ficha-filmography-head"><div className="ficha-section-label"><span>02</span> GALERÍA</div><span>{String(gallery.length).padStart(2,'0')} IMÁGENES</span></div>
       {slot('gallery')}

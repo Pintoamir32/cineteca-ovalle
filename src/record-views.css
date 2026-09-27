@@ -134,3 +134,15 @@
 .media-external a{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:inline-flex;align-items:center;gap:10px;background:var(--acid);color:var(--black);padding:16px 22px;font-weight:800;font-size:14px;border-radius:999px;white-space:nowrap}
 .media-external a svg{width:20px;height:20px}
 @media(max-width:760px){.media-viewer .media-embed{height:380px}}
+
+/* Prensa: el PDF subido, en pantalla */
+.press-pdf{scroll-margin-top:90px;margin:0 24px;padding:44px 5vw 56px;background:#f8f7f1;border:1px solid var(--line);border-top:0}
+.press-pdf .ficha-section-label{margin:0}
+.press-pdf .ficha-filmography-head{margin-bottom:22px}
+.press-pdf .ficha-filmography-head a{display:inline-flex;align-items:center;gap:6px;font:700 10px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:inherit}
+.press-pdf .ficha-filmography-head a svg{width:14px;height:14px}
+.press-pdf-frame{height:min(88vh,1100px);border:1px solid var(--line);background:#fffdf6}
+.press-pdf-frame iframe,.press-pdf-frame object{display:block;width:100%;height:100%;border:0}
+.press-pdf-fallback{height:100%;display:grid;place-content:center;justify-items:center;gap:14px;padding:24px;text-align:center}
+.press-pdf-fallback svg{width:34px;height:34px}
+@media (max-width:760px){.press-pdf{margin:0 14px;padding:32px 20px 40px}.press-pdf-frame{height:75vh}}
