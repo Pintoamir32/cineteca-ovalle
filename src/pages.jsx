@@ -196,7 +196,7 @@ export function RecordDetail({item,extra}){
       <div className="ficha-hero-shade"/>
       {slot('image')}
       <BackLink item={item}/>
-      {/* Persona: fotografía, nombre y rol(es); la biografía va abajo */}
+      {/* Persona: fotografía, nombre y rol(es); abajo, biografía y filmografía */}
       <div className="ficha-hero-content">
         <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
         {!isPerson&&<span className="ficha-code">FICHA CDO—{String(item.id).padStart(4,'0')}</span>}
@@ -209,16 +209,15 @@ export function RecordDetail({item,extra}){
         <div className="ficha-section-label"><span>01</span> BIOGRAFÍA</div>
         <p className="ficha-person-bio">{f('description',item.description,{multiline:true})}</p>
         <div className="ficha-media ficha-filmography" id="filmografia">
-          <div className="ficha-filmography-head"><div className="ficha-section-label"><span>02</span> OBRAS EN LAS QUE PARTICIPÓ</div><span>{String(filmography.length).padStart(2,'0')} {filmography.length===1?'OBRA':'OBRAS'}</span></div>
-          {filmography.length?<ol className="ficha-filmography-list">{filmography.map(({film,roles})=>{const [fGenre,fDuration]=(film.format||'').split(' · ');return <li key={film.id}>
+          <div className="ficha-filmography-head"><div className="ficha-section-label"><span>02</span> FILMOGRAFÍA</div><span>{String(filmography.length).padStart(2,'0')} {filmography.length===1?'PELÍCULA':'PELÍCULAS'}</span></div>
+          {filmography.length?<ol className="ficha-filmography-list">{filmography.map(({film})=>{const [fGenre,fDuration]=(film.format||'').split(' · ');return <li key={film.id}>
             <img src={film.image} alt="" loading="lazy" decoding="async"/>
             <div className="ficha-filmography-info">
               <small>{film.year}{fGenre&&` · ${fGenre}`}{fDuration&&` · ${fDuration}`}</small>
               <h3>{film.title}</h3>
-              <div className="ficha-filmography-roles">{roles.map(r=><span key={r}>{r}</span>)}</div>
             </div>
             <Link className="ficha-filmography-btn" to={recordPath(film)}>Ver ficha <ArrowRight/></Link>
-          </li>})}</ol>:<p className="ficha-filmography-empty">Aún no hay obras vinculadas a esta persona en el archivo.</p>}
+          </li>})}</ol>:<p className="ficha-filmography-empty">Aún no hay películas vinculadas a esta persona en el archivo.</p>}
           {slot('works')}
         </div>
       </article>

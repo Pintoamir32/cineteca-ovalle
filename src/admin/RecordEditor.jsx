@@ -207,14 +207,14 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
   return {context,modals,open:setPicker};
 }
 
-// Obras de una persona: las películas donde figura en dirección o en un cargo con su nombre
+// Filmografía de una persona: las películas donde figura en dirección o en un cargo con su nombre
 // aparecen solas; otras se vinculan a mano (y solo esas se pueden quitar aquí)
 function PersonWorks({r,e,setE,openPicker}){
   const works=getFilmography(r,e);
-  return <PanelBlock title={`Obras en las que participó · ${works.length}`}>
+  return <PanelBlock title={`Filmografía · ${works.length}`}>
     {works.length>0&&<ul className="cms-mini-list">{works.map(({film,roles})=>{const manual=(e.relations||[]).includes(film.id)&&roles.join()==='Participación';return <li key={film.id}>
-      <img src={thumb(film.image,120)} alt=""/><span>{film.title}<small>{film.year} · {roles.join(', ')}</small></span>
-      {manual&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({relations:e.relations.filter(id=>id!==film.id)})} aria-label={`Quitar ${film.title}`} title="Quitar de sus obras"><X/></button>}
+      <img src={thumb(film.image,120)} alt=""/><span>{film.title}<small>{film.year}</small></span>
+      {manual&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({relations:e.relations.filter(id=>id!==film.id)})} aria-label={`Quitar ${film.title}`} title="Quitar de su filmografía"><X/></button>}
     </li>})}</ul>}
     <button type="button" className="cms-btn is-block" onClick={()=>openPicker('work')}><Plus/> Vincular película</button>
     <p className="cms-help is-text">Aparecen solas las películas donde figura con este mismo nombre en «Dirigida por» o en un cargo. Con «Vincular película» agregas otras.</p>
