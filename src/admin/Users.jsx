@@ -50,7 +50,7 @@ export function UsersPage({session}){
         </table>
         {!shown.length&&<p className="cms-empty">No hay cuentas que coincidan.</p>}
       </div>
-      <p className="cms-help">Para cambiar tu propia contraseña usa «Mi cuenta», abajo en el menú. Cada persona ve su propio tutorial la primera vez que entra.</p>
+      <p className="cms-help">Para cambiar tu propia contraseña usa «Mi cuenta», abajo en el menú. Cada persona ve el tutorial de cada pantalla la primera vez que entra a ella.</p>
     </>}
     {!users&&!error&&<p className="cms-help">Cargando…</p>}
     {dialog&&<UserDialog {...dialog} onClose={()=>setDialog(null)} onDone={msg=>{setDialog(null);toast(msg);load()}}/>}

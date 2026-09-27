@@ -92,3 +92,6 @@ export function findRecordByParam(param){
   if(/^\d+$/.test(p))return records.find(r=>r.id===Number(p))||null;
   return slugTable().bySlug.get(p.toLowerCase())||null;
 }
+
+// «Recién catalogado» automático: las últimas fichas creadas (el número más alto es la más nueva)
+export const newestRecords=(n=4)=>[...getAllRecords()].sort((a,b)=>b.id-a.id).slice(0,n);

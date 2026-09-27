@@ -34,7 +34,7 @@ const BACK={target:'.cms-editor-bar .cms-icon-btn',title:'Volver',text:'Con la f
 export const TOURS={
   dashboard:[
     {title:'Bienvenida al gestor',text:'Desde aquí se edita todo lo que se publica en el sitio de la Cineteca. Este recorrido corto te muestra dónde está cada cosa. Puedes saltarlo cuando quieras y volver a verlo con el botón «Tutorial».'},
-    {target:'.cms-side-nav',title:'El menú',text:'Las secciones están agrupadas: el Archivo (películas, personas, prensa, entrevistas y artículos), cómo se organiza (colecciones, línea de tiempo, comunas), la página de inicio, los colores y el respaldo. El número al lado indica cuántos elementos hay.'},
+    {target:'.cms-side-nav',title:'El menú',text:'Las secciones están agrupadas: el Archivo (películas, personas, prensa, entrevistas y artículos), cómo se organiza (colecciones, línea de tiempo, comunas), el sitio (la página de inicio y los colores) y el sistema (usuarios y respaldo). El número al lado indica cuántos elementos hay.'},
     {target:'.cms-new',title:'Crear una ficha',text:'Con «Nueva ficha» eliges qué tipo de ficha crear. También puedes crearla desde cada sección.'},
     {target:'.cms-kpis',title:'El archivo en cifras',text:'Cuántas fichas hay, cuántas están incompletas y cuántos archivos digitales (videos, audios y documentos) tiene el archivo.'},
     {target:'.cms-dash-grid',title:'Qué hay que hacer',text:'«Por completar» lista las fichas a las que les falta algo (imagen, descripción, archivo…). Haz clic en una para completarla. «Editado recientemente» te lleva de vuelta a lo último que tocaste.'},
@@ -46,18 +46,18 @@ export const TOURS={
     {target:'.cms-head-actions',title:'Crear una ficha',text:'Este botón abre una ficha nueva en blanco de esta sección.'},
     {target:'.cms-toolbar',title:'Buscar, ordenar y filtrar',text:'Busca por título, autoría, año o colección. Ordena por las más recientes, alfabéticamente o por año. «Por completar» muestra solo las fichas incompletas y «Borradores» las que no se ven en el sitio.'},
     {target:'.cms-tile-wrap',title:'Cada ficha',text:'La tarjeta muestra el tipo, el código y el año. Si le falta algo aparece un aviso amarillo («1 pendiente»): pasa el mouse por encima para ver qué es.'},
-    {target:'.cms-tile-pub',title:'Publicar y despublicar',text:'«Despublicar» oculta la ficha del sitio sin borrarla: queda como borrador (en gris) y la puedes seguir editando. «Publicar» la vuelve a mostrar. El cambio es inmediato.'}
+    {target:'.cms-tile-pub',title:'Publicar y despublicar',text:'«Despublicar» oculta la ficha del sitio sin borrarla: queda como borrador (en gris) y la puedes seguir editando. «Publicar» la vuelve a mostrar. Desde esta lista el cambio es inmediato; para ocultar te pide confirmación.'}
   ],
   record:[
     {target:'.cms-editor-bar',title:'Editor de ficha',text:'Arriba ves la sección y el código de la ficha, su estado («Guardado», «Cambios sin guardar» o «Borrador») y los botones para ver la ficha en el sitio y guardar.'},
     {target:'.cms-mode',title:'Dos vistas',text:'«Ficha completa» muestra la página de la ficha tal como se ve en el sitio. «Tarjeta y lista» muestra cómo aparece en los listados y el buscador.'},
     {...PREVIEW,text:'Esta es la ficha real del sitio. Haz clic en el título, la descripción, el año o cualquier dato para reescribirlo ahí mismo. Con los botones negros cambias la imagen principal y el archivo digital (video, audio o documento).'},
-    {target:'[data-tour="Visibilidad en el sitio"]',title:'Visibilidad',text:'Indica si la ficha se ve en el sitio. «Despublicar» la deja como borrador: desaparece del sitio pero sigue aquí. En una ficha nueva eliges si se publica al guardar o queda como borrador.'},
+    {target:'[data-tour="Visibilidad en el sitio"]',title:'Visibilidad',text:'Elige si la ficha se ve en el sitio («Publicada») o queda oculta como «Borrador», que sigue aquí para editarla. El cambio se aplica al guardar, junto con todo lo demás.'},
     {target:'[data-tour="Estado de la ficha"]',title:'Qué le falta',text:'La lista marca lo que ya está completo y lo que falta para que la ficha quede bien presentada en el sitio.'},
     {target:'[data-tour="Clasificación"]',title:'Clasificación',text:'La colección a la que pertenece, el color de su etiqueta (puedes elegir cualquier color con el círculo de colores o escribiendo el código) y el tipo de ficha.'},
     {target:'[data-tour="Contenido"]',title:'Contenido',text:'Agrega créditos y datos (fotografía, montaje…) con los botones «+»; su valor se escribe con clic en la vista previa. Aquí también cambias el archivo digital y armas la galería: agrega, ordena con las flechas o quita imágenes.'},
     {target:'[data-tour="Conexiones"]',title:'Conexiones',text:'Vincula otras fichas relacionadas (aparecen en «Relacionados») y los territorios o locaciones, que conectan la ficha con el mapa.'},
-    {target:'[data-tour="Portada del sitio"]',title:'Destacar en el inicio',text:'Convierte esta ficha en la «Pieza destacada» de la página de inicio.'},
+    {target:'[data-tour="Portada del sitio"]',title:'Destacar en el inicio',text:'Convierte esta ficha en la «Pieza destacada» de la página de inicio. Se aplica al guardar.'},
     DANGER,SAVE
   ],
   inicio:[
@@ -68,7 +68,7 @@ export const TOURS={
     {target:'.cms-hsec',title:'Portada y carrusel',text:'Elige la diapositiva que quieres editar con las miniaturas. Crea una nueva en blanco o «Desde una ficha» (toma su imagen y textos). Con las flechas cambias su orden, con el basurero la quitas, y abajo eliges a dónde lleva su botón.'},
     {target:'.cms-hsecs',title:'Secciones en el orden de la página',text:'Cada sección aparece en el mismo orden que en la página. Haz clic en su nombre para abrir sus opciones y llevar la vista hasta ella.'},
     {target:'.cms-hsecs .cms-toggle-eye',title:'Mostrar u ocultar secciones',text:'El ojo muestra u oculta la sección en el sitio. Las ocultas aparecen tachadas aquí y en la vista previa.'},
-    {...DANGER,text:'«Volver a los textos originales» reemplaza los textos del inicio por los de fábrica. Podrás revisar el resultado antes de guardar.'},
+    {target:'[data-tour="Textos originales"]',title:'Textos originales',text:'«Volver a los textos originales» reemplaza los textos del inicio por los de fábrica. Podrás revisar el resultado y descartarlo antes de guardar.'},
     SAVE
   ],
   colecciones:[
@@ -111,7 +111,7 @@ export const TOURS={
     {...PREVIEW,title:'Vista previa de colores',text:'Aquí ves el sitio con los colores que estás probando. No cambia nada hasta que guardes.'},
     {target:'[data-tour="Combinaciones"]',title:'Combinaciones',text:'Paletas listas para usar. «Volver a los colores originales» restaura los de fábrica.'},
     {target:'[data-tour="Colores principales"]',title:'Colores principales',text:'Ajusta cada color: haz clic en el círculo para elegirlo o escribe su código (por ejemplo #d9ff43).'},
-    {target:'[data-tour="Etiquetas de fichas y colecciones"]',title:'Colores de etiquetas',text:'Los colores que se ofrecen para las etiquetas. Si cambias uno, las fichas y colecciones que lo usaban se actualizan.'},
+    {target:'[data-tour="Etiquetas de fichas y colecciones"]',title:'Colores de etiquetas',text:'Cada sección del archivo tiene su color de etiqueta. Si cambias uno, las fichas y colecciones que lo usaban se actualizan.'},
     {target:'[data-tour="Legibilidad"]',title:'¿Se lee bien?',text:'Revisa automáticamente si los textos se leen bien sobre cada fondo. Si aparece un aviso, elige un color más claro u oscuro.'},
     SAVE
   ],

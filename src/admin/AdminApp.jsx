@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle, ArrowLeft, ArrowUpRight, BookOpen, CalendarRange, Check, CircleCheck, CircleHelp, Database, LogOut, UserPlus, Download, ExternalLink, Eye, EyeOff, FileText, Film, Home, Layers, LayoutDashboard, MapPin, Menu, Mic2, Palette, Plus, RotateCcw, Save, Search, Trash2, Upload, UserRound, Users, X } from 'lucide-react';
 import { collections, heroSlides, locations, recordExtras, records, timelineEvents } from '../data';
-import { exportData, getLastSaved, hydrate, importData, resetData, setRecordPublished, useStoreVersion } from '../store';
+import { exportData, getLastSaved, hydrate, importData, resetData, saveError, setRecordPublished, useStoreVersion } from '../store';
 import { tagStyle } from '../color';
 import { Modal, UiProvider, thumb, useUi } from './fields';
 import { authStatus, changePassword, logout as endSession, markTutorials } from './auth';
@@ -126,8 +126,10 @@ function AdminShell({session,onLogout}){
             {item('linea-de-tiempo',CalendarRange,'Línea de tiempo',timelineEvents.length)}
             {item('comunas',MapPin,'Comunas y mapa',locations.length)}
           </>)}
-          {group('Página de inicio',item('inicio',Home,'Inicio y carrusel',heroSlides.length))}
-          {group('Apariencia',item('colores',Palette,'Colores'))}
+          {group('Sitio',<>
+            {item('inicio',Home,'Inicio y carrusel',heroSlides.length)}
+            {item('colores',Palette,'Colores del sitio')}
+          </>)}
           {group('Sistema',<>
             {item('usuarios',Users,'Usuarios')}
             {item('respaldo',Database,'Respaldo')}
@@ -219,14 +221,21 @@ const savedLabel=()=>{
 export function EditorShell({crumb,title,isNew,dirty,onBack,onSave,onDiscard,onDelete,deleteLabel='Eliminar',saveLabel,note,viewHref,panel,children,hint='Haz clic sobre cualquier texto o imagen de la vista previa para cambiarlo.'}){
   const {setDirty}=useAdminNav();
   const saveRef=useRef(onSave);saveRef.current=onSave;
+  // El panel derecho queda fijo bajo la barra de guardar; su alto depende de lo que mide la barra
+  const rootRef=useRef(null), barRef=useRef(null);
+  useEffect(()=>{
+    const bar=barRef.current;if(!bar)return;
+    const ro=new ResizeObserver(()=>rootRef.current?.style.setProperty('--cms-bar-h',`${bar.offsetHeight}px`));
+    ro.observe(bar);return()=>ro.disconnect();
+  },[]);
   useEffect(()=>{setDirty(dirty)},[dirty,setDirty]);
   useEffect(()=>()=>setDirty(false),[setDirty]);
   useEffect(()=>{
     const onKey=e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();saveRef.current()}};
     window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey);
   },[]);
-  return <div className="cms-editor">
-    <div className="cms-editor-bar">
+  return <div className="cms-editor" ref={rootRef}>
+    <div className="cms-editor-bar" ref={barRef}>
       <button type="button" className="cms-icon-btn" onClick={onBack} aria-label="Volver"><ArrowLeft/></button>
       <div className="cms-editor-title"><small>{crumb}</small><strong>{title||'Sin título'}</strong></div>
       <span className={`cms-status ${isNew?'is-new':dirty?'is-dirty':''}`}>{isNew?'Nuevo · sin guardar':dirty?'Cambios sin guardar':'Guardado'}</span>
@@ -289,7 +298,7 @@ function Dashboard(){
       <section className="cms-card">
         <div className="cms-card-head"><h2>Editado recientemente</h2></div>
         {recent.length?<ul className="cms-rows">{recent.map(r=><li key={r.id}><button type="button" onClick={()=>go(`/admin/registros/${r.slug}/${r.id}`)}>
-          <img src={thumb(r.image,120)} alt=""/><span><strong>{r.title}</strong><small>{r.type} · {new Date(r.updatedAt).toLocaleString('es-CL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</small></span><ArrowUpRight/>
+          {r.image?<img src={thumb(r.image,120)} alt=""/>:<span className="cms-thumb-empty"/>}<span><strong>{r.title||'Sin título'}</strong><small>{r.type}{r.draft&&' · borrador'} · {new Date(r.updatedAt).toLocaleString('es-CL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</small></span><ArrowUpRight/>
         </button></li>)}</ul>:<p className="cms-empty">Aún no has editado fichas. Elige una sección abajo para comenzar.</p>}
       </section>
     </div>
@@ -321,7 +330,7 @@ function NewRecordMenu({type}){
 
 function RecordList(){
   const {slug}=useParams(), type=typeBySlug(slug), {go}=useAdminNav();
-  const [q,setQ]=useState(''), [sort,setSort]=useState('recent'), [filter,setFilter]=useState(null), {toast}=useUi();
+  const [q,setQ]=useState(''), [sort,setSort]=useState('recent'), [filter,setFilter]=useState(null), {toast,confirm}=useUi();
   if(!type)return <Dashboard/>;
   const meta=TYPE_META[type];
   const fold=s=>String(s).normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
@@ -329,8 +338,10 @@ function RecordList(){
   if(filter==='pending')list=list.filter(r=>missingFields(r).length);
   if(filter==='drafts')list=list.filter(r=>r.draft);
   const drafts=records.filter(r=>r.type===type&&r.draft).length;
+  // Desde la lista se aplica al instante; ocultar pide confirmación, igual que en la ficha
   const togglePublished=async r=>{
-    try{await setRecordPublished(r.id,!!r.draft)}catch{return toast('No se pudo cambiar la visibilidad.','error')}
+    if(!r.draft&&!await confirm({title:`¿Despublicar “${r.title}”?`,text:'Dejará de verse en el sitio: listas, buscador, relacionados e inicio. Seguirá aquí como borrador y podrás volver a publicarla cuando quieras.',ok:'Despublicar'}))return;
+    try{await setRecordPublished(r.id,!!r.draft)}catch(err){return toast(saveError(err),'error')}
     toast(r.draft?`“${r.title}” ya se ve en el sitio.`:`“${r.title}” quedó como borrador.`);
   };
   list=[...list].sort(sort==='title'?(a,b)=>a.title.localeCompare(b.title,'es'):sort==='year'?(a,b)=>String(a.year).localeCompare(String(b.year)):(a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||'')||b.id-a.id);

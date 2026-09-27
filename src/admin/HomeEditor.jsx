@@ -3,11 +3,12 @@ import { ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, ImagePlus, Layers, Maximi
 import { heroSlides, homeContent, records, site } from '../data';
 import { HOME_SECTIONS, HomeEditContext, rich } from '../home';
 import { getPath } from '../site-text';
-import { originalHome, setData, useStoreVersion } from '../store';
+import { originalHome, saveError, setData, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
 import { Choice, Editable, ImagePicker, RecordPicker, thumb, useUi } from './fields';
 import { SiteFrame } from './SiteFrame';
 import { slideFromRecord, slideLinkOptions } from './meta';
+import { newestRecords } from '../repository';
 
 // Copia el objeto solo a lo largo de la ruta modificada
 function setPath(obj,path,value){
@@ -51,7 +52,7 @@ export function HomeEditor(){
     const {slides,featuredId,...content}=draft;
     const bad=slides.findIndex(x=>!x.image||!String(x.title||'').trim());
     if(bad>=0){setSlide(bad);reveal('.hero-new');return toast(`La diapositiva ${bad+1} necesita ${slides[bad].image?'un título':'una foto'} antes de guardar.`,'error')}
-    try{await setData({homeContent:content,heroSlides:slides,site:{...site,featuredId}})}catch{return toast('No se pudo guardar.','error')}
+    try{await setData({homeContent:content,heroSlides:slides,site:{...site,featuredId}})}catch(err){return toast(saveError(err),'error')}
     setDirty(false);setNavDirty(false);toast('Inicio actualizado y publicado.');
   };
   const discard=async()=>{if(await confirm({title:'¿Descartar los cambios?',text:'El inicio volverá a su última versión guardada.',ok:'Descartar'})){setDraft(load());setDirty(false)}};
@@ -123,9 +124,9 @@ export function HomeEditor(){
     {id:'latest',body:<>
       <div className="cms-segment is-small cms-seg-block">
         <button type="button" className={!latestIds.length?'active':''} onClick={()=>set('latestIds',[])}>Automático</button>
-        <button type="button" className={latestIds.length?'active':''} onClick={()=>!latestIds.length&&set('latestIds',records.slice(0,4).map(r=>r.id))}>Elegir fichas</button>
+        <button type="button" className={latestIds.length?'active':''} onClick={()=>!latestIds.length&&set('latestIds',newestRecords().map(r=>r.id))}>Elegir fichas</button>
       </div>
-      {!latestIds.length?help('Muestra las primeras 4 fichas del archivo.'):<>
+      {!latestIds.length?help('Muestra solas las 4 últimas fichas creadas y publicadas.'):<>
         <ul className="cms-mini-list cms-latest">{latest.map((r,i)=><li key={r.id}>
           <img src={thumb(r.image,120)} alt=""/><span>{r.title}<small>{r.type}</small></span>
           <button type="button" className="cms-icon-btn" disabled={i===0} onClick={()=>moveLatest(i,-1)} aria-label="Subir"><ArrowUp/></button>
@@ -160,13 +161,14 @@ export function HomeEditor(){
       </div>
       {isOpen&&<div className="cms-hsec-body">{s.body}</div>}
     </section>})}</div>
-    <div className="cms-panel-block cms-danger-zone">
-      <div className="cms-panel-title"><span>Zona de peligro</span></div>
-      <button type="button" className="cms-btn is-block is-danger-outline" onClick={restore}><RotateCcw/> Volver a los textos originales</button>
-    </div>
+    {/* No es irreversible: se puede revisar y descartar antes de guardar */}
+    <PanelBlock title="Textos originales">
+      <button type="button" className="cms-btn is-ghost is-block" onClick={restore}><RotateCcw/> Volver a los textos originales</button>
+      {help('Se puede revisar y descartar antes de guardar.')}
+    </PanelBlock>
   </>;
 
-  return <EditorShell crumb="Página de inicio" title="Inicio y carrusel" dirty={dirty} onBack={()=>go('/admin')} onSave={save} onDiscard={discard} viewHref="/" panel={panel}
+  return <EditorShell crumb="Sitio" title="Inicio y carrusel" dirty={dirty} onBack={()=>go('/admin')} onSave={save} onDiscard={discard} viewHref="/" panel={panel}
     hint="Es la página real: clic en cualquier texto para reescribirlo, o en los botones negros sobre las fotos para cambiarlas.">
     <div className="cms-frame-tools">
       <div className="cms-segment is-small">

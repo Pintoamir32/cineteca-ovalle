@@ -5,12 +5,14 @@ import { collections, locations, records, timelineEvents } from '../data';
 import { EditContext } from '../edit-context';
 import { CollectionsPage, TimelinePage } from '../pages';
 import { countByCollection, countByLocation } from '../repository';
-import { removeListItem, saveCollection, saveLocation, saveTimelineEvent, useStoreVersion } from '../store';
+import { removeListItem, saveCollection, saveError, saveLocation, saveTimelineEvent, useStoreVersion } from '../store';
 import { tagStyle } from '../color';
 import { EditorShell, PageHead, PanelBlock, useAdminNav } from './AdminApp';
 import { Choice, ColorSwatches, Editable, ImagePicker, palette, useUi } from './fields';
 import { SiteFrame } from './SiteFrame';
 import { LocationPicker } from './LocationPicker';
+import { HomeEditContext } from '../site-text';
+import { useSharedTexts } from './shared-text';
 
 const pad=n=>String(n).padStart(2,'0');
 const slugify=s=>s.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -27,7 +29,8 @@ function useItemDraft(list,blank,startDirty=false){
 
 // Guardar / eliminar / descartar comunes a todos los editores de lista
 // male: concuerda los avisos ("Hito creado" / "Colección creada")
-function useItemActions({base,item,label,save,remove,removeText,stayAfterSave=true,male=false}){
+// shared: textos comunes de la página (títulos e introducción), que se guardan con el mismo botón
+function useItemActions({base,item,label,save,remove,removeText,stayAfterSave=true,male=false,shared}){
   const o=male?'o':'a';
   const navigate=useNavigate(), {setDirty}=useAdminNav(), {toast,confirm}=useUi();
   return {
@@ -35,7 +38,7 @@ function useItemActions({base,item,label,save,remove,removeText,stayAfterSave=tr
       const err=save.validate?.();
       if(err)return toast(err,'error');
       let result;
-      try{result=await save.run()}catch{return toast('No se pudo guardar. Revisa el espacio disponible del navegador.','error')}
+      try{result=await save.run();await shared?.save()}catch(err){return toast(saveError(err),'error')}
       item.setDirty(false);setDirty(false);
       toast(item.isNew?`${label} cread${o} y publicad${o}.`:'Cambios guardados y publicados.');
       if(save.next)navigate(save.next(result),{replace:true});
@@ -43,9 +46,10 @@ function useItemActions({base,item,label,save,remove,removeText,stayAfterSave=tr
     },
     onDelete:async()=>{
       if(!await confirm({title:`¿Eliminar ${label.toLowerCase()}?`,text:removeText,ok:'Eliminar',danger:true}))return;
-      await remove();setDirty(false);toast(`${label} eliminad${o}.`);navigate(base);
+      try{await remove()}catch(err){return toast(saveError(err),'error')}
+      setDirty(false);toast(`${label} eliminad${o}.`);navigate(base);
     },
-    onDiscard:async()=>{if(await confirm({title:'¿Descartar los cambios?',ok:'Descartar'}))item.reset()},
+    onDiscard:async()=>{if(await confirm({title:'¿Descartar los cambios?',ok:'Descartar'})){item.reset();shared?.reset()}},
     deleteLabel:`Eliminar ${label.toLowerCase()}`
   };
 }
@@ -75,7 +79,7 @@ export function CollectionList(){
   useStoreVersion();
   const {go}=useAdminNav();
   return <div className="cms-page">
-    <PageHead eyebrow="SITIO" title="Colecciones" desc="Recorridos temáticos. Cada ficha pertenece a una colección."><button type="button" className="cms-btn is-primary" onClick={()=>go('/admin/colecciones/nuevo')}><Plus/> Nueva colección</button></PageHead>
+    <PageHead eyebrow="ORGANIZAR EL ARCHIVO" title="Colecciones" desc="Recorridos temáticos. Cada ficha pertenece a una colección."><button type="button" className="cms-btn is-primary" onClick={()=>go('/admin/colecciones/nuevo')}><Plus/> Nueva colección</button></PageHead>
     <div className="cms-collections">{collections.map((c,i)=><button type="button" key={c.slug||i} className="cms-collection" onClick={()=>go(`/admin/colecciones/${i}`)}>
       <img src={c.image} alt=""/><div className="cms-collection-shade"/>
       <span>{pad(i+1)} · {c.years}</span><h3>{c.title}</h3><b style={tagStyle(c.color)}>{countByCollection(c.title)} fichas</b>
@@ -86,11 +90,13 @@ export function CollectionList(){
 export const CollectionEditor=keyed(function CollectionEditor(){
   useStoreVersion();
   const item=useItemDraft(collections,()=>({slug:'',title:'',years:'',description:'',image:'',color:palette()[collections.length%palette().length]}));
-  const {draft:c,set}=item, {go}=useAdminNav();
+  const {draft:c,set}=item, {go}=useAdminNav(), shared=useSharedTexts(()=>item.setDirty(true));
   const count=item.existing?countByCollection(item.existing.title):0;
-  const actions=useItemActions({base:'/admin/colecciones',item,label:'Colección',
+  const actions=useItemActions({base:'/admin/colecciones',item,label:'Colección',shared,
     save:{validate:()=>!c.title.trim()?'Escribe un nombre para la colección.':!c.image?'Añade una imagen de portada.':collections.some((x,j)=>j!==item.i&&x.title===c.title.trim())?'Ya existe una colección con ese nombre.':null,
-      run:()=>saveCollection(item.i,{...c,title:c.title.trim(),slug:slugify(c.title)})},
+      // Al crearla queda al final de la lista; el editor sigue abierto en ella
+      run:async()=>{const at=item.isNew?collections.length:item.i;await saveCollection(item.i,{...c,title:c.title.trim(),slug:slugify(c.title)});return at},
+      next:at=>`/admin/colecciones/${at}`},
     remove:()=>removeListItem('collections',item.i),removeText:count?`Tiene ${count} registros. Las fichas conservarán el nombre de la colección, pero esta dejará de aparecer en la página de colecciones.`:'Dejará de aparecer en la página de colecciones.'});
   const members=item.existing?records.filter(r=>r.collection===item.existing.title):[];
   const edit=useListEdit({draft:c,set,items:withDraft(collections,item),index:item.isNew?collections.length:item.i,count,pick:i=>i<collections.length&&go(`/admin/colecciones/${i}`),
@@ -107,9 +113,9 @@ export const CollectionEditor=keyed(function CollectionEditor(){
         {members.length>12&&<p className="cms-help">y {members.length-12} más…</p>}
       </PanelBlock>
     </>}>
-    <EditContext.Provider value={edit.context}>
+    <HomeEditContext.Provider value={shared.context}><EditContext.Provider value={edit.context}>
       <SiteFrame className="is-list" path="/colecciones"><CollectionsPage/></SiteFrame>
-    </EditContext.Provider>
+    </EditContext.Provider></HomeEditContext.Provider>
     {edit.modals}
   </EditorShell>;
 });
@@ -126,7 +132,7 @@ export function TimelineList(){
   timelineEvents.forEach((e,i)=>{const d=decadeOf(e), last=groups[groups.length-1];last&&last.decade===d?last.items.push({e,i}):groups.push({decade:d,items:[{e,i}]})});
   const add=year=>go(`/admin/linea-de-tiempo/nuevo${year?`?anio=${year}`:''}`);
   return <div className="cms-page">
-    <PageHead eyebrow="SITIO" title="Línea de tiempo" desc={`${timelineEvents.length} hitos de la historia audiovisual. Se ordenan solos por año.`}><button type="button" className="cms-btn is-primary" onClick={()=>add()}><Plus/> Nuevo hito</button></PageHead>
+    <PageHead eyebrow="ORGANIZAR EL ARCHIVO" title="Línea de tiempo" desc={`${timelineEvents.length} hitos de la historia audiovisual. Se ordenan solos por año.`}><button type="button" className="cms-btn is-primary" onClick={()=>add()}><Plus/> Nuevo hito</button></PageHead>
     {timelineEvents.length?groups.map(g=><section key={g.decade} className="cms-timeline-group">
       <header><h2>{g.decade==='Sin año'?g.decade:`Década de ${g.decade.slice(0,-1)}`}</h2><small>{g.items.length} {g.items.length===1?'hito':'hitos'}</small>
         {g.decade!=='Sin año'&&<button type="button" className="cms-btn is-ghost is-small" onClick={()=>add(g.decade.slice(0,-1))}><Plus/> Agregar aquí</button>}</header>
@@ -141,10 +147,10 @@ export const TimelineEditor=keyed(function TimelineEditor(){
   useStoreVersion();
   const [params]=useSearchParams();
   const item=useItemDraft(timelineEvents,()=>({year:params.get('anio')||String(new Date().getFullYear()),title:'',text:'',type:'Hito',image:''}));
-  const {draft:e,set}=item, {go}=useAdminNav();
+  const {draft:e,set}=item, {go}=useAdminNav(), shared=useSharedTexts(()=>item.setDirty(true));
   const year=String(e.year||'').trim();
   const yearError=!year?'Escribe el año del hito.':!/^\d{4}(\s*[-–—]\s*\d{4})?$/.test(year)?'Usa un año de cuatro cifras (1972) o un período (1968—1973).':null;
-  const actions=useItemActions({base:'/admin/linea-de-tiempo',item,label:'Hito',male:true,
+  const actions=useItemActions({base:'/admin/linea-de-tiempo',item,label:'Hito',male:true,shared,
     save:{validate:()=>!e.title.trim()?'Escribe un título para el hito.':yearError,
       run:()=>saveTimelineEvent(item.i,{...e,year,title:e.title.trim(),text:(e.text||'').trim()}),next:i=>`/admin/linea-de-tiempo/${i}`},
     remove:()=>removeListItem('timelineEvents',item.i),removeText:'Dejará de mostrarse en la línea de tiempo.'});
@@ -168,8 +174,8 @@ export const TimelineEditor=keyed(function TimelineEditor(){
       <PanelBlock title="Año">
         <label className="cms-field"><input value={e.year} onChange={ev=>set({year:ev.target.value})} inputMode="numeric" placeholder="1972" aria-label="Año del hito" aria-invalid={!!yearError}/></label>
         {yearError?<p className="cms-help is-error">{yearError}</p>
-          :<p className="cms-help">{before&&after?<>Quedará entre {neighbor(before)} y {neighbor(after)}.</>:before?<>Quedará al final, después de {neighbor(before)}.</>:after?<>Quedará al comienzo, antes de {neighbor(after)}.</>:'Es el único hito.'}</p>}
-        {!yearError&&sameYear.length>0&&<p className="cms-help">También en {yearOf(e)}: {sameYear.map(x=>x.title).join(', ')}.</p>}
+          :<p className="cms-help is-text">{before&&after?<>Quedará entre {neighbor(before)} y {neighbor(after)}.</>:before?<>Quedará al final, después de {neighbor(before)}.</>:after?<>Quedará al comienzo, antes de {neighbor(after)}.</>:'Es el único hito.'}</p>}
+        {!yearError&&sameYear.length>0&&<p className="cms-help is-text">También en {yearOf(e)}: {sameYear.map(x=>x.title).join(', ')}.</p>}
       </PanelBlock>
       <PanelBlock title="Categoría"><Choice value={e.type} options={types} onChange={type=>set({type})} allowNew newLabel="Nueva categoría"/></PanelBlock>
       <PanelBlock title="Imagen · opcional">
@@ -184,9 +190,9 @@ export const TimelineEditor=keyed(function TimelineEditor(){
         </div>
       </PanelBlock>}
     </>}>
-    <EditContext.Provider value={edit.context}>
+    <HomeEditContext.Provider value={shared.context}><EditContext.Provider value={edit.context}>
       <SiteFrame className="is-list" path="/linea-de-tiempo"><TimelinePage/></SiteFrame>
-    </EditContext.Provider>
+    </EditContext.Provider></HomeEditContext.Provider>
     {edit.modals}
   </EditorShell>;
 });
@@ -197,7 +203,7 @@ export function LocationList(){
   useStoreVersion();
   const {go}=useAdminNav();
   return <div className="cms-page">
-    <PageHead eyebrow="SITIO" title="Comunas y mapa" desc="Lugares del mapa territorial. Las fichas se vinculan a ellos desde «Territorios»."><button type="button" className="cms-btn is-primary" onClick={()=>go('/admin/comunas/nuevo')}><Plus/> Nueva comuna</button></PageHead>
+    <PageHead eyebrow="ORGANIZAR EL ARCHIVO" title="Comunas y mapa" desc="Lugares del mapa territorial. Las fichas se vinculan a ellos desde «Territorios»."><button type="button" className="cms-btn is-primary" onClick={()=>go('/admin/comunas/nuevo')}><Plus/> Nueva comuna</button></PageHead>
     <div className="cms-locations">{locations.map((l,i)=><button type="button" key={l.id} onClick={()=>go(`/admin/comunas/${i}`)}>
       <MapPin/><strong>{l.name}</strong><b>{countByLocation(l.name)}</b><small>{l.lat.toFixed(3)}, {l.lon.toFixed(3)}</small>
     </button>)}</div>
@@ -212,7 +218,8 @@ export const LocationEditor=keyed(function LocationEditor(){
   const lat=Number(l.lat), lon=Number(l.lon), valid=Number.isFinite(lat)&&Number.isFinite(lon)&&Math.abs(lat)<=90&&Math.abs(lon)<=180;
   const actions=useItemActions({base:'/admin/comunas',item,label:'Comuna',
     save:{validate:()=>!l.name.trim()?'Escribe el nombre de la comuna.':!valid?'Revisa la latitud y longitud.':locations.some((x,j)=>j!==item.i&&x.name===l.name.trim())?'Ya existe una comuna con ese nombre.':null,
-      run:()=>saveLocation(item.i,{...l,name:l.name.trim(),lat,lon})},
+      run:async()=>{const at=item.isNew?locations.length:item.i;await saveLocation(item.i,{...l,name:l.name.trim(),lat,lon});return at},
+      next:at=>`/admin/comunas/${at}`},
     remove:()=>removeListItem('locations',item.i),removeText:count?`Hay ${count} registros vinculados a este lugar. Seguirán mostrándolo en su ficha, pero ya no aparecerá en el mapa.`:'Dejará de aparecer en el mapa.'});
   if(!item.isNew&&!item.existing)return <NotFound back="/admin/comunas"/>;
   return <EditorShell crumb={`Comunas · ${item.isNew?'Nueva':l.name}`} title={l.name} isNew={item.isNew} dirty={item.dirty}

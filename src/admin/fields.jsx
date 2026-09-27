@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown, FileText, Film, Headphones, ImagePlus, Images, Link2, Pencil, Plus, Search, SlidersHorizontal, Trash2, Type, Upload, X } from 'lucide-react';
 import { collections, heroSlides, recordExtras, records, theme, timelineEvents } from '../data';
@@ -73,24 +73,48 @@ export function Modal({children,onClose,className='',title}){
 // multiline: admite saltos de línea · wrap: ajusta el texto largo pero Enter confirma
 // render: cómo mostrar el valor cuando no se está editando (p. ej. con cursivas)
 export function Editable({value,onChange,placeholder='Escribe aquí…',multiline=false,wrap=false,as:Tag='span',className='',type='text',label,render}){
-  const [editing,setEditing]=useState(false);
-  const original=useRef(value), fieldRef=useRef(null);
-  const start=()=>{original.current=value;setEditing(true)};
+  const [editing,setEditing]=useState(false), [floatBox,setFloatBox]=useState(null);
+  const original=useRef(value), fieldRef=useRef(null), tagRef=useRef(null), floating=useRef(false);
+  // En la vista previa achicada, el texto se edita en un cuadro flotante a tamaño normal
+  const scaleOf=()=>{const frame=tagRef.current?.ownerDocument?.defaultView?.frameElement;if(!frame)return null;const w=frame.getBoundingClientRect().width;return frame.offsetWidth?{frame,scale:w/frame.offsetWidth}:null};
+  const start=()=>{original.current=value;const s=scaleOf();floating.current=!!s&&s.scale<.9;setEditing(true)};
   const finish=()=>setEditing(false);
   const cancel=()=>{onChange(original.current);setEditing(false)};
-  const area=multiline||wrap;
-  const grow=el=>{if(el&&area){el.style.height='auto';el.style.height=`${el.scrollHeight}px`}};
-  useEffect(()=>{if(editing){const el=fieldRef.current;el?.focus();el?.select?.();grow(el)}},[editing]);
+  const area=multiline||wrap||floating.current;
+  const grow=el=>{if(el&&area){el.style.height='auto';el.style.height=`${Math.min(el.scrollHeight+el.offsetHeight-el.clientHeight,320)}px`}};
+  useEffect(()=>{if(editing){const el=fieldRef.current;el?.focus();el?.select?.();grow(el)}},[editing,floatBox!==null]);// eslint-disable-line react-hooks/exhaustive-deps
+  // Ubica el cuadro junto al texto (debajo, o encima si no cabe) y lo sigue al desplazar
+  useLayoutEffect(()=>{
+    if(!editing||!floating.current){setFloatBox(null);return}
+    const place=()=>{
+      const s=scaleOf();if(!s)return;
+      const fr=s.frame.getBoundingClientRect(), r=tagRef.current.getBoundingClientRect(), W=window.innerWidth, H=window.innerHeight;
+      const width=Math.min(W-16,Math.max(340,Math.min(560,r.width*s.scale))), top=fr.top+r.top*s.scale, bottom=fr.top+r.bottom*s.scale;
+      const up=H-bottom<220&&top>H-bottom;
+      setFloatBox({left:Math.max(8,Math.min(fr.left+r.left*s.scale,W-width-8)),width,...(up?{bottom:H-top+8}:{top:bottom+8})});
+    };
+    place();
+    window.addEventListener('scroll',place,true);window.addEventListener('resize',place);
+    return()=>{window.removeEventListener('scroll',place,true);window.removeEventListener('resize',place)};
+  },[editing]);
+  const display=v=>{const empty=v===undefined||v===null||String(v).trim()==='';return empty?placeholder:render?render(v):multiline?String(v).split('\n').map((l,i,a)=><React.Fragment key={i}>{l}{i<a.length-1&&<br/>}</React.Fragment>):v};
   if(editing){
     const props={ref:fieldRef,value:value??'',className:'cms-edit-field',placeholder,'aria-label':label||placeholder,onBlur:finish,onClick:e=>{e.preventDefault();e.stopPropagation()},
       onChange:e=>{onChange(multiline?e.target.value:e.target.value.replace(/\n/g,' '));grow(e.target)},
       onKeyDown:e=>{if(e.key==='Escape'){e.stopPropagation();cancel()}if(e.key==='Enter'&&(!multiline||e.ctrlKey||e.metaKey)){e.preventDefault();finish()}}};
-    return <Tag className={`cms-editable is-editing ${className}`}>{area?<textarea rows={1} {...props}/>:<input type={type} step="any" {...props}/>}</Tag>;
+    if(floating.current)return <Tag ref={tagRef} className={`cms-editable is-floating ${className}`}>{display(value)}
+      {floatBox&&createPortal(<div className="cms-float-edit" style={floatBox} onMouseDown={e=>{if(e.target!==fieldRef.current)e.preventDefault()}}>
+        <span>{label||'Texto'}</span>
+        <textarea rows={1} {...props}/>
+        <small>{multiline?'Enter: salto de línea · Ctrl+Enter o clic fuera: listo':'Enter o clic fuera: listo'} · Esc: deshacer</small>
+      </div>,document.body)}
+    </Tag>;
+    return <Tag ref={tagRef} className={`cms-editable is-editing ${className}`}>{area?<textarea rows={1} {...props}/>:<input type={type} step="any" {...props}/>}</Tag>;
   }
   const empty=value===undefined||value===null||String(value).trim()==='';
-  return <Tag className={`cms-editable ${empty?'is-empty':''} ${className}`} role="button" tabIndex={0} title={label?`Editar ${label.toLowerCase()}`:'Clic para editar'}
+  return <Tag ref={tagRef} className={`cms-editable ${empty?'is-empty':''} ${className}`} role="button" tabIndex={0} title={label?`Editar ${label.toLowerCase()}`:'Clic para editar'}
     onClick={e=>{e.preventDefault();e.stopPropagation();start()}} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();start()}}}>
-    {empty?placeholder:render?render(value):multiline?String(value).split('\n').map((l,i,a)=><React.Fragment key={i}>{l}{i<a.length-1&&<br/>}</React.Fragment>):value}
+    {display(value)}
     <Pencil className="cms-edit-hint" aria-hidden="true"/>
   </Tag>;
 }
@@ -262,19 +286,33 @@ export function RecordPicker({onPick,onClose,exclude=[],title='Vincular registro
 
 // Lista desplegable con opción de escribir un valor nuevo
 export function Choice({value,options,onChange,placeholder='Elegir…',allowNew=false,newLabel='Crear',renderOption}){
-  const [open,setOpen]=useState(false), [q,setQ]=useState(''), ref=useRef(null);
+  const [open,setOpen]=useState(false), [q,setQ]=useState(''), ref=useRef(null), btnRef=useRef(null), [pos,setPos]=useState(null);
   useEffect(()=>{
     if(!open)return;
     const onDown=e=>{if(!ref.current?.contains(e.target))setOpen(false)};
     document.addEventListener('mousedown',onDown);return()=>document.removeEventListener('mousedown',onDown);
+  },[open]);
+  // La lista flota sobre la pantalla junto a su botón (el panel lateral tiene su propio desplazamiento
+  // y la recortaría); se abre hacia arriba si abajo no cabe
+  useLayoutEffect(()=>{
+    if(!open)return;
+    const place=()=>{
+      const r=btnRef.current.getBoundingClientRect(), W=window.innerWidth, H=window.innerHeight;
+      const width=Math.max(r.width,220), below=H-r.bottom-12, above=r.top-12, up=below<260&&above>below;
+      setPos({position:'fixed',left:Math.max(8,Math.min(r.left,W-width-8)),right:'auto',width,
+        top:up?'auto':r.bottom+6,bottom:up?H-r.top+6:'auto',maxHeight:Math.max(160,(up?above:below)-6)});
+    };
+    place();
+    window.addEventListener('resize',place);window.addEventListener('scroll',place,true);
+    return()=>{window.removeEventListener('resize',place);window.removeEventListener('scroll',place,true)};
   },[open]);
   const opts=options.map(o=>typeof o==='string'?{value:o,label:o}:o);
   const shown=opts.filter(o=>o.label.toLowerCase().includes(q.toLowerCase()));
   const current=opts.find(o=>o.value===value);
   const pick=v=>{onChange(v);setOpen(false);setQ('')};
   return <div className={`cms-choice ${open?'is-open':''}`} ref={ref}>
-    <button type="button" className="cms-choice-btn" onClick={()=>setOpen(!open)}>{current?(renderOption?renderOption(current):current.label):value||<em>{placeholder}</em>}<ChevronDown/></button>
-    {open&&<div className="cms-choice-menu">
+    <button type="button" className="cms-choice-btn" ref={btnRef} onClick={()=>setOpen(!open)} aria-expanded={open}>{current?(renderOption?renderOption(current):current.label):value||<em>{placeholder}</em>}<ChevronDown/></button>
+    {open&&<div className="cms-choice-menu" style={pos||{visibility:'hidden'}}>
       {(opts.length>6||allowNew)&&<input autoFocus value={q} onChange={e=>setQ(e.target.value)} placeholder={allowNew?'Buscar o escribir uno nuevo…':'Buscar…'} onKeyDown={e=>{if(e.key==='Enter'&&allowNew&&q.trim()){e.preventDefault();pick(q.trim())}}}/>}
       <div>{shown.map(o=><button type="button" key={o.value} className={o.value===value?'active':''} onClick={()=>pick(o.value)}>{renderOption?renderOption(o):o.label}{o.value===value&&<Check/>}</button>)}
       {allowNew&&q.trim()&&!opts.some(o=>o.label.toLowerCase()===q.trim().toLowerCase())&&<button type="button" className="cms-choice-new" onClick={()=>pick(q.trim())}><Plus/> {newLabel} “{q.trim()}”</button>}</div>

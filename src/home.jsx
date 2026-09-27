@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowDownRight, ArrowRight, BookOpen, ChevronLeft, ChevronRight, CirclePlay, FileText, Film, Grid2X2, Layers, MapPin, Mic2, Search, Settings2, Sparkles, UserRound } from 'lucide-react';
 import { Counter, RecordCard, SearchResults } from './components';
 import { collections, locations, sections, site } from './data';
-import { countByType, getAllRecords, recordPath } from './repository';
+import { countByType, getAllRecords, newestRecords, recordPath } from './repository';
 import { buildSearchIndex, matchIndex } from './search-index';
 import { SearchSelect } from './SearchSelect';
 import { useSiteText } from './site-text';
@@ -64,7 +64,7 @@ export function Home(){
   const goTo=path=>{nav(path);setTerm('');setShowResults(false)};
   useEffect(()=>{const onClick=e=>{if(searchRef.current&&!searchRef.current.contains(e.target))setShowResults(false)};document.addEventListener('mousedown',onClick);return()=>document.removeEventListener('mousedown',onClick)},[]);
   const years=Number.isFinite(firstYear)?Math.floor((new Date().getFullYear()-firstYear)/10)*10:0;
-  const latest=(c.latestIds?.length?c.latestIds.map(id=>allRecords.find(r=>r.id===id)).filter(Boolean):allRecords.slice(0,4));
+  const latest=(c.latestIds?.length?c.latestIds.map(id=>allRecords.find(r=>r.id===id)).filter(Boolean):newestRecords());
   const s=i=>`slides.${Math.min(slide,slides.length-1)}.${i}`;
 
   return <main className="home-page">

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Check, RotateCcw, TriangleAlert } from 'lucide-react';
 import { theme } from '../data';
-import { originalTheme, saveTheme, useStoreVersion } from '../store';
+import { originalTheme, saveError, saveTheme, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
 import { SiteFrame } from './SiteFrame';
 import { useUi } from './fields';
+import { TYPE_META, TYPES } from './meta';
 
 const MAIN=[
   ['acid','Acento','Botones, destacados y detalles vivos'],
@@ -12,7 +13,8 @@ const MAIN=[
   ['black','Tinta','Textos y fondos negros'],
   ['paper','Papel','Fondo general de las páginas']
 ];
-const PALETTE_NAMES=['Etiqueta 1','Etiqueta 2','Etiqueta 3','Etiqueta 4','Etiqueta 5'];
+// Cada color de etiqueta se nombra por la sección del archivo que lo usa
+const PALETTE_NAMES=[0,1,2,3,4].map(i=>TYPES.filter(t=>TYPE_META[t].colorIndex===i).map(t=>TYPE_META[t].label).join(' y ')||`Etiqueta ${i+1}`);
 const PRESETS=[
   {name:'Original',acid:'#d9ff43',forest:'#123c2f',black:'#101210',paper:'#f2f0e9',palette:['#d9ff43','#8ee6c4','#ffc3d8','#ffdc72','#b8c8ff']},
   {name:'Cobre',acid:'#ffb347',forest:'#3b1f14',black:'#1a1210',paper:'#f5efe6',palette:['#ffb347','#f4a28c','#e9d38c','#b5d6a7','#c8b6e2']},
@@ -52,7 +54,7 @@ export function ThemeEditor(){
   const setPal=(i,v)=>set({palette:draft.palette.map((c,j)=>j===i?v:c)});
 
   const save=async()=>{
-    try{await saveTheme(draft)}catch{return toast('No se pudieron guardar los colores.','error')}
+    try{await saveTheme(draft)}catch(err){return toast(saveError(err),'error')}
     setNavDirty(false);toast('Colores aplicados en todo el sitio.');
   };
   const discard=async()=>{if(await confirm({title:'¿Descartar los colores nuevos?',ok:'Descartar'}))setDraft(structuredClone(theme))};
@@ -76,9 +78,9 @@ export function ThemeEditor(){
       {MAIN.map(([k,label,hint])=><ColorField key={k} label={label} hint={hint} value={draft[k]} onChange={v=>set({[k]:v})}/>)}
     </PanelBlock>
     <PanelBlock title="Etiquetas de fichas y colecciones">
-      <p className="cms-help">Al cambiar un color, las fichas y colecciones que lo usaban se actualizan.</p>
+      <p className="cms-help">Cada sección del archivo usa uno. Las colecciones también pueden usarlos. Al cambiar un color, las fichas y colecciones que lo usaban se actualizan.</p>
       {draft.palette.map((c,i)=><ColorField key={i} label={PALETTE_NAMES[i]} value={c} onChange={v=>setPal(i,v)}/>)}
-      <div className="cms-tag-preview">{['Película','Persona','Prensa','Entrevista','Artículo'].map((t,i)=><span key={t} style={{background:draft.palette[[1,2,3,0,4][i]],color:draft.black}}>{t}</span>)}</div>
+      <div className="cms-tag-preview">{TYPES.map(t=><span key={t} style={{background:draft.palette[TYPE_META[t].colorIndex],color:draft.black}}>{t}</span>)}</div>
     </PanelBlock>
     <PanelBlock title="Legibilidad">
       <ul className="cms-contrast">{checks.map(c=>{const ok=c.ratio>=c.min;return <li key={c.label} className={ok?'':'is-bad'}>
@@ -87,7 +89,7 @@ export function ThemeEditor(){
     </PanelBlock>
   </>;
 
-  return <EditorShell crumb="Sitio · Apariencia" title="Colores de la app" dirty={dirty} onBack={()=>go('/admin')} onSave={save} onDiscard={discard} viewHref="/" panel={panel}
+  return <EditorShell crumb="Sitio" title="Colores del sitio" dirty={dirty} onBack={()=>go('/admin')} onSave={save} onDiscard={discard} viewHref="/" panel={panel}
     hint="Vista previa del sitio con los colores elegidos. Se aplican a todo el sitio y al gestor al guardar.">
     <div className="cms-theme-preview" style={vars}>
       <div className="cms-theme-strip">

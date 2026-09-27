@@ -1,7 +1,7 @@
 /* ==========================================================
    Gestor de contenidos · Cineteca de Ovalle
    ========================================================== */
-.cms,.cms-modal-layer,.cms-toasts{--ink:#101210;--muted:#6b716c;--surface:#fff;--canvas:#e9e8e1;--line:rgba(16,18,16,.12);--line-strong:rgba(16,18,16,.22);--r-sm:8px;--r-md:12px;--r-lg:18px;--shadow:0 1px 2px rgba(16,18,16,.05),0 8px 28px rgba(16,18,16,.06);--danger:#c2410c;--warn:#b45309}
+.cms,.cms-modal-layer,.cms-toasts,.cms-float-edit{--ink:#101210;--muted:#6b716c;--surface:#fff;--canvas:#e9e8e1;--line:rgba(16,18,16,.12);--line-strong:rgba(16,18,16,.22);--r-sm:8px;--r-md:12px;--r-lg:18px;--shadow:0 1px 2px rgba(16,18,16,.05),0 8px 28px rgba(16,18,16,.06);--danger:#c2410c;--warn:#b45309}
 .cms{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh;background:var(--paper);color:var(--ink);font:14px/1.5 'Manrope',sans-serif}
 .cms *:focus-visible{outline:2px solid var(--forest);outline-offset:2px}
 .cms svg{width:16px;height:16px;flex:none}
@@ -150,7 +150,8 @@
 .cms-canvas-hint{display:flex;align-items:center;gap:12px;margin:0 0 16px;font-size:12px;color:var(--muted)}
 .cms-canvas-hint span{font:600 10px 'IBM Plex Mono';letter-spacing:.14em;color:var(--ink);background:var(--acid);padding:4px 8px;border-radius:4px}
 .cms-mode{margin-bottom:16px}
-.cms-panel{background:var(--surface);border-left:1px solid var(--line);padding:6px 20px 40px;overflow:auto}
+/* Fijo al costado bajo la barra de guardar, con su propio desplazamiento */
+.cms-panel{background:var(--surface);border-left:1px solid var(--line);padding:6px 20px 40px;overflow:auto;overscroll-behavior:contain;position:sticky;top:var(--cms-bar-h,66px);align-self:start;height:calc(100vh - var(--cms-bar-h,66px));height:calc(100dvh - var(--cms-bar-h,66px));scrollbar-width:thin}
 .cms-panel-block{padding:18px 0;border-bottom:1px solid var(--line)}
 .cms-panel-block:last-child{border-bottom:0}
 .cms-panel-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
@@ -280,9 +281,9 @@ span.cms-editable.is-editing{display:inline-block;min-width:8ch;width:100%}
 .cms-choice-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:1px solid var(--line-strong);background:var(--surface);border-radius:var(--r-sm);padding:10px 12px;font-size:13px;font-weight:600;text-align:left}
 .cms-choice-btn em{color:var(--muted);font-weight:500}
 .cms-choice.is-open .cms-choice-btn{border-color:var(--forest)}
-.cms-choice-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:60;min-width:220px;background:var(--surface);border-radius:var(--r-md);box-shadow:0 18px 50px rgba(16,18,16,.2);padding:6px;color:var(--ink)}
+.cms-choice-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:90;min-width:220px;display:flex;flex-direction:column;background:var(--surface);border-radius:var(--r-md);box-shadow:0 18px 50px rgba(16,18,16,.2);padding:6px;color:var(--ink)}
 .cms-choice-menu input{width:100%;border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 11px;font-size:13px;margin-bottom:4px;outline:none}
-.cms-choice-menu>div{max-height:240px;overflow:auto;display:flex;flex-direction:column}
+.cms-choice-menu>div{max-height:240px;min-height:0;flex:1 1 auto;overflow:auto;display:flex;flex-direction:column}
 .cms-choice-menu button{display:flex;justify-content:space-between;align-items:center;gap:8px;border:0;background:transparent;padding:9px 11px;border-radius:6px;font:600 13px 'Manrope',sans-serif;text-align:left;color:var(--ink);letter-spacing:0;text-transform:none}
 .cms-choice-menu button:hover,.cms-choice-menu button.active{background:rgba(16,18,16,.06)}
 .cms-choice-new{color:var(--forest)!important;justify-content:flex-start!important}
@@ -412,8 +413,8 @@ span.cms-editable.is-editing{display:inline-block;min-width:8ch;width:100%}
   .cms-dash-grid{grid-template-columns:1fr 1fr}
   .cms-dash-grid>:first-child{grid-column:1/-1}
   .cms-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .cms-editor-body{grid-template-columns:1fr}
-  .cms-panel{border-left:0;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0 24px}
+  .cms-editor-body{grid-template-columns:minmax(0,1fr) 280px}
+  .cms-panel{padding:6px 16px 40px}
   .cms-panel-block{border-bottom:0}
 }
 @media(max-width:860px){
@@ -732,8 +733,8 @@ html:has(.cms-preview-doc){overflow:hidden}
 .cms-hsec.is-off .cms-toggle-eye{color:var(--muted)}
 .cms-hsec-body{padding:4px 14px 14px;border-top:1px solid var(--line)}
 .cms-hsec-body>.cms-help:first-child{margin-top:10px}
-.cms-inline-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0}
-.cms-inline-actions .cms-btn{justify-content:center}
+.cms-inline-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:6px;margin:10px 0}
+.cms-inline-actions .cms-btn{justify-content:center;min-width:0;padding-inline:10px;white-space:nowrap}
 .cms-subblock{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
 .cms-subblock-head{display:flex;align-items:center;justify-content:space-between}
 .cms-subblock-head strong{font-size:13px}
@@ -745,15 +746,6 @@ html:has(.cms-preview-doc){overflow:hidden}
 
 /* ---------- Publicar / despublicar fichas ---------- */
 .cms-status.is-draft{background:rgba(16,18,16,.08);color:var(--ink)}
-.cms-publish{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--line);background:#fff}
-.cms-publish.is-on{border-color:color-mix(in srgb,var(--forest) 35%,transparent);background:#eef6f1}
-.cms-publish.is-off{border-style:dashed;background:rgba(16,18,16,.03)}
-.cms-publish>span{display:grid;grid-template-columns:18px 1fr;column-gap:8px;align-items:center;min-width:0}
-.cms-publish>span svg{width:17px;height:17px;grid-row:span 2;color:var(--forest)}
-.cms-publish.is-off>span svg{color:var(--muted)}
-.cms-publish strong{font-size:14px}
-.cms-publish small{font-size:11px;color:var(--muted)}
-.cms-publish .cms-btn{flex-shrink:0}
 .cms-tile-wrap{position:relative;display:flex}
 .cms-tile-wrap>.cms-tile{flex:1;padding-bottom:50px}
 .cms-tile-pub{position:absolute;left:16px;bottom:12px;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;color:var(--ink)}
@@ -872,3 +864,18 @@ html:has(.cms-preview-doc){overflow:hidden}
 .cms-you{font:600 9px 'IBM Plex Mono';font-style:normal;letter-spacing:.1em;text-transform:uppercase;background:var(--acid);padding:2px 7px;border-radius:999px}
 .cms-users-count{font:600 11px 'IBM Plex Mono';color:var(--muted);margin-left:auto}
 .cms-account-sub{font-size:14px}
+
+/* En pantallas angostas el panel pasa debajo de la vista previa */
+@media(max-width:900px){
+  .cms-editor-body{grid-template-columns:1fr}
+  .cms-panel{position:static;height:auto;overflow:visible;border-left:0;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0 24px}
+}
+.cms-help.is-text{display:block}
+.cms-help.is-text b{font-weight:700}
+
+/* Edición a tamaño normal cuando la vista previa está achicada */
+.cms-editable.is-floating{outline:2px solid var(--acid)!important;outline-offset:3px;background:color-mix(in srgb,var(--acid) 18%,transparent)}
+.cms-float-edit{position:fixed;z-index:95;display:flex;flex-direction:column;gap:6px;background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--r-md);box-shadow:0 18px 50px rgba(16,18,16,.25);padding:10px 12px 9px}
+.cms-float-edit>span{font:600 10px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.cms-float-edit textarea{width:100%;min-height:40px;max-height:320px;resize:none;border:1px solid var(--forest);border-radius:var(--r-sm);padding:9px 11px;font:500 15px/1.5 'Manrope',sans-serif;color:var(--ink);background:#fff;outline:none;box-shadow:0 0 0 3px rgba(18,60,47,.12);overflow:auto}
+.cms-float-edit small{font-size:11px;color:var(--muted)}

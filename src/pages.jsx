@@ -5,6 +5,7 @@ import { Counter, RecordCard, RecordRow } from './components';
 import { collections, locations, recordExtras, sections, timelineEvents } from './data';
 import { countByCollection, countByLocation, countByType, getAllRecords, getFilmPeople, getFilmography, getLocations, getRecordPeople, placesOf, findRecordByParam, recordPath, recordSlug } from './repository';
 import { useEdit } from './edit-context';
+import { useSiteText } from './site-text';
 import { SearchSelect } from './SearchSelect';
 import { BackLink, DocumentView, MediaViewer } from './record-views';
 import { tagStyle } from './color';
@@ -168,6 +169,7 @@ export function RichDetailPage(){
 
 // Ficha pública de un registro. El gestor la usa también como vista previa editable (ver edit-context)
 export function RecordDetail({item,extra}){
+  const {t}=useSiteText();
   const {edit,f,slot}=useEdit();
   const related=(extra.relations||[]).map(rid=>getAllRecords().find(r=>r.id===rid)).filter(Boolean);
   if(['Prensa','Entrevista','Artículo'].includes(item.type))return <DocumentView item={item} extra={extra} related={related} people={getRecordPeople(item,extra)}/>;
@@ -211,8 +213,8 @@ export function RecordDetail({item,extra}){
           </div>
         </header>}
         <div className="ficha-section-label"><span>01</span> DESCRIPCIÓN</div>
-        <h2>Una pieza, múltiples lecturas.</h2>
-        <p>{f('description',item.description,{multiline:true})} Este registro forma parte de un proceso continuo de investigación, preservación y acceso comunitario al patrimonio audiovisual de la Provincia del Limarí.</p>
+        <h2>{t('fichaLeadTitle')}</h2>
+        <p>{f('description',item.description,{multiline:true})} {t('fichaArchiveNote')}</p>
         <div className="ficha-credits">{credits.map(([k,v],i)=><div key={`${k}-${i}`} className="stagger-item" style={{transitionDelay:`${i*60}ms`}}><small>{f(`creditKey.${i}`,k,{placeholder:'Dato'})}</small><strong>{f(`credits.${i}`,v,{placeholder:'Completar…'})}</strong></div>)}{slot('credits')}</div>
         {isPerson?<div className="ficha-media ficha-filmography" id="filmografia">
           <div className="ficha-filmography-head"><div className="ficha-section-label"><span>02</span> FILMOGRAFÍA</div><span>{String(filmography.length).padStart(2,'0')} {filmography.length===1?'PELÍCULA':'PELÍCULAS'}</span></div>
@@ -261,20 +263,20 @@ export function RecordDetail({item,extra}){
 
 // En el gestor (ver edit-context): `items` es la lista con el borrador y `index` el elemento en edición
 export function CollectionsPage(){
-  const {edit,f,slot}=useEdit();
+  const {edit,f,slot}=useEdit(), {t}=useSiteText();
   const list=edit?.items||collections, on=i=>edit?.index===i;
   const v=(i,key,value,opts)=>on(i)?f(key,value,opts):value;
-  return <main className="discovery-page"><section className="discovery-hero"><img src="https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>RECORRIDOS CURATORIALES</span><h1>Colecciones</h1><p>Entradas temáticas para descubrir conexiones inesperadas dentro del archivo.</p></section><section className="collections-grid" data-reveal>{list.map((c,i)=><Link to={`/archivo?collection=${encodeURIComponent(c.title)}`} className={`collection-card stagger-item${on(i)?' is-editing':''}`} style={{transitionDelay:`${i*80}ms`}} key={c.slug||i} onClick={edit&&!on(i)?ev=>{ev.preventDefault();edit.pick?.(i)}:undefined}><img src={c.image} alt="" loading="lazy" decoding="async"/><div className="collection-shade"/>{on(i)&&slot('image')}<span>{String(i+1).padStart(2,'0')} · {v(i,'years',c.years,{placeholder:'1968—1990'})}</span><h2>{v(i,'title',c.title)}</h2><p>{v(i,'description',c.description,{multiline:true})}</p><b style={tagStyle(c.color)}>{on(i)&&edit.count!=null?edit.count:countByCollection(c.title)} registros <ArrowRight/></b></Link>)}</section></main>;
+  return <main className="discovery-page"><section className="discovery-hero"><img src="https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>{t('collectionsKicker')}</span><h1>{t('collectionsTitle')}</h1><p>{t('collectionsIntro')}</p></section><section className="collections-grid" data-reveal>{list.map((c,i)=><Link to={`/archivo?collection=${encodeURIComponent(c.title)}`} className={`collection-card stagger-item${on(i)?' is-editing':''}`} style={{transitionDelay:`${i*80}ms`}} key={c.slug||i} onClick={edit&&!on(i)?ev=>{ev.preventDefault();edit.pick?.(i)}:undefined}><img src={c.image} alt="" loading="lazy" decoding="async"/><div className="collection-shade"/>{on(i)&&slot('image')}<span>{String(i+1).padStart(2,'0')} · {v(i,'years',c.years,{placeholder:'1968—1990'})}</span><h2>{v(i,'title',c.title)}</h2><p>{v(i,'description',c.description,{multiline:true})}</p><b style={tagStyle(c.color)}>{on(i)&&edit.count!=null?edit.count:countByCollection(c.title)} registros <ArrowRight/></b></Link>)}</section></main>;
 }
 
 export function TimelinePage(){
-  const {edit,f,slot}=useEdit();
+  const {edit,f,slot}=useEdit(), {t}=useSiteText();
   const list=edit?.items||timelineEvents;
   // Por posición: dos hitos del mismo año no quedan marcados a la vez
   const [picked,setPicked]=useState(0);
   const current=edit?edit.index:Math.min(picked,list.length-1), active=list[current]||{}, isActive=(e,i)=>i===current;
   return <main className="timeline-page">
-    <section className="discovery-hero"><img src="https://images.unsplash.com/photo-1586899028174-e7098604235b?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>HISTORIA AUDIOVISUAL</span><h1>Línea de tiempo</h1><p>Ochenta años de imágenes, encuentros y memoria en movimiento.</p></section>
+    <section className="discovery-hero"><img src="https://images.unsplash.com/photo-1586899028174-e7098604235b?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>{t('timelineKicker')}</span><h1>{t('timelineTitle')}</h1><p>{t('timelineIntro')}</p></section>
     <section className="timeline-layout" data-reveal>
       <div className="timeline-spine">
         {list.map((e,i)=><button key={`${e.year}-${i}`} className={`timeline-entry${isActive(e,i)?' active':''} stagger-item`} style={{transitionDelay:`${(i%8)*50}ms`}} onClick={()=>edit?(i!==edit.index&&edit.pick?.(i)):setPicked(i)}>

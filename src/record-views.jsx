@@ -4,10 +4,10 @@ import { ArrowLeft, ArrowRight, BookOpen, ChevronLeft, ChevronRight, CirclePlay,
 import { sections } from './data';
 import { placesOf, recordPath } from './repository';
 import { useEdit } from './edit-context';
+import { useSiteText } from './site-text';
 import { tagStyle } from './color';
 import './record-views.css';
 
-const ARCHIVE_NOTE='Este registro forma parte de un proceso continuo de investigación, preservación y acceso comunitario al patrimonio audiovisual de la Provincia del Limarí.';
 const code=item=>`FICHA CDO—${String(item.id).padStart(4,'0')}`;
 
 // Botón volver compartido: muestra el nombre real de la sección
@@ -98,7 +98,7 @@ function docConfig(item,extra){
 }
 
 export function DocumentView({item,extra,related,people}){
-  const {f,slot}=useEdit();
+  const {f,slot}=useEdit(), {t}=useSiteText();
   const cfg=docConfig(item,extra);
   // Galería: imagen principal, material propio del registro e imágenes de sus relacionados
   const gallery=useMemo(()=>[
@@ -147,7 +147,7 @@ export function DocumentView({item,extra,related,people}){
           <div className="ficha-aside-label">{cfg.factsLabel}</div>
           <Facts rows={cfg.facts}/>
           <div className="ficha-section-label" id="texto"><span>01</span> {cfg.textLabel}</div>
-          <div className="press-transcript"><p>{f('description',item.description,{multiline:true})}</p><p>{ARCHIVE_NOTE}</p></div>
+          <div className="press-transcript"><p>{f('description',item.description,{multiline:true})}</p><p>{t('fichaArchiveNote')}</p></div>
         </article>
       </div>
     </section>

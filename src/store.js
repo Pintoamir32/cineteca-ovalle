@@ -96,6 +96,14 @@ function persist(){
   return next;
 }
 
+// Mensaje claro cuando un guardado falla (la sesión vencida y el conflicto ya abren su propio aviso)
+export function saveError(err){
+  if(err?.status===401)return 'Tu sesión terminó. Vuelve a iniciar sesión; tus cambios siguen en pantalla.';
+  if(err?.status===409)return 'No se guardó: otra persona guardó antes. Recarga la página y vuelve a hacer el cambio.';
+  if(err?.status===413)return 'No se guardó: el archivo o la imagen es demasiado grande.';
+  return err?.status?`No se pudo guardar (${err.message})`:'No se pudo guardar: no hay conexión con el servidor. Revisa tu internet e inténtalo de nuevo.';
+}
+
 // Aplica varios cambios a la vez y los guarda
 export function setData(changes){
   for(const [k,v] of Object.entries(changes))if(k in LIVE)apply(k,v);
