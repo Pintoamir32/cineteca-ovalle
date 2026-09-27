@@ -90,7 +90,7 @@ function RecordEditorInner(){
   const REQUIRED=['Imagen','Título'];
   const checklist=meta.only||['Imagen','Título',meta.subtitle,'Año','Descripción','Colección',...(['video','audio'].includes(e.mediaType)?['Archivo digital']:[])];
   // Cómo se llama cada punto de la lista en una ficha de persona
-  const checkName=k=>isPerson?({Imagen:'Fotografía',Título:'Nombre',Descripción:'Biografía'}[k]||k):k;
+  const checkName=k=>isPerson?({Imagen:'Fotografía',Título:'Nombre',Descripción:'Biografía'}[k]||k):r.type==='Película'&&k==='Descripción'?'Sinopsis':k;
   // Panel en cuatro grupos, de lo que más se mira a lo que menos se cambia
   const panel=<>
     <PanelBlock title="Visibilidad en el sitio">
@@ -144,7 +144,7 @@ const BLANK='data:image/gif;base64,R0lGODlhAQABAAAAACw=';
 // «el título», «la dirección», «los roles», «las obras vinculadas»: según la primera palabra
 function withArticle(label){
   const text=label.toLowerCase(), w=text.split(' ')[0];
-  const art=w.endsWith('as')?'las':w.endsWith('s')?'los':/(a|ión|dad)$/.test(w)?'la':'el';
+  const art=/(sis|a|ión|dad)$/.test(w)?'la':w.endsWith('as')?'las':w.endsWith('s')?'los':'el';
   return `${art} ${text}`;
 }
 
@@ -162,7 +162,7 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     // Cargos: el nombre del cargo y quién lo ocupó (el 5.º valor es la indicación completa)
     if(name==='credits')return [credits[n]?.[1]??'',v=>setCredit(n,1,v),credits[n]?.[0]||'Nombre',undefined,'Escribe el nombre (ej. María Cortés)'];
     if(name==='creditKey')return [credits[n]?.[0]??'',v=>setCredit(n,0,v),'Cargo',undefined,'Escribe el cargo (ej. Fotografía)'];
-    const labels={title:r.type==='Persona'?'Nombre':'Título',subtitle:meta.subtitle,year:meta.year,description:r.type==='Persona'?'Biografía':'Descripción',collection:'Colección'};
+    const labels={title:r.type==='Persona'?'Nombre':'Título',subtitle:meta.subtitle,year:meta.year,description:{Persona:'Biografía',Película:'Sinopsis'}[r.type]||'Descripción',collection:'Colección'};
     return [r[name]??'',v=>setR({[name]:v}),labels[name]||name,name==='year'?(r.type==='Persona'?'1931—2010':'1972'):undefined];
   };
   const cfg=MEDIA_TYPES.find(m=>m.value===e.mediaType)||MEDIA_TYPES[3], MediaIcon=cfg.icon;

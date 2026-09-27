@@ -234,7 +234,7 @@ export function RecordDetail({item,extra}){
             <ul className="ficha-film-specs">{[['Año',item.year,'year'],...filmFormat].map(([k,v,field])=>{const Icon={Año:CalendarDays,Género:Clapperboard,Duración:Clock,Soporte:Film}[k]||Film;const key=FACET_KEY[k];const text=f(field,v,{placeholder:k});return <li key={k}>{key?<Link to={`/peliculas?${key}=${encodeURIComponent(v)}`} title={`Ver películas · ${k}: ${v}`}><Icon aria-hidden="true"/><span className="sr-only">{k}: </span>{text}</Link>:<span><Icon aria-hidden="true"/>{text}</span>}</li>})}</ul>
           </div>
         </header>}
-        <div className="ficha-section-label"><span>01</span> DESCRIPCIÓN</div>
+        <div className="ficha-section-label"><span>01</span> {isFilm?'SINOPSIS':'DESCRIPCIÓN'}</div>
         <h2>{t('fichaLeadTitle')}</h2>
         <p>{f('description',item.description,{multiline:true})}</p>
         <div className="ficha-credits">{credits.map(([k,v],i)=><div key={`${k}-${i}`} className="stagger-item" style={{transitionDelay:`${i*60}ms`}}><small>{f(`creditKey.${i}`,k,{placeholder:'Dato'})}</small><strong>{f(`credits.${i}`,v,{placeholder:'Completar…'})}</strong></div>)}{slot('credits')}</div>
