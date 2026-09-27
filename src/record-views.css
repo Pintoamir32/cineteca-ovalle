@@ -161,3 +161,11 @@
 .doc-entrevistas .press-player .audio-viewer h3{font-size:28px;margin:12px 0 0}
 .doc-entrevistas .press-player .audio-viewer audio{margin-top:18px}
 @media (max-width:1000px){.doc-entrevistas .press-layout{grid-template-columns:1fr}.doc-entrevistas .press-side{position:static}.doc-entrevistas .press-clipping{max-width:420px;margin:0 auto}}
+
+/* Entrevista: contenido en sección propia, columna de lectura cómoda */
+.interview-text{margin:0 24px;padding:44px 5vw 64px;background:#f8f7f1;border:1px solid var(--line);border-top:0}
+.interview-text .ficha-section-label{margin:0}
+.interview-text .ficha-filmography-head{margin-bottom:34px}
+.interview-text-body{max-width:720px;margin:0 auto;font:400 18px/1.85 Georgia,'Times New Roman',serif;color:#2f3430;white-space:pre-line;text-wrap:pretty}
+.interview-text-body::first-letter{float:left;font:700 64px/.8 Georgia,serif;margin:8px 10px 0 0;color:var(--forest)}
+@media (max-width:760px){.interview-text{margin:0 14px;padding:32px 20px 40px}.interview-text-body{font-size:16px;line-height:1.75}}

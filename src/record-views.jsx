@@ -175,17 +175,22 @@ export function DocumentView({item,extra,related,people}){
           <div className="ficha-aside-label">{cfg.factsLabel}</div>
           <Facts rows={cfg.facts}/>
           {cfg.interview&&player}
-          {!cfg.press&&(!cfg.interview||edit||item.description?.trim())&&<><div className="ficha-section-label" id="texto"><span>01</span> {cfg.textLabel}</div>
+          {!cfg.press&&!cfg.interview&&<><div className="ficha-section-label" id="texto"><span>01</span> {cfg.textLabel}</div>
           <div className="press-transcript"><p>{f('description',item.description,{multiline:true})}</p></div></>}
         </article>
       </div>
     </section>
+    {/* Entrevista: el contenido va en su propia sección, a lo ancho y con columna de lectura; si no hay texto, no aparece */}
+    {cfg.interview&&(edit||item.description?.trim())&&<section className="interview-text" id="texto" data-reveal>
+      <div className="ficha-filmography-head"><div className="ficha-section-label"><span>01</span> CONTENIDO</div><span>ENTREVISTA{cfg.person||item.subtitle?` A ${(cfg.person?.title||item.subtitle).toUpperCase()}`:''}</span></div>
+      <div className="interview-text-body">{f('description',item.description,{multiline:true})}</div>
+    </section>}
     {hasPdf&&<section className="press-pdf" id="documento" data-reveal>
       <div className="ficha-filmography-head"><div className="ficha-section-label">DOCUMENTO DIGITALIZADO</div><div className="press-pdf-links"><a href={extra.media} download={`${item.title}.pdf`} target="_blank" rel="noreferrer"><Download/> Descargar PDF</a><a href={extra.media} target="_blank" rel="noreferrer">Abrir en otra pestaña <ArrowRight/></a></div></div>
       <PdfViewer url={extra.media} title={item.title}/>
     </section>}
     {!cfg.press&&(!cfg.interview||edit||extra.gallery?.length>0)&&<section className="doc-gallery" data-reveal>
-      <div className="ficha-filmography-head"><div className="ficha-section-label"><span>02</span> GALERÍA</div><span>{String(gallery.length).padStart(2,'0')} IMÁGENES</span></div>
+      <div className="ficha-filmography-head"><div className="ficha-section-label"><span>{cfg.interview&&!(edit||item.description?.trim())?'01':'02'}</span> GALERÍA</div><span>{String(gallery.length).padStart(2,'0')} IMÁGENES</span></div>
       {slot('gallery')}
       <div className="doc-gallery-grid">{gallery.map((g,i)=><figure key={g.src+i} className={i===0?'is-main':undefined}>
         <button type="button" onClick={()=>setZoom(i)} aria-label={`Ampliar: ${g.caption}`}><img src={g.src} alt={g.caption} loading="lazy" decoding="async"/><span className="press-zoom"><Maximize2/> Ampliar</span></button>
