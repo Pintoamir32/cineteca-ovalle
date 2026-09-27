@@ -185,3 +185,6 @@
 .doc-articulos .press-layout{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:4.5vw;align-items:center}
 .doc-articulos .press-clipping img{aspect-ratio:4/3}
 @media (max-width:1000px){.doc-articulos .press-layout{grid-template-columns:1fr}.doc-articulos .press-clipping{max-width:520px;margin:0 auto}}
+.doc-footer.is-single:has(+ .doc-gallery){margin-bottom:0}
+.doc-articulos .doc-gallery{margin-bottom:24px}
+@media (max-width:760px){.doc-articulos .doc-gallery{margin-bottom:14px}}

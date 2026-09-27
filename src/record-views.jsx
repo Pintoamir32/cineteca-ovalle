@@ -192,6 +192,11 @@ export function DocumentView({item,extra,related,people}){
       <div className="ficha-filmography-head"><div className="ficha-section-label">DOCUMENTO DIGITALIZADO</div><div className="press-pdf-links"><a href={extra.media} download={`${item.title}.pdf`} target="_blank" rel="noreferrer"><Download/> Descargar PDF</a><a href={extra.media} target="_blank" rel="noreferrer">Abrir en otra pestaña <ArrowRight/></a></div></div>
       <PdfViewer url={extra.media} title={item.title}/>
     </section>}
+    {/* Artículo: las películas referenciadas, con enlace a sus fichas */}
+    {cfg.article&&(edit||related.some(r=>r.type==='Película'))&&<section className="doc-footer is-single" data-reveal>
+      <div className="doc-footer-main"><RelatedList related={related.filter(r=>r.type==='Película')} title="Películas referenciadas"/>
+        {!related.some(r=>r.type==='Película')&&edit&&<p className="ficha-filmography-empty">Vincula las películas desde el panel de la derecha.</p>}</div>
+    </section>}
     {(!(cfg.press||cfg.interview||cfg.article)||edit||extra.gallery?.length>0)&&<section className="doc-gallery" data-reveal>
       <div className="ficha-filmography-head"><div className="ficha-section-label"><span>{cfg.press||((cfg.interview||cfg.article)&&!(edit||item.description?.trim()))?'01':'02'}</span> GALERÍA</div><span>{String(shownGallery.length).padStart(2,'0')} {shownGallery.length===1?'IMAGEN':'IMÁGENES'}</span></div>
       {slot('gallery')}
@@ -199,11 +204,6 @@ export function DocumentView({item,extra,related,people}){
         <button type="button" onClick={()=>setZoom(i+skipMain)} aria-label={`Ampliar: ${g.caption||g.alt}`}><img src={g.src} alt={g.caption||g.alt} loading="lazy" decoding="async"/><span className="press-zoom"><Maximize2/> Ampliar</span></button>
         {g.caption&&<figcaption><small>{String(i+1).padStart(2,'0')}{skipMain?'':` · ${g.kind}`}</small>{g.to?<Link to={g.to}>{g.caption}</Link>:<span>{g.caption}</span>}</figcaption>}
       </figure>)}</div>
-    </section>}
-    {/* Artículo: las películas referenciadas, con enlace a sus fichas */}
-    {cfg.article&&(edit||related.some(r=>r.type==='Película'))&&<section className="doc-footer is-single" data-reveal>
-      <div className="doc-footer-main"><RelatedList related={related.filter(r=>r.type==='Película')} title="Películas referenciadas"/>
-        {!related.some(r=>r.type==='Película')&&edit&&<p className="ficha-filmography-empty">Vincula las películas desde el panel de la derecha.</p>}</div>
     </section>}
     {!cfg.interview&&!cfg.article&&<section className="doc-footer" data-reveal>
       <div className="doc-footer-main"><PeopleCards people={people} number={cfg.press?(edit||extra.gallery?.length>0?'02':'01'):'03'} title={cfg.press?'Personas vinculadas':undefined}/></div>
