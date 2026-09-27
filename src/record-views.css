@@ -169,3 +169,10 @@
 .interview-text-body{max-width:720px;margin:0 auto;font:400 18px/1.85 Georgia,'Times New Roman',serif;color:#2f3430;white-space:pre-line;text-wrap:pretty}
 .interview-text-body::first-letter{float:left;font:700 64px/.8 Georgia,serif;margin:8px 10px 0 0;color:var(--forest)}
 @media (max-width:760px){.interview-text{margin:0 14px;padding:32px 20px 40px}.interview-text-body{font-size:16px;line-height:1.75}}
+/* Entrevista: galería de miniaturas más pequeñas, todas del mismo tamaño */
+.doc-entrevistas .doc-gallery-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:24px 20px}
+.doc-entrevistas .doc-gallery-grid figure.is-main{grid-column:auto;grid-row:auto}
+.doc-entrevistas .doc-gallery-grid figure.is-main img,.doc-entrevistas .doc-gallery-grid img{aspect-ratio:4/3;height:auto;min-height:0}
+.doc-entrevistas .doc-gallery-grid button{padding:7px}
+.doc-entrevistas .doc-gallery-grid figcaption span,.doc-entrevistas .doc-gallery-grid figcaption a{font-size:13px}
+@media (max-width:760px){.doc-entrevistas .doc-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 14px}}
