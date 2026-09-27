@@ -115,9 +115,8 @@ function docConfig(item,extra){
     source:item.subtitle,
     meta:[item.year],
     caption:'Documento digitalizado · Archivo CDO',
-    cta:[Maximize2,'Ver documento completo',null],
     facts:[['Medio de origen',item.subtitle,true,'subtitle'],['Fecha',item.year,true,'year']],
-    factsLabel:'Ficha del documento',download:true,press:true
+    factsLabel:'Ficha del documento',press:true
   };
 }
 
@@ -140,7 +139,7 @@ export function DocumentView({item,extra,related,people}){
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[open,gallery.length]);
   const hasPdf=cfg.press&&!!extra.media;
-  const [CtaIcon,ctaText,ctaHref]=hasPdf?[FileText,'Ver documento','#documento']:cfg.cta;
+  const [CtaIcon,ctaText,ctaHref]=cfg.cta||[];
   return <main className={`ficha-page doc-page doc-press doc-${item.slug}`}>
     <section className="doc-shell" data-reveal>
       <div className="ficha-film-top"><BackLink item={item}/><span className="ficha-code">{code(item)}</span></div>
@@ -164,11 +163,10 @@ export function DocumentView({item,extra,related,people}){
           <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
           <h1>{f('title',item.title)}</h1>
           {!cfg.press&&<p className="press-dek">{f('description',item.description,{multiline:true})}</p>}
-          <div className="press-actions">
-            {ctaHref?<a className="ficha-cta" href={ctaHref}><CtaIcon/> {ctaText}</a>:<button type="button" className="ficha-cta" onClick={()=>setZoom(0)}><CtaIcon/> {ctaText}</button>}
-            {cfg.download&&(extra.media?<a className="doc-ghost-btn" href={extra.media} download={`${item.title}.pdf`} target="_blank" rel="noreferrer"><Download/> Descargar PDF</a>:<button type="button" className="doc-ghost-btn" disabled><Download/> Descargar PDF</button>)}
+          {(CtaIcon||slot('media'))&&<div className="press-actions">
+            {CtaIcon&&(ctaHref?<a className="ficha-cta" href={ctaHref}><CtaIcon/> {ctaText}</a>:<button type="button" className="ficha-cta" onClick={()=>setZoom(0)}><CtaIcon/> {ctaText}</button>)}
             {!cfg.player&&slot('media')}
-          </div>
+          </div>}
           <div className="ficha-aside-label">{cfg.factsLabel}</div>
           <Facts rows={cfg.facts}/>
           {!cfg.press&&<><div className="ficha-section-label" id="texto"><span>01</span> {cfg.textLabel}</div>
@@ -177,7 +175,7 @@ export function DocumentView({item,extra,related,people}){
       </div>
     </section>
     {hasPdf&&<section className="press-pdf" id="documento" data-reveal>
-      <div className="ficha-filmography-head"><div className="ficha-section-label">DOCUMENTO DIGITALIZADO</div><a href={extra.media} target="_blank" rel="noreferrer">Abrir en otra pestaña <ArrowRight/></a></div>
+      <div className="ficha-filmography-head"><div className="ficha-section-label">DOCUMENTO DIGITALIZADO</div><div className="press-pdf-links"><a href={extra.media} download={`${item.title}.pdf`} target="_blank" rel="noreferrer"><Download/> Descargar PDF</a><a href={extra.media} target="_blank" rel="noreferrer">Abrir en otra pestaña <ArrowRight/></a></div></div>
       <PdfViewer url={extra.media} title={item.title}/>
     </section>}
     {!cfg.press&&<section className="doc-gallery" data-reveal>

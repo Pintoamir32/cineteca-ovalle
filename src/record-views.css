@@ -139,6 +139,7 @@
 .press-pdf{scroll-margin-top:90px;margin:0 24px;padding:44px 5vw 56px;background:#f8f7f1;border:1px solid var(--line);border-top:0}
 .press-pdf .ficha-section-label{margin:0}
 .press-pdf .ficha-filmography-head{margin-bottom:22px}
+.press-pdf-links{display:flex;flex-wrap:wrap;gap:10px 22px}
 .press-pdf .ficha-filmography-head a{display:inline-flex;align-items:center;gap:6px;font:700 10px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:inherit}
 .press-pdf .ficha-filmography-head a svg{width:14px;height:14px}
 .press-pdf-frame{height:min(88vh,1100px);border:1px solid var(--line);background:#fffdf6}
