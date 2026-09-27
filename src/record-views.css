@@ -182,6 +182,6 @@
 .doc-footer.is-single .doc-footer-main{border-right:0;padding:40px 5vw 24px}
 
 /* Artículo: imagen más angosta a la izquierda y ficha a la derecha, como las entrevistas */
-.doc-articulos .press-layout{grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr);gap:5vw;align-items:center}
+.doc-articulos .press-layout{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:4.5vw;align-items:center}
 .doc-articulos .press-clipping img{aspect-ratio:4/3}
 @media (max-width:1000px){.doc-articulos .press-layout{grid-template-columns:1fr}.doc-articulos .press-clipping{max-width:520px;margin:0 auto}}
