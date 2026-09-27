@@ -255,12 +255,12 @@ export function RecordDetail({item,extra}){
           {slot('media')}
         </div>}
         {isFilm&&<div className="ficha-people" id="personas">
-          <div className="ficha-filmography-head"><div className="ficha-section-label"><span>03</span> PERSONAS MENCIONADAS</div><span>{String(people.length).padStart(2,'0')} {people.length===1?'PERSONA':'PERSONAS'}</span></div>
+          <div className="ficha-filmography-head"><div className="ficha-section-label"><span>03</span> ELENCO</div><span>{String(people.length).padStart(2,'0')} {people.length===1?'PERSONA':'PERSONAS'}</span></div>
           {people.length?<div className="ficha-people-grid">{people.map(({person,roles})=><Link key={person.id} to={recordPath(person)} className="ficha-person-card">
             <img src={person.image} alt="" loading="lazy" decoding="async"/>
             <div><h3>{person.title}</h3><small>{person.subtitle}</small><div className="ficha-filmography-roles">{roles.map(r=><span key={r}>{r}</span>)}</div></div>
             <ArrowRight/>
-          </Link>)}</div>:<p className="ficha-filmography-empty">Aún no hay personas vinculadas a esta película en el archivo.</p>}
+          </Link>)}</div>:<p className="ficha-filmography-empty">Aún no hay elenco vinculado a esta película en el archivo.</p>}
         </div>}
         {gallery.length>0&&<div className="ficha-gallery">
           <div className="ficha-section-label"><span>{isFilm?'04':'03'}</span> GALERÍA</div>
