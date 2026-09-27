@@ -129,7 +129,7 @@ export function DocumentView({item,extra,related,people}){
   // Galería: imagen principal, material propio del registro e imágenes de sus relacionados
   const gallery=useMemo(()=>[
     {src:cfg.image||item.image,caption:cfg.caption,kind:'Imagen principal'},
-    ...(extra.gallery||[]).map((src,i)=>({src,caption:`Material asociado ${i+1}`,kind:'Material asociado'})),
+    ...(extra.gallery||[]).map((src,i)=>({src,caption:'',alt:`${item.title} · imagen ${i+1}`})),
     ...(cfg.press||cfg.interview?[]:related).map(r=>({src:r.image,caption:r.title,kind:`Ver también · ${r.type}`,to:recordPath(r)}))
   ],[item,extra,related,cfg.caption,cfg.image,cfg.press,cfg.interview]);
   const [zoom,setZoom]=useState(null);
@@ -195,8 +195,8 @@ export function DocumentView({item,extra,related,people}){
       <div className="ficha-filmography-head"><div className="ficha-section-label"><span>{cfg.press||(cfg.interview&&!(edit||item.description?.trim()))?'01':'02'}</span> GALERÍA</div><span>{String(shownGallery.length).padStart(2,'0')} {shownGallery.length===1?'IMAGEN':'IMÁGENES'}</span></div>
       {slot('gallery')}
       <div className="doc-gallery-grid">{shownGallery.map((g,i)=><figure key={g.src+i} className={i===0?'is-main':undefined}>
-        <button type="button" onClick={()=>setZoom(i+skipMain)} aria-label={`Ampliar: ${g.caption}`}><img src={g.src} alt={g.caption} loading="lazy" decoding="async"/><span className="press-zoom"><Maximize2/> Ampliar</span></button>
-        <figcaption><small>{String(i+1).padStart(2,'0')}{skipMain?'':` · ${g.kind}`}</small>{g.to?<Link to={g.to}>{g.caption}</Link>:<span>{g.caption}</span>}</figcaption>
+        <button type="button" onClick={()=>setZoom(i+skipMain)} aria-label={`Ampliar: ${g.caption||g.alt}`}><img src={g.src} alt={g.caption||g.alt} loading="lazy" decoding="async"/><span className="press-zoom"><Maximize2/> Ampliar</span></button>
+        {g.caption&&<figcaption><small>{String(i+1).padStart(2,'0')}{skipMain?'':` · ${g.kind}`}</small>{g.to?<Link to={g.to}>{g.caption}</Link>:<span>{g.caption}</span>}</figcaption>}
       </figure>)}</div>
     </section>}
     {!cfg.interview&&<section className="doc-footer" data-reveal>
@@ -204,10 +204,10 @@ export function DocumentView({item,extra,related,people}){
       <aside className="doc-footer-side">{cfg.press?<RelatedList related={related.filter(r=>r.type==='Película')} title="Películas vinculadas"/>
         :<><RelatedList related={related}/>{slot('relations')}<Places item={item} places={placesOf(extra)} slot={slot}/></>}</aside>
     </section>}
-    {open&&<div className="press-lightbox" role="dialog" aria-modal="true" aria-label={shown.caption} onClick={()=>setZoom(null)}>
+    {open&&<div className="press-lightbox" role="dialog" aria-modal="true" aria-label={shown.caption||shown.alt} onClick={()=>setZoom(null)}>
       <figure onClick={e=>e.stopPropagation()}>
-        <img src={shown.src} alt={shown.caption}/>
-        <figcaption><span>{zoom+1} / {gallery.length}</span><strong>{shown.caption}</strong>{shown.to&&<Link to={shown.to} onClick={()=>setZoom(null)}>Ver ficha <ArrowRight/></Link>}</figcaption>
+        <img src={shown.src} alt={shown.caption||shown.alt}/>
+        <figcaption><span>{zoom+1} / {gallery.length}</span>{shown.caption&&<strong>{shown.caption}</strong>}{shown.to&&<Link to={shown.to} onClick={()=>setZoom(null)}>Ver ficha <ArrowRight/></Link>}</figcaption>
       </figure>
       <button type="button" className="press-lightbox-close" aria-label="Cerrar" onClick={()=>setZoom(null)}><X/></button>
       {gallery.length>1&&<>
