@@ -205,6 +205,17 @@ export async function importData(file){
 }
 
 export const resetData=()=>setData(structuredClone(ORIGINAL));
+
+// Archivo vacío para cargar el real desde cero: sin fichas, colecciones, hitos ni comunas.
+// Se mantienen los textos de la portada, los colores y las diapositivas propias; las que
+// mostraban una ficha pasan a llevar al archivo. Las cuentas de usuario no se tocan.
+export const emptyData=()=>({
+  records:[],recordExtras:{},collections:[],timelineEvents:[],locations:[],
+  heroSlides:heroSlides.map(({recordId,...s})=>recordId||String(s.link).startsWith('/ficha/')?{...s,link:'/archivo'}:s),// eslint-disable-line no-unused-vars
+  site:{...site,featuredId:null},
+  homeContent:{...homeContent,latestIds:[]}
+});
+export const emptyArchive=()=>setData(emptyData());
 export const originalTheme=()=>structuredClone(ORIGINAL.theme);
 export const originalHome=()=>structuredClone(ORIGINAL.homeContent);
 

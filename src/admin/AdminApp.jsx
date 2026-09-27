@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle, ArrowLeft, ArrowUpRight, BookOpen, CalendarRange, Check, CircleCheck, CircleHelp, Database, LogOut, UserPlus, Download, ExternalLink, Eye, EyeOff, FileText, Film, Home, Layers, LayoutDashboard, MapPin, Menu, Mic2, Palette, Plus, RotateCcw, Save, Search, Trash2, Upload, UserRound, Users, X } from 'lucide-react';
 import { collections, heroSlides, locations, recordExtras, records, timelineEvents } from '../data';
-import { exportData, getLastSaved, hydrate, importData, resetData, saveError, setRecordPublished, useStoreVersion } from '../store';
+import { emptyArchive, exportData, getLastSaved, hydrate, importData, resetData, saveError, setRecordPublished, useStoreVersion } from '../store';
 import { tagStyle } from '../color';
 import { Modal, UiProvider, thumb, useUi } from './fields';
 import { authStatus, changePassword, logout as endSession, markTutorials } from './auth';
@@ -375,6 +375,13 @@ function Backup(){
     try{await importData(file);toast('Respaldo importado correctamente.')}catch(err){toast(err.message,'error')}
     inputRef.current.value='';
   };
+  // Deja el archivo vacío; antes descarga un respaldo para poder volver atrás
+  const onEmpty=async()=>{
+    if(!await confirm({title:'¿Vaciar todo el archivo?',text:`Se borrarán las ${records.length} fichas, las ${collections.length} colecciones, los ${timelineEvents.length} hitos de la línea de tiempo y las ${locations.length} comunas del mapa. Se mantienen las cuentas de usuario, los textos de la portada y los colores. Antes de vaciar se descargará un respaldo automáticamente.`,ok:'Descargar respaldo y vaciar',danger:true}))return;
+    exportData();
+    try{await emptyArchive()}catch(err){return toast(saveError(err),'error')}
+    toast('Archivo vaciado. El respaldo quedó en tu carpeta de descargas.');
+  };
   const onReset=async()=>{
     if(!await confirm({title:'¿Restablecer el contenido original?',text:'Se perderán todas las fichas creadas, las imágenes subidas y los cambios hechos desde el gestor.',ok:'Restablecer',danger:true}))return;
     await resetData();toast('Contenido original restablecido.');
@@ -388,7 +395,9 @@ function Backup(){
     <p className="cms-help"><Check/> {savedLabel()}</p>
     <section className="cms-danger-section">
       <h2>Zona de peligro</h2>
-      <div><p><strong>Restablecer todo.</strong> Vuelve al contenido original del sitio y borra las fichas creadas, las imágenes subidas y todos los cambios. Úsalo solo si quieres empezar de cero.</p>
+      <div><p><strong>Vaciar el archivo.</strong> Borra todas las fichas, colecciones, hitos y comunas para cargar el archivo real desde cero. Se mantienen las cuentas, los textos de la portada y los colores. Antes descarga un respaldo automáticamente.</p>
+      <button type="button" className="cms-btn is-danger" onClick={onEmpty}><Trash2/> Vaciar el archivo</button></div>
+      <div><p><strong>Restablecer el contenido de ejemplo.</strong> Vuelve a las fichas de muestra con que venía el sitio y borra las fichas creadas y todos los cambios.</p>
       <button type="button" className="cms-btn is-danger" onClick={onReset}><RotateCcw/> Restablecer todo</button></div>
     </section>
   </div>;
