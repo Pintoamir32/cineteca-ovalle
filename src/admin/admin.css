@@ -468,19 +468,25 @@ span.cms-editable.is-editing{display:inline-block;min-width:8ch;width:100%}
 
 .cms-modal.ie{width:min(1100px,100%);padding:20px 22px}
 .ie-body{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:20px}
-.ie-stage{min-height:300px;display:grid;place-items:center;background:repeating-conic-gradient(#e2e1d9 0 25%,#ecebe4 0 50%) 0 0/18px 18px;border-radius:var(--r-md);padding:14px;min-width:0}
-.ie-canvas{position:relative;overflow:hidden;touch-action:none;user-select:none;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+.ie-stage{min-height:300px;display:grid;place-items:center;align-content:center;gap:10px;background:repeating-conic-gradient(#e2e1d9 0 25%,#ecebe4 0 50%) 0 0/18px 18px;border-radius:var(--r-md);padding:14px;min-width:0}
+.ie-canvas{position:relative;touch-action:none;user-select:none;box-shadow:0 6px 24px rgba(0,0,0,.18);margin:12px}
 .ie-canvas canvas{display:block}
-.ie-crop{position:absolute;cursor:move;outline:2px solid #fff;box-shadow:0 0 0 9999px rgba(10,14,12,.58);touch-action:none}
+/* Oscurecido fuera del recorte (recortado al tamaño de la foto) y marco siempre visible encima */
+.ie-shade{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.ie-shade i{position:absolute;box-shadow:0 0 0 9999px rgba(10,14,12,.55)}
+.ie-crop{position:absolute;cursor:move;outline:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.45),inset 0 0 0 1px rgba(0,0,0,.35);touch-action:none}
 .ie-grid{position:absolute;inset:0;pointer-events:none}
 .ie-grid::before,.ie-grid::after{content:"";position:absolute;border:0 solid rgba(255,255,255,.55)}
 .ie-grid::before{top:0;bottom:0;left:33.33%;right:33.33%;border-left-width:1px;border-right-width:1px}
 .ie-grid::after{left:0;right:0;top:33.33%;bottom:33.33%;border-top-width:1px;border-bottom-width:1px}
-.ie-handle{position:absolute;width:16px;height:16px;background:var(--acid);border:2px solid var(--ink);border-radius:50%;touch-action:none}
-.ie-handle.is-nw{left:-8px;top:-8px;cursor:nwse-resize}.ie-handle.is-se{right:-8px;bottom:-8px;cursor:nwse-resize}
-.ie-handle.is-ne{right:-8px;top:-8px;cursor:nesw-resize}.ie-handle.is-sw{left:-8px;bottom:-8px;cursor:nesw-resize}
-.ie-handle.is-n,.ie-handle.is-s{left:calc(50% - 8px);cursor:ns-resize}.ie-handle.is-n{top:-8px}.ie-handle.is-s{bottom:-8px}
-.ie-handle.is-e,.ie-handle.is-w{top:calc(50% - 8px);cursor:ew-resize}.ie-handle.is-e{right:-8px}.ie-handle.is-w{left:-8px}
+.ie-handle{position:absolute;width:20px;height:20px;background:var(--acid);border:2px solid var(--ink);border-radius:50%;touch-action:none;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.ie-handle:hover{transform:scale(1.15)}
+.ie-handle.is-nw{left:-10px;top:-10px;cursor:nwse-resize}.ie-handle.is-se{right:-10px;bottom:-10px;cursor:nwse-resize}
+.ie-handle.is-ne{right:-10px;top:-10px;cursor:nesw-resize}.ie-handle.is-sw{left:-10px;bottom:-10px;cursor:nesw-resize}
+.ie-handle.is-n,.ie-handle.is-s{left:calc(50% - 10px);cursor:ns-resize}.ie-handle.is-n{top:-10px}.ie-handle.is-s{bottom:-10px}
+.ie-handle.is-e,.ie-handle.is-w{top:calc(50% - 10px);cursor:ew-resize}.ie-handle.is-e{right:-10px}.ie-handle.is-w{left:-10px}
+.ie-hint{margin:0;font-size:12px;font-weight:600;color:var(--ink);background:rgba(255,255,255,.85);border-radius:999px;padding:6px 12px;text-align:center}
+.ie-help{font-size:11px;line-height:1.45;color:var(--muted);margin:8px 0 0}
 .ie-controls fieldset{border:0;margin:0;padding:0;min-width:0}
 .ie-controls fieldset:disabled{opacity:.45}
 .ie-group{padding:0 0 16px;margin-bottom:16px;border-bottom:1px solid var(--line)}
@@ -892,3 +898,11 @@ html:has(.cms-preview-doc){overflow:hidden}
 .cms-choice-clear svg{width:13px;height:13px}
 .cms-editable-choice{cursor:pointer}
 .cms-editable-choice .cms-edit-hint{transform:none}
+
+/* Cargos de la ficha: cargo y nombre en una fila */
+.cms-cargos{list-style:none;margin:0 0 8px;padding:0;display:flex;flex-direction:column;gap:6px}
+.cms-cargos li{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 30px;gap:6px;align-items:center}
+.cms-cargos input{min-width:0;border:1px solid var(--line-strong);background:var(--surface);border-radius:var(--r-sm);padding:8px 9px;font-size:12px;outline:none}
+.cms-cargos input[data-cargo]{font-weight:700}
+.cms-cargos input:focus{border-color:var(--forest);box-shadow:0 0 0 3px rgba(18,60,47,.12)}
+.cms-cargos .cms-icon-btn{width:30px;height:30px}

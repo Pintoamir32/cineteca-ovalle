@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, Circle, Eye, EyeOff, ImagePlus, Images, MapPin, Plus, Star, X } from 'lucide-react';
 import { RecordCard, RecordRow } from '../components';
@@ -19,7 +19,7 @@ function blankDraft(type){
   return {
     // Todo vacío: cada campo muestra en gris cómo completarlo
     record:{id:nextId(),type,slug:meta.slug,title:'',subtitle:'',year:'',format:'',collection:'',color:typeColor(type),image:'',description:''},
-    extra:{credits:meta.credits.map(k=>[k,'']),relations:[],locations:[],mediaType:meta.media,media:'',gallery:[]}
+    extra:{credits:[],relations:[],locations:[],mediaType:meta.media,media:'',gallery:[]}
   };
 }
 
@@ -116,7 +116,7 @@ function RecordEditorInner(){
     onBack={()=>go(`/admin/registros/${slug}`)} onSave={save} onDiscard={discard} onDelete={remove} deleteLabel="Eliminar esta ficha" viewHref={wasPublished?`/ficha/${r.id}`:undefined}
     saveLabel={isNew&&!published?'Guardar borrador':undefined} note={!isNew&&!wasPublished?'Borrador · no se ve en el sitio':undefined}
     panel={panel}
-    hint="Es la ficha real del sitio: clic en cualquier texto para reescribirlo. Las listas (créditos, galería, relacionados y territorios) se manejan en el panel de la derecha.">
+    hint="Es la ficha real del sitio: clic en cualquier texto para reescribirlo. Las listas (cargos, galería, relacionados y territorios) se manejan en el panel de la derecha.">
     <div className="cms-frame-tools">
       <div className="cms-segment is-small cms-mode">{[['ficha','Ficha completa'],['tarjeta','Tarjeta y lista']].map(([k,l])=><button key={k} type="button" className={mode===k?'active':''} onClick={()=>setMode(k)}>{l}</button>)}</div>
     </div>
@@ -149,8 +149,9 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
   const field=key=>{
     const [name,i]=key.split('.'), n=Number(i);
     if(name==='format')return [parts[n]??'',v=>setPart(n,v),meta.format[n]||'Formato',meta.formatHint?.[n]];
-    if(name==='credits')return [credits[n]?.[1]??'',v=>setCredit(n,1,v),credits[n]?.[0]||'Dato'];
-    if(name==='creditKey')return [credits[n]?.[0]??'',v=>setCredit(n,0,v),'Nombre del dato'];
+    // Cargos: el nombre del cargo y quién lo ocupó (el 5.º valor es la indicación completa)
+    if(name==='credits')return [credits[n]?.[1]??'',v=>setCredit(n,1,v),credits[n]?.[0]||'Nombre',undefined,'Escribe el nombre (ej. María Cortés)'];
+    if(name==='creditKey')return [credits[n]?.[0]??'',v=>setCredit(n,0,v),'Cargo',undefined,'Escribe el cargo (ej. Fotografía)'];
     const labels={title:r.type==='Persona'?'Nombre':'Título',subtitle:meta.subtitle,year:meta.year,description:'Descripción',collection:'Colección'};
     return [r[name]??'',v=>setR({[name]:v}),labels[name]||name,name==='year'?(r.type==='Persona'?'1931—2010':'1972'):undefined];
   };
@@ -174,7 +175,8 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
   const context={
     text:(key,{multiline=false}={})=>{
       // La indicación siempre dice qué escribir (la página solo aporta la clave del campo)
-      const [value,onChange,label,example]=field(key), options=choices(key);
+      const [value,onChange,label,example,hint]=field(key), options=choices(key);
+      if(hint)return <Editable key={key} value={value} onChange={onChange} placeholder={hint} label={label}/>;
       if(options)return <EditableChoice key={key} value={value} onChange={onChange} options={options} label={label} placeholder={`Elige ${withArticle(label)}${example?` (ej. ${example})`:''}`}/>;
       return <Editable key={key} value={value} onChange={onChange} multiline={multiline} wrap={key==='title'} placeholder={`Escribe ${withArticle(label)}${example?` (ej. ${example})`:''}`} label={label}/>;
     },
@@ -197,23 +199,26 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
 function RecordPanelBlocks({r,e,meta,setE,openPicker}){
   const credits=e.credits||[], gallery=e.gallery||[], places=e.locations||[];
   const related=(e.relations||[]).map(id=>records.find(x=>x.id===id)).filter(Boolean);
-  const suggestions=meta.credits.filter(k=>!credits.some(([c])=>c===k));
+  const setCredit=(i,j,v)=>setE({credits:credits.map((c,k)=>k===i?(j===0?[v,c[1]]:[c[0],v]):c)});
+  // Al agregar un cargo, el cursor queda en su primer campo
+  const listRef=useRef(null), focusNew=useRef(false);
+  const addCredit=()=>{focusNew.current=true;setE({credits:[...credits,['','']]})};
+  useEffect(()=>{if(focusNew.current){focusNew.current=false;[...(listRef.current?.querySelectorAll('input[data-cargo]')||[])].pop()?.focus()}},[credits.length]);
   const moveGallery=(i,d)=>{const g=[...gallery];[g[i],g[i+d]]=[g[i+d],g[i]];setE({gallery:g})};
   const free=locations.map(l=>l.name).filter(n=>!places.includes(n));
   const media=MEDIA_TYPES.find(m=>m.value===e.mediaType)||MEDIA_TYPES[3], MediaIcon=media.icon;
   const needsFile=['video','audio','document'].includes(e.mediaType);
   return <>
     <PanelBlock title="Contenido">
-      <label className="cms-panel-label">Créditos y datos</label>
-      {credits.length>0&&<ul className="cms-mini-list">{credits.map(([k,v],i)=><li key={i}>
-        <span>{v||<em>Sin completar</em>}<small>{k||'Sin nombre'}</small></span>
-        <button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({credits:credits.filter((_,j)=>j!==i)})} aria-label={`Quitar ${k||'dato'}`}><X/></button>
+      <label className="cms-panel-label">Cargos · {credits.length}</label>
+      {credits.length>0&&<ul className="cms-cargos" ref={listRef}>{credits.map(([k,v],i)=><li key={i}>
+        <input data-cargo value={k} onChange={ev=>setCredit(i,0,ev.target.value)} placeholder="Cargo" aria-label={`Cargo ${i+1}`}/>
+        <input value={v} onChange={ev=>setCredit(i,1,ev.target.value)} placeholder="Nombre" aria-label={`Nombre para ${k||`el cargo ${i+1}`}`}
+          onKeyDown={ev=>{if(ev.key==='Enter'){ev.preventDefault();addCredit()}}}/>
+        <button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({credits:credits.filter((_,j)=>j!==i)})} aria-label={`Quitar ${k||'cargo'}`} title="Quitar cargo"><X/></button>
       </li>)}</ul>}
-      <div className="cms-suggest">
-        {suggestions.map(k=><button key={k} type="button" onClick={()=>setE({credits:[...credits,[k,'']]})}><Plus/>{k}</button>)}
-        <button type="button" onClick={()=>setE({credits:[...credits,['','']]})}><Plus/>Otro dato</button>
-      </div>
-      <p className="cms-help">El nombre y el valor de cada dato se escriben con clic en la vista previa.</p>
+      <button type="button" className="cms-btn is-block" onClick={addCredit}><Plus/> Añadir cargo</button>
+      <p className="cms-help">{credits.length?'Ej.: Fotografía · María Cortés. Si falta el cargo o el nombre, esa fila no se guarda.':'Agrega cada cargo (fotografía, montaje…) y quién lo ocupó.'}</p>
       <label className="cms-panel-label">Archivo digital</label>
       <button type="button" className="cms-btn is-block" onClick={()=>openPicker('media')}><MediaIcon/> {media.label}{needsFile?(e.media?' · cambiar archivo':' · subir archivo'):' · cambiar tipo'}</button>
       <label className="cms-panel-label">Galería · {gallery.length}</label>

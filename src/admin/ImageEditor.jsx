@@ -8,18 +8,22 @@ const ADJUST=[['b','Brillo',0,200],['c','Contraste',0,200],['s','Saturación',0,
 const fresh=aspect=>({rot:0,flip:false,crop:{x:0,y:0,w:1,h:1},aspect,b:100,c:100,s:100,g:0,pending:aspect!=null});
 const untouched=st=>!st.rot&&!st.flip&&st.crop.x===0&&st.crop.y===0&&st.crop.w===1&&st.crop.h===1&&st.b===100&&st.c===100&&st.s===100&&st.g===0;
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const cropped=st=>!(st.crop.x===0&&st.crop.y===0&&st.crop.w===1&&st.crop.h===1);
 const filterOf=st=>`brightness(${st.b}%) contrast(${st.c}%) saturate(${st.s}%) grayscale(${st.g}%)`;
 const dims=(img,rot)=>rot%180?[img.naturalHeight,img.naturalWidth]:[img.naturalWidth,img.naturalHeight];
 
 // Primero con CORS (para poder exportar); si el sitio de origen no lo permite, solo se puede mostrar
 function loadImage(src){
-  const attempt=cors=>new Promise((resolve,reject)=>{
+  const attempt=(cors,url=src)=>new Promise((resolve,reject)=>{
     const img=new Image();
     if(cors)img.crossOrigin='anonymous';
-    img.onload=()=>resolve(img);img.onerror=reject;img.src=src;
+    img.onload=()=>resolve(img);img.onerror=reject;img.src=url;
   });
   if(/^(data|blob):/.test(src))return attempt(false).catch(()=>{throw new Error('No se pudo leer la imagen.')});
-  return attempt(true).catch(()=>attempt(false).then(img=>{img.tainted=true;return img})).catch(()=>{throw new Error('No se pudo cargar la imagen desde ese enlace.')});
+  // Si el otro sitio no lo permite, el servidor trae la imagen para que igual se pueda recortar;
+  // como último recurso se muestra tal cual (sin editar)
+  const viaServer=()=>/^https?:/.test(src)?attempt(false,`/api/image-proxy?url=${encodeURIComponent(src)}`):Promise.reject();
+  return attempt(true).catch(viaServer).catch(()=>attempt(false).then(img=>{img.tainted=true;return img})).catch(()=>{throw new Error('No se pudo cargar la imagen desde ese enlace.')});
 }
 
 // Proporción de recorte expresada en coordenadas normalizadas (ancho/alto dentro de 0..1)
@@ -90,7 +94,8 @@ export function ImageEditor({sources,onDone,onClose,aspect=null}){
 
   useLayoutEffect(()=>{
     const el=stageRef.current;if(!el)return;
-    const ro=new ResizeObserver(([e])=>setBox({w:e.contentRect.width,h:Math.min(460,window.innerHeight*.52)}));
+    // Se descuenta el margen que deja espacio a las esquinas del recorte
+    const ro=new ResizeObserver(([e])=>setBox({w:Math.max(120,e.contentRect.width-24),h:Math.min(440,window.innerHeight*.5)}));
     ro.observe(el);return()=>ro.disconnect();
   },[]);
 
@@ -144,19 +149,26 @@ export function ImageEditor({sources,onDone,onClose,aspect=null}){
   return <Modal onClose={onClose} title={many?`Editar imágenes · ${i+1} de ${items.length}`:'Editar imagen'} className="ie">
     <div className="ie-body">
       <div className="ie-stage" ref={stageRef}>
+        {img&&!img.tainted&&<p className="ie-hint">Arrastra las esquinas o los bordes para recortar · arrastra el recuadro para moverlo</p>}
         {img?<div className="ie-canvas" style={{width:dw,height:dh}}>
           <canvas ref={canvasRef} style={{width:dw,height:dh,filter:filterOf(st)}}/>
-          {!img.tainted&&<div className="ie-crop" style={{left:st.crop.x*dw,top:st.crop.y*dh,width:st.crop.w*dw,height:st.crop.h*dh}} onPointerDown={drag('move')}>
-            <i className="ie-grid"/>
-            {handles.map(h=><span key={h} className={`ie-handle is-${h}`} onPointerDown={drag(h)}/>)}
-          </div>}
+          {/* El oscurecido fuera del recorte va en una capa recortada; el marco y sus esquinas, encima y siempre visibles */}
+          {!img.tainted&&<>
+            <div className="ie-shade" aria-hidden="true"><i style={{left:st.crop.x*dw,top:st.crop.y*dh,width:st.crop.w*dw,height:st.crop.h*dh}}/></div>
+            <div className="ie-crop" style={{left:st.crop.x*dw,top:st.crop.y*dh,width:st.crop.w*dw,height:st.crop.h*dh}} onPointerDown={drag('move')}>
+              <i className="ie-grid"/>
+              {handles.map(h=><span key={h} className={`ie-handle is-${h}`} onPointerDown={drag(h)}/>)}
+            </div>
+          </>}
         </div>:<p className={error?'cms-error':'cms-help'}>{error||'Cargando imagen…'}</p>}
       </div>
       <aside className="ie-controls">
         {img?.tainted&&<p className="ie-note">El sitio de origen no permite editar esta imagen. Se usará tal cual; para editarla, descárgala y súbela desde tu equipo.</p>}
         <fieldset disabled={!img||img.tainted}>
           <div className="ie-group"><span>Recorte</span>
-            <div className="ie-chips">{ASPECTS.map(([label,a])=><button key={label} type="button" className={st.aspect===a?'active':''} onClick={()=>setAspect(a)}>{label}</button>)}</div>
+            <div className="ie-chips">{ASPECTS.map(([label,a])=><button key={label} type="button" className={st.aspect===a?'active':''} onClick={()=>setAspect(a)}>{label}{aspect!=null&&a===aspect?' · sitio':''}</button>)}</div>
+            <p className="ie-help">{aspect!=null?`En el sitio esta imagen se ve en ${ASPECTS.find(([,a])=>a===aspect)?.[0]||'una proporción fija'}; «Libre» deja recortar a mano.`:'«Libre» deja recortar a mano; las proporciones fijan la forma del recuadro.'}{cropped(st)?'':' Ahora se usa la foto completa.'}</p>
+            {cropped(st)&&<button type="button" className="cms-btn is-ghost ie-reset" onClick={()=>update({crop:{x:0,y:0,w:1,h:1},aspect:null})}><Undo2/> Quitar recorte</button>}
           </div>
           <div className="ie-group"><span>Orientación</span>
             <div className="ie-row">

@@ -1,6 +1,7 @@
 /* Servidor de la Cineteca: entrega el sitio y la API del gestor (cuentas, contenido e imágenes).
    En desarrollo (npm run dev) monta Vite para recargar al instante; en producción sirve dist/. */
 import crypto from 'node:crypto';
+import dns from 'node:dns/promises';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -128,6 +129,25 @@ api.post('/tutorials',needUser,async(req,res)=>{
   const views=[].concat(req.body.views||[]).map(String).filter(v=>/^[a-z-]{1,40}$/.test(v)).slice(0,50);
   for(const v of views)await db.markTutorial(req.user.id,v);
   res.json({ok:true});
+});
+
+// Trae una imagen de otro sitio para poder recortarla en el editor (el navegador no deja editar
+// imágenes ajenas que no lo permiten). Solo con sesión iniciada, solo imágenes y nunca de la red interna.
+const PRIVATE_IP=/^(10\.|127\.|0\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|::1$|::ffff:(10|127|192\.168)\.|f[cd][0-9a-f]{2}:|fe80:)/i;
+api.get('/image-proxy',needUser,async(req,res)=>{
+  let url;
+  try{url=new URL(String(req.query.url||''))}catch{return res.status(400).json({error:'Dirección de imagen no válida.'})}
+  if(!/^https?:$/.test(url.protocol))return res.status(400).json({error:'Dirección de imagen no válida.'});
+  try{const {address}=await dns.lookup(url.hostname);if(PRIVATE_IP.test(address))return res.status(400).json({error:'Dirección de imagen no permitida.'})}
+  catch{return res.status(404).json({error:'No se encontró la imagen.'})}
+  try{
+    const r=await fetch(url,{signal:AbortSignal.timeout(12000)});
+    const type=r.headers.get('content-type')||'';
+    if(!r.ok||!type.startsWith('image/'))return res.status(404).json({error:'No se pudo traer la imagen.'});
+    const buf=Buffer.from(await r.arrayBuffer());
+    if(buf.length>15*1024*1024)return res.status(413).json({error:'La imagen es demasiado grande.'});
+    res.setHeader('Content-Type',type);res.send(buf);
+  }catch{res.status(502).json({error:'No se pudo traer la imagen.'})}
 });
 
 api.get('/users',needUser,async(req,res)=>res.json({users:(await db.listUsers()).map(u=>({id:u.id,name:u.name,user:u.username,createdAt:u.createdAt}))}));
