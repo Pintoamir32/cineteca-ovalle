@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, BookOpen, ChevronLeft, ChevronRight, CirclePlay, Download, FileText, Headphones, MapPin, Maximize2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, CirclePlay, Download, FileText, Headphones, MapPin, Maximize2, X } from 'lucide-react';
 import { sections } from './data';
 import { getInterviewee, interviewFormat, placesOf, recordPath } from './repository';
 import { useEdit } from './edit-context';
@@ -90,9 +90,6 @@ function Places({item,places,slot}){
 
 // Qué muestra cada tipo dentro del diseño de documento
 function docConfig(item,extra){
-  const [kind,extent]=(item.format||'').split(' · ');
-  const credit=k=>extra.credits?.find(([key])=>key===k)?.[1];
-  const others=skip=>(extra.credits||[]).filter(([k])=>!skip.includes(k));
   // Entrevista: entrevistado(a) (con enlace a su ficha), fecha, formato y contenido o archivo adjunto
   if(item.type==='Entrevista'){
     const person=getInterviewee(item,extra), name=person?.title||item.subtitle, format=interviewFormat(extra);
@@ -105,13 +102,13 @@ function docConfig(item,extra){
       factsLabel:'Ficha de la entrevista',textLabel:'CONTENIDO',player:extra.mediaType!=='text'
     };
   }
+  // Artículo: título, autor(a), fecha de publicación, películas referenciadas y cuerpo del artículo (más galería)
   if(item.type==='Artículo')return {
-    source:credit('Edición')||credit('Revista')||item.collection,
-    meta:[item.year,kind,extent],
-    caption:`Imagen: Archivo CDO · ${item.collection}`,
-    cta:[BookOpen,'Leer artículo','#texto'],
-    facts:[['Autoría',item.subtitle,true,'subtitle'],['Año',item.year,false,'year'],['Tipo',kind,false,'format.0'],['Lectura',extent,false,'format.1'],...others(['Extensión']),['Colección',item.collection,true]],
-    factsLabel:'Ficha del artículo',textLabel:'TEXTO'
+    article:true,
+    source:item.subtitle,
+    meta:[item.year],
+    facts:[['Autor(a)',item.subtitle,true,'subtitle'],['Fecha de publicación',item.year,true,'year']],
+    factsLabel:'Ficha del artículo'
   };
   // Prensa: título/fuente, fecha, medio de origen, documento digitalizado y vínculos a películas y personas
   return {
@@ -128,10 +125,10 @@ export function DocumentView({item,extra,related,people}){
   const cfg=docConfig(item,extra);
   // Galería: imagen principal, material propio del registro e imágenes de sus relacionados
   const gallery=useMemo(()=>[
-    {src:cfg.image||item.image,caption:cfg.caption,kind:'Imagen principal'},
+    ...(cfg.article?[]:[{src:cfg.image||item.image,caption:cfg.caption,kind:'Imagen principal'}]),
     ...(extra.gallery||[]).map((src,i)=>({src,caption:'',alt:`${item.title} · imagen ${i+1}`})),
-    ...(cfg.press||cfg.interview?[]:related).map(r=>({src:r.image,caption:r.title,kind:`Ver también · ${r.type}`,to:recordPath(r)}))
-  ],[item,extra,related,cfg.caption,cfg.image,cfg.press,cfg.interview]);
+    ...(cfg.press||cfg.interview||cfg.article?[]:related).map(r=>({src:r.image,caption:r.title,kind:`Ver también · ${r.type}`,to:recordPath(r)}))
+  ],[item,extra,related,cfg.caption,cfg.image,cfg.press,cfg.interview,cfg.article]);
   const [zoom,setZoom]=useState(null);
   const open=zoom!==null, shown=open?gallery[zoom]:null;
   const step=d=>setZoom(z=>(z+d+gallery.length)%gallery.length);
@@ -154,8 +151,8 @@ export function DocumentView({item,extra,related,people}){
         <h2>La Cineteca de Ovalle</h2>
         <div>{[cfg.source,...cfg.meta].filter(Boolean).map(m=><span key={m}>{m}</span>)}</div>
       </header>
-      <div className="press-layout">
-        <div className="press-side">
+      <div className={`press-layout${cfg.article?' is-single':''}`}>
+        {!cfg.article&&<div className="press-side">
           <figure className="press-clipping">
             <button type="button" onClick={()=>setZoom(0)} aria-label="Ampliar imagen">
               <img src={cfg.image||item.image} alt={item.title} decoding="async"/>
@@ -165,11 +162,11 @@ export function DocumentView({item,extra,related,people}){
             <figcaption>{cfg.caption}</figcaption>
           </figure>
           {!cfg.interview&&player}
-        </div>
+        </div>}
         <article className="press-article">
           <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
           <h1>{cfg.interview?cfg.title:f('title',item.title)}</h1>
-          {!cfg.press&&!cfg.interview&&<p className="press-dek">{f('description',item.description,{multiline:true})}</p>}
+          {!cfg.press&&!cfg.interview&&!cfg.article&&<p className="press-dek">{f('description',item.description,{multiline:true})}</p>}
           {(CtaIcon||slot('media'))&&<div className="press-actions">
             {CtaIcon&&(ctaHref?<a className="ficha-cta" href={ctaHref}><CtaIcon/> {ctaText}</a>:<button type="button" className="ficha-cta" onClick={()=>setZoom(0)}><CtaIcon/> {ctaText}</button>)}
             {!cfg.player&&slot('media')}
@@ -177,7 +174,7 @@ export function DocumentView({item,extra,related,people}){
           <div className="ficha-aside-label">{cfg.factsLabel}</div>
           <Facts rows={cfg.facts}/>
           {cfg.interview&&player}
-          {!cfg.press&&!cfg.interview&&<><div className="ficha-section-label" id="texto"><span>01</span> {cfg.textLabel}</div>
+          {!cfg.press&&!cfg.interview&&!cfg.article&&<><div className="ficha-section-label" id="texto"><span>01</span> {cfg.textLabel}</div>
           <div className="press-transcript"><p>{f('description',item.description,{multiline:true})}</p></div></>}
         </article>
       </div>
@@ -187,19 +184,28 @@ export function DocumentView({item,extra,related,people}){
       <div className="ficha-filmography-head"><div className="ficha-section-label"><span>01</span> CONTENIDO</div><span>ENTREVISTA{cfg.person||item.subtitle?` A ${(cfg.person?.title||item.subtitle).toUpperCase()}`:''}</span></div>
       <div className="interview-text-body">{f('description',item.description,{multiline:true})}</div>
     </section>}
+    {cfg.article&&(edit||item.description?.trim())&&<section className="interview-text" id="texto" data-reveal>
+      <div className="ficha-filmography-head"><div className="ficha-section-label"><span>01</span> CUERPO DEL ARTÍCULO</div>{item.subtitle&&<span>POR {item.subtitle.toUpperCase()}</span>}</div>
+      <div className="interview-text-body">{f('description',item.description,{multiline:true})}</div>
+    </section>}
     {hasPdf&&<section className="press-pdf" id="documento" data-reveal>
       <div className="ficha-filmography-head"><div className="ficha-section-label">DOCUMENTO DIGITALIZADO</div><div className="press-pdf-links"><a href={extra.media} download={`${item.title}.pdf`} target="_blank" rel="noreferrer"><Download/> Descargar PDF</a><a href={extra.media} target="_blank" rel="noreferrer">Abrir en otra pestaña <ArrowRight/></a></div></div>
       <PdfViewer url={extra.media} title={item.title}/>
     </section>}
-    {(!(cfg.press||cfg.interview)||edit||extra.gallery?.length>0)&&<section className="doc-gallery" data-reveal>
-      <div className="ficha-filmography-head"><div className="ficha-section-label"><span>{cfg.press||(cfg.interview&&!(edit||item.description?.trim()))?'01':'02'}</span> GALERÍA</div><span>{String(shownGallery.length).padStart(2,'0')} {shownGallery.length===1?'IMAGEN':'IMÁGENES'}</span></div>
+    {(!(cfg.press||cfg.interview||cfg.article)||edit||extra.gallery?.length>0)&&<section className="doc-gallery" data-reveal>
+      <div className="ficha-filmography-head"><div className="ficha-section-label"><span>{cfg.press||((cfg.interview||cfg.article)&&!(edit||item.description?.trim()))?'01':'02'}</span> GALERÍA</div><span>{String(shownGallery.length).padStart(2,'0')} {shownGallery.length===1?'IMAGEN':'IMÁGENES'}</span></div>
       {slot('gallery')}
       <div className="doc-gallery-grid">{shownGallery.map((g,i)=><figure key={g.src+i} className={i===0?'is-main':undefined}>
         <button type="button" onClick={()=>setZoom(i+skipMain)} aria-label={`Ampliar: ${g.caption||g.alt}`}><img src={g.src} alt={g.caption||g.alt} loading="lazy" decoding="async"/><span className="press-zoom"><Maximize2/> Ampliar</span></button>
         {g.caption&&<figcaption><small>{String(i+1).padStart(2,'0')}{skipMain?'':` · ${g.kind}`}</small>{g.to?<Link to={g.to}>{g.caption}</Link>:<span>{g.caption}</span>}</figcaption>}
       </figure>)}</div>
     </section>}
-    {!cfg.interview&&<section className="doc-footer" data-reveal>
+    {/* Artículo: las películas referenciadas, con enlace a sus fichas */}
+    {cfg.article&&(edit||related.some(r=>r.type==='Película'))&&<section className="doc-footer is-single" data-reveal>
+      <div className="doc-footer-main"><RelatedList related={related.filter(r=>r.type==='Película')} title="Películas referenciadas"/>
+        {!related.some(r=>r.type==='Película')&&edit&&<p className="ficha-filmography-empty">Vincula las películas desde el panel de la derecha.</p>}</div>
+    </section>}
+    {!cfg.interview&&!cfg.article&&<section className="doc-footer" data-reveal>
       <div className="doc-footer-main"><PeopleCards people={people} number={cfg.press?(edit||extra.gallery?.length>0?'02':'01'):'03'} title={cfg.press?'Personas vinculadas':undefined}/></div>
       <aside className="doc-footer-side">{cfg.press?<RelatedList related={related.filter(r=>r.type==='Película')} title="Películas vinculadas"/>
         :<><RelatedList related={related}/>{slot('relations')}<Places item={item} places={placesOf(extra)} slot={slot}/></>}</aside>
