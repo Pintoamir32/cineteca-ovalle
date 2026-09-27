@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, Circle, Eye, EyeOff, ImagePlus, Images, MapPin, Plus, Star, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Circle, Eye, EyeOff, FileText, ImagePlus, Images, MapPin, Plus, Star, X } from 'lucide-react';
 import { RecordCard, RecordRow } from '../components';
 import { collections, locations, records, site } from '../data';
 import { EditContext } from '../edit-context';
@@ -40,7 +40,7 @@ function RecordEditorInner(){
   const isFeatured=()=>!isNew&&site.featuredId===Number(id);
   const [featured,setFeatured]=useState(isFeatured);
 
-  const {record:r,extra:e}=draft, meta=TYPE_META[r.type], isPerson=r.type==='Persona';
+  const {record:r,extra:e}=draft, meta=TYPE_META[r.type], isPerson=r.type==='Persona', isPress=r.type==='Prensa';
   const setR=patch=>{setDraft(d=>({...d,record:{...d.record,...patch}}));setDirty(true)};
   const setE=patch=>{setDraft(d=>({...d,extra:{...d.extra,...patch}}));setDirty(true)};
   const parts=meta.format.map((_,i)=>(r.format||'').split(' · ')[i]||'');
@@ -58,6 +58,11 @@ function RecordEditorInner(){
       record={...record,year:'',format:'',collection:''};
       extra={...extra,credits:[],gallery:[],locations:[],media:'',mediaType:'image',relations:(extra.relations||[]).filter(id=>records.some(x=>x.id===id&&x.type==='Película')),
         works:(extra.works||[]).map(w=>({title:String(w.title||'').trim(),year:String(w.year||'').trim()})).filter(w=>w.title)};
+    }
+    // Prensa: título/fuente, fecha, medio, documento digitalizado (imagen y PDF opcional) y vínculos a películas y personas
+    if(isPress){
+      record={...record,format:'',collection:''};
+      extra={...extra,credits:[],gallery:[],locations:[],mediaType:'document',relations:(extra.relations||[]).filter(id=>records.some(x=>x.id===id&&['Película','Persona'].includes(x.type)))};
     }
     try{
       await saveRecord(record,extra);
@@ -92,7 +97,8 @@ function RecordEditorInner(){
   const REQUIRED=['Imagen','Título'];
   const checklist=meta.only||['Imagen','Título',meta.subtitle,'Año','Descripción','Colección',...(['video','audio'].includes(e.mediaType)?['Archivo digital']:[])];
   // Cómo se llama cada punto de la lista en una ficha de persona
-  const checkName=k=>isPerson?({Imagen:'Fotografía',Título:'Nombre',Descripción:'Biografía'}[k]||k):r.type==='Película'&&k==='Descripción'?'Sinopsis':k;
+  const checkName=k=>isPerson?({Imagen:'Fotografía',Título:'Nombre',Descripción:'Biografía'}[k]||k)
+    :isPress?({Imagen:'Documento digitalizado',Título:'Título / fuente',Año:'Fecha'}[k]||k):r.type==='Película'&&k==='Descripción'?'Sinopsis':k;
   // Panel en cuatro grupos, de lo que más se mira a lo que menos se cambia
   const panel=<>
     <PanelBlock title="Visibilidad en el sitio">
@@ -107,7 +113,7 @@ function RecordEditorInner(){
     <PanelBlock title="Estado de la ficha" aside={<b className={miss.length?'cms-count-warn':'cms-count-ok'}>{miss.length?`${miss.length} pendiente${miss.length>1?'s':''}`:'Completa'}</b>}>
       <ul className="cms-checklist">{checklist.map(k=><li key={k} className={miss.includes(k)?'':'done'}>{miss.includes(k)?<Circle/>:<Check/>}{checkName(k)}{REQUIRED.includes(k)&&miss.includes(k)&&<small>obligatorio para guardar</small>}{k==='Descripción'&&miss.includes(k)&&<small>mín. 40 caracteres</small>}</li>)}</ul>
     </PanelBlock>
-    {isPerson?<PersonWorks r={r} e={e} setE={setE} openPicker={edit.open}/>:<>
+    {isPerson?<PersonWorks r={r} e={e} setE={setE} openPicker={edit.open}/>:isPress?<PressPanel r={r} e={e} setE={setE} openPicker={edit.open}/>:<>
     <PanelBlock title="Clasificación">
       <label className="cms-panel-label">Colección</label>
       {collectionOptions.length?<Choice value={r.collection} options={collectionOptions} onChange={collection=>setR({collection})} placeholder="Elegir colección…"/>
@@ -165,8 +171,8 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     // Cargos: el nombre del cargo y quién lo ocupó (el 5.º valor es la indicación completa)
     if(name==='credits')return [credits[n]?.[1]??'',v=>setCredit(n,1,v),credits[n]?.[0]||'Nombre',undefined,'Escribe el nombre (ej. María Cortés)'];
     if(name==='creditKey')return [credits[n]?.[0]??'',v=>setCredit(n,0,v),'Cargo',undefined,'Escribe el cargo (ej. Fotografía)'];
-    const labels={title:r.type==='Persona'?'Nombre':'Título',subtitle:meta.subtitle,year:meta.year,description:{Persona:'Biografía',Película:'Sinopsis'}[r.type]||'Descripción',collection:'Colección'};
-    return [r[name]??'',v=>setR({[name]:v}),labels[name]||name,name==='year'?(r.type==='Persona'?'1931—2010':'1972'):undefined];
+    const labels={title:{Persona:'Nombre',Prensa:'Título / fuente'}[r.type]||'Título',subtitle:meta.subtitle,year:meta.year,description:{Persona:'Biografía',Película:'Sinopsis'}[r.type]||'Descripción',collection:'Colección'};
+    return [r[name]??'',v=>setR({[name]:v}),labels[name]||name,name==='year'?({Persona:'1931—2010',Prensa:'14 de marzo de 1971'}[r.type]||'1972'):undefined];
   };
   const cfg=MEDIA_TYPES.find(m=>m.value===e.mediaType)||MEDIA_TYPES[3], MediaIcon=cfg.icon;
   const needsFile=['video','audio','document'].includes(e.mediaType);
@@ -182,6 +188,7 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
   const choices=key=>{
     const [name,i]=key.split('.');
     if(name==='subtitle'&&['Película','Entrevista'].includes(r.type))return [...records.filter(x=>x.type==='Persona').map(x=>x.title),...sameType.map(x=>x.subtitle)];
+    if(name==='subtitle'&&r.type==='Prensa')return sameType.map(x=>x.subtitle);
     if(name==='format')return sameType.map(x=>(x.format||'').split(' · ')[Number(i)]);
     if(name==='collection')return [...collections.map(c=>c.title),...records.map(x=>x.collection)];
     return null;
@@ -200,6 +207,7 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     {picker==='image'&&<ImagePicker value={r.image} aspect={pickAspect} onPick={image=>setR({image})} onClose={()=>setPicker(null)} title="Imagen principal"/>}
     {picker==='media'&&<MediaPicker mediaType={e.mediaType} media={e.media} onChange={(mediaType,media)=>setE({mediaType,media})} onClose={()=>setPicker(null)}/>}
     {picker==='work'&&<RecordPicker title="Vincular una película" types={['Película']} exclude={e.relations||[]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
+    {picker==='link'&&<RecordPicker title="Vincular película o persona" types={['Película','Persona']} exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
     {picker==='relation'&&<RecordPicker exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
     {picker?.gallery!==undefined&&<ImagePicker title={picker.gallery<0?'Añadir a la galería':'Imagen de la galería'} value={gallery[picker.gallery]} multiple={picker.gallery<0}
       onPickMany={srcs=>setE({gallery:[...gallery,...srcs]})}
@@ -234,6 +242,27 @@ function PersonWorks({r,e,setE,openPicker}){
     <button type="button" className="cms-btn is-block" onClick={()=>{focusNew.current=true;setE({works:[...written,{title:'',year:''}]})}}><Plus/> Escribir película</button>
     <p className="cms-help is-text">Las del archivo aparecen solas cuando figura con este mismo nombre en «Dirigida por» o en un cargo, o al vincularlas. Las escritas a mano se muestran sin enlace, para películas que no tienen ficha.</p>
   </PanelBlock>;
+}
+
+// Prensa: el documento digitalizado (imagen principal y PDF opcional) y sus vínculos a películas y personas
+function PressPanel({r,e,setE,openPicker}){
+  const linked=(e.relations||[]).map(id=>records.find(x=>x.id===id)).filter(x=>x&&['Película','Persona'].includes(x.type));
+  return <>
+    <PanelBlock title="Documento digitalizado">
+      <label className="cms-panel-label">Imagen</label>
+      <button type="button" className="cms-btn is-block" onClick={()=>openPicker('image')}><ImagePlus/> {r.image?'Cambiar imagen':'Subir imagen'}</button>
+      <label className="cms-panel-label">PDF · opcional</label>
+      <button type="button" className="cms-btn is-block" onClick={()=>openPicker('media')}><FileText/> {e.media?'Cambiar PDF':'Subir PDF'}</button>
+      <p className="cms-help">La imagen se muestra en el sitio y en los listados; el PDF, si lo hay, se puede abrir y descargar.</p>
+    </PanelBlock>
+    <PanelBlock title={`Películas y personas · ${linked.length}`}>
+      {linked.length>0?<ul className="cms-mini-list">{linked.map(x=><li key={x.id}>
+        <img src={thumb(x.image,120)} alt=""/><span>{x.title}<small>{x.type}</small></span>
+        <button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({relations:e.relations.filter(id=>id!==x.id)})} aria-label={`Quitar ${x.title}`} title="Quitar vínculo"><X/></button>
+      </li>)}</ul>:<p className="cms-help">Ninguna todavía.</p>}
+      <button type="button" className="cms-btn is-block" onClick={()=>openPicker('link')}><Plus/> Vincular película o persona</button>
+    </PanelBlock>
+  </>;
 }
 
 // Contenido y conexiones de la ficha: aquí se agregan, ordenan y quitan todas sus listas

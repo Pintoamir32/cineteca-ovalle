@@ -51,10 +51,10 @@ function PeopleCards({people,title='Personas mencionadas',number}){
 }
 
 // Relacionados como índice de diario: miniatura en papel, titular con serifa
-function RelatedList({related}){
+function RelatedList({related,title='Ver también'}){
   if(!related.length)return null;
   return <section className="doc-related">
-    <header><h3>Ver también</h3><span>{String(related.length).padStart(2,'0')} registros</span></header>
+    <header><h3>{title}</h3><span>{String(related.length).padStart(2,'0')} registros</span></header>
     <ol>{related.map((r,i)=><li key={r.id}><Link to={recordPath(r)}>
       <span className="doc-related-num">{String(i+1).padStart(2,'0')}</span>
       <span className="doc-related-thumb"><img src={r.image} alt="" loading="lazy" decoding="async"/></span>
@@ -95,18 +95,19 @@ function docConfig(item,extra){
     facts:[['Autoría',item.subtitle,true,'subtitle'],['Año',item.year,false,'year'],['Tipo',kind,false,'format.0'],['Lectura',extent,false,'format.1'],...others(['Extensión']),['Colección',item.collection,true]],
     factsLabel:'Ficha del artículo',textLabel:'TEXTO'
   };
+  // Prensa: título/fuente, fecha, medio de origen, documento digitalizado y vínculos a películas y personas
   return {
     source:item.subtitle,
-    meta:[credit('Fecha')||item.year,credit('Sección')&&`Sección ${credit('Sección')}`,item.format],
-    caption:'Recorte digitalizado · Archivo CDO',
+    meta:[item.year],
+    caption:'Documento digitalizado · Archivo CDO',
     cta:[Maximize2,'Ver documento completo',null],
-    facts:[['Medio',item.subtitle,true,'subtitle'],['Fecha',credit('Fecha')||item.year,false,credit('Fecha')?undefined:'year'],['Tipo',kind,false,'format.0'],['Extensión',credit('Páginas')?`${credit('Páginas')} páginas`:extent,false,credit('Páginas')?undefined:'format.1'],['Sección',credit('Sección')],['Fondo',credit('Fondo')],['Colección',item.collection,true]],
-    factsLabel:'Ficha del documento',textLabel:'TRANSCRIPCIÓN',download:true
+    facts:[['Medio de origen',item.subtitle,true,'subtitle'],['Fecha',item.year,true,'year']],
+    factsLabel:'Ficha del documento',textLabel:'RESUMEN',download:true,press:true
   };
 }
 
 export function DocumentView({item,extra,related,people}){
-  const {f,slot}=useEdit();
+  const {f,slot,edit}=useEdit();
   const cfg=docConfig(item,extra);
   // Galería: imagen principal, material propio del registro e imágenes de sus relacionados
   const gallery=useMemo(()=>[
@@ -146,7 +147,7 @@ export function DocumentView({item,extra,related,people}){
         <article className="press-article">
           <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
           <h1>{f('title',item.title)}</h1>
-          <p className="press-dek">{f('description',item.description,{multiline:true})}</p>
+          {!cfg.press&&<p className="press-dek">{f('description',item.description,{multiline:true})}</p>}
           <div className="press-actions">
             {ctaHref?<a className="ficha-cta" href={ctaHref}><CtaIcon/> {ctaText}</a>:<button type="button" className="ficha-cta" onClick={()=>setZoom(0)}><CtaIcon/> {ctaText}</button>}
             {cfg.download&&(extra.media?<a className="doc-ghost-btn" href={extra.media} download={`${item.title}.pdf`} target="_blank" rel="noreferrer"><Download/> Descargar PDF</a>:<button type="button" className="doc-ghost-btn" disabled><Download/> Descargar PDF</button>)}
@@ -154,22 +155,23 @@ export function DocumentView({item,extra,related,people}){
           </div>
           <div className="ficha-aside-label">{cfg.factsLabel}</div>
           <Facts rows={cfg.facts}/>
-          <div className="ficha-section-label" id="texto"><span>01</span> {cfg.textLabel}</div>
-          <div className="press-transcript"><p>{f('description',item.description,{multiline:true})}</p></div>
+          {(!cfg.press||edit||item.description)&&<><div className="ficha-section-label" id="texto"><span>01</span> {cfg.textLabel}</div>
+          <div className="press-transcript"><p>{f('description',item.description,{multiline:true})}</p></div></>}
         </article>
       </div>
     </section>
-    <section className="doc-gallery" data-reveal>
+    {!cfg.press&&<section className="doc-gallery" data-reveal>
       <div className="ficha-filmography-head"><div className="ficha-section-label"><span>02</span> GALERÍA</div><span>{String(gallery.length).padStart(2,'0')} IMÁGENES</span></div>
       {slot('gallery')}
       <div className="doc-gallery-grid">{gallery.map((g,i)=><figure key={g.src+i} className={i===0?'is-main':undefined}>
         <button type="button" onClick={()=>setZoom(i)} aria-label={`Ampliar: ${g.caption}`}><img src={g.src} alt={g.caption} loading="lazy" decoding="async"/><span className="press-zoom"><Maximize2/> Ampliar</span></button>
         <figcaption><small>{String(i+1).padStart(2,'0')} · {g.kind}</small>{g.to?<Link to={g.to}>{g.caption}</Link>:<span>{g.caption}</span>}</figcaption>
       </figure>)}</div>
-    </section>
+    </section>}
     <section className="doc-footer" data-reveal>
-      <div className="doc-footer-main"><PeopleCards people={people} number="03"/></div>
-      <aside className="doc-footer-side"><RelatedList related={related}/>{slot('relations')}<Places item={item} places={placesOf(extra)} slot={slot}/></aside>
+      <div className="doc-footer-main"><PeopleCards people={people} number={cfg.press?'02':'03'} title={cfg.press?'Personas vinculadas':undefined}/></div>
+      <aside className="doc-footer-side">{cfg.press?<RelatedList related={related.filter(r=>r.type==='Película')} title="Películas vinculadas"/>
+        :<><RelatedList related={related}/>{slot('relations')}<Places item={item} places={placesOf(extra)} slot={slot}/></>}</aside>
     </section>
     {open&&<div className="press-lightbox" role="dialog" aria-modal="true" aria-label={shown.caption} onClick={()=>setZoom(null)}>
       <figure onClick={e=>e.stopPropagation()}>

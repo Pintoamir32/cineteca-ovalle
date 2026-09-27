@@ -6,7 +6,8 @@ export const TYPE_META={
   Película:{slug:'peliculas',label:'Películas',one:'película',newLabel:'Nueva película',subtitle:'Dirección',year:'Año',format:['Género','Duración','Soporte'],formatHint:['Documental','18 min','16 mm'],media:'video',credits:['Fotografía','Montaje','Producción'],colorIndex:1},
   // Persona: solo nombre, biografía, rol(es), fotografía y las obras en que participó
   Persona:{slug:'personas',label:'Personas',one:'persona',newLabel:'Nueva persona',subtitle:'Rol(es)',year:'',format:[],formatHint:[],media:'image',credits:[],colorIndex:2,only:['Imagen','Título','Rol(es)','Descripción']},
-  Prensa:{slug:'prensa',label:'Prensa',one:'documento de prensa',newLabel:'Nuevo documento',subtitle:'Medio',year:'Año',format:['Tipo','Extensión'],formatHint:['Recorte','2 páginas'],media:'document',credits:['Fecha','Sección','Fondo'],colorIndex:3},
+  // Prensa: título/fuente, fecha, medio de origen, documento digitalizado (imagen o PDF) y vínculos a películas y personas
+  Prensa:{slug:'prensa',label:'Prensa',one:'documento de prensa',newLabel:'Nuevo documento',subtitle:'Medio de origen',year:'Fecha',format:[],formatHint:[],media:'document',credits:[],colorIndex:3,only:['Imagen','Título','Medio de origen','Año']},
   Entrevista:{slug:'entrevistas',label:'Entrevistas',one:'entrevista',newLabel:'Nueva entrevista',subtitle:'Persona entrevistada',year:'Año',format:['Formato','Duración'],formatHint:['Audio','30 min'],media:'audio',credits:['Entrevista','Sonido','Duración'],colorIndex:0},
   Artículo:{slug:'articulos',label:'Artículos',one:'artículo',newLabel:'Nuevo artículo',subtitle:'Autoría',year:'Año',format:['Tipo','Lectura'],formatHint:['Ensayo','12 min lectura'],media:'text',credits:['Edición','Extensión','Licencia'],colorIndex:4}
 };
