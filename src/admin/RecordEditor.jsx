@@ -83,7 +83,8 @@ function RecordEditorInner(){
   const pickFeatured=on=>{setFeatured(on);setDirty(true)};
 
   const miss=missingFields(r,e);
-  const collectionOptions=[...new Set([...collections.map(c=>c.title),...records.map(x=>x.collection)].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+  // Solo colecciones ya creadas en la sección Colecciones
+  const collectionOptions=collections.map(c=>c.title).filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
   const edit=useRecordEdit({r,e,meta,parts,setR,setE,setPart});
   const shared=useSharedTexts(()=>setDirty(true));
   // Después de todos los hooks: si la ficha se elimina mientras está abierta, React no pierde la cuenta
@@ -109,7 +110,8 @@ function RecordEditorInner(){
     {isPerson?<PersonWorks r={r} e={e} setE={setE} openPicker={edit.open}/>:<>
     <PanelBlock title="Clasificación">
       <label className="cms-panel-label">Colección</label>
-      <Choice value={r.collection} options={collectionOptions} onChange={collection=>setR({collection})} placeholder="Elegir colección…" allowNew newLabel="Nueva colección"/>
+      {collectionOptions.length?<Choice value={r.collection} options={collectionOptions} onChange={collection=>setR({collection})} placeholder="Elegir colección…"/>
+        :<p className="cms-help">Aún no hay colecciones. Créalas en la sección Colecciones.</p>}
       <label className="cms-panel-label">Color de etiqueta</label>
       <ColorSwatches value={r.color} onChange={color=>setR({color})}/>
     </PanelBlock>
