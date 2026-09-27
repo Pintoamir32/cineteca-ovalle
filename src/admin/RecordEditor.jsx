@@ -63,10 +63,10 @@ function RecordEditorInner(){
       extra={...extra,credits:[],gallery:[],locations:[],media:'',mediaType:'image',relations:(extra.relations||[]).filter(id=>records.some(x=>x.id===id&&x.type==='Película')),
         works:(extra.works||[]).map(w=>({title:String(w.title||'').trim(),year:String(w.year||'').trim()})).filter(w=>w.title)};
     }
-    // Prensa: título/fuente, fecha, medio, documento digitalizado (imagen y PDF opcional) y vínculos a películas y personas
+    // Prensa: título/fuente, fecha, medio, documento digitalizado (imagen y PDF opcional), galería y vínculos a películas y personas
     if(isPress){
       record={...record,format:'',collection:'',description:''};
-      extra={...extra,credits:[],gallery:[],locations:[],mediaType:'document',relations:(extra.relations||[]).filter(id=>records.some(x=>x.id===id&&['Película','Persona'].includes(x.type)))};
+      extra={...extra,credits:[],locations:[],mediaType:'document',relations:(extra.relations||[]).filter(id=>records.some(x=>x.id===id&&['Película','Persona'].includes(x.type)))};
     }
     // Entrevista: entrevistado(a), fecha, formato, texto (opcional), archivo adjunto (audio o video), imagen y galería
     if(isInterview){
@@ -280,6 +280,7 @@ function PressPanel({r,e,setR,setE,openPicker}){
       <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('media')}><FileText/> {e.media?'Cambiar PDF':'Subir PDF'}</button>
         {e.media&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({media:''})} aria-label="Quitar PDF" title="Quitar PDF"><Trash2/></button>}</div>
       <p className="cms-help">La imagen se muestra en el sitio y en los listados; el PDF, si lo hay, se puede abrir y descargar.</p>
+      <GalleryEditor e={e} setE={setE} openPicker={openPicker}/>
     </PanelBlock>
     <PanelBlock title={`Películas y personas · ${linked.length}`}>
       {linked.length>0?<ul className="cms-mini-list">{linked.map(x=><li key={x.id}>
