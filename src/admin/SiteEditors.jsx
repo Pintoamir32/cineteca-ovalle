@@ -1,18 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ImagePlus, MapPin, Pencil, Plus, X } from 'lucide-react';
-import { collections, locations, records, timelineEvents } from '../data';
-import { EditContext } from '../edit-context';
-import { CollectionsPage, TimelinePage } from '../pages';
+import { ImagePlus, MapPin, Pencil, Plus, Trash2, Type, X } from 'lucide-react';
+import { collections, homeContent, locations, records, timelineEvents } from '../data';
 import { countByCollection, countByLocation } from '../repository';
-import { removeListItem, saveCollection, saveError, saveLocation, saveTimelineEvent, useStoreVersion } from '../store';
+import { removeListItem, saveCollection, saveError, saveLocation, saveTimelineEvent, setData, useStoreVersion } from '../store';
 import { tagStyle } from '../color';
 import { EditorShell, PageHead, PanelBlock, useAdminNav } from './AdminApp';
-import { aspectNear, Choice, ColorSwatches, Editable, ImagePicker, palette, useUi } from './fields';
-import { SiteFrame } from './SiteFrame';
+import { Choice, ColorSwatches, Editable, ImagePicker, Modal, palette, useUi } from './fields';
 import { LocationPicker } from './LocationPicker';
-import { HomeEditContext } from '../site-text';
-import { useSharedTexts } from './shared-text';
 
 const pad=n=>String(n).padStart(2,'0');
 const slugify=s=>s.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -27,10 +22,9 @@ function useItemDraft(list,blank,startDirty=false){
   return {isNew,i,existing,draft,set,dirty,setDirty,reset:()=>{setDraft({...existing});setDirty(false)}};
 }
 
-// Guardar / eliminar / descartar comunes a todos los editores de lista
+// Guardar / eliminar / descartar comunes a los editores de página completa (comunas)
 // male: concuerda los avisos ("Hito creado" / "Colección creada")
-// shared: textos comunes de la página (títulos e introducción), que se guardan con el mismo botón
-function useItemActions({base,item,label,save,remove,removeText,stayAfterSave=true,male=false,shared}){
+function useItemActions({base,item,label,save,remove,removeText,stayAfterSave=true,male=false}){
   const o=male?'o':'a';
   const navigate=useNavigate(), {setDirty}=useAdminNav(), {toast,confirm}=useUi();
   return {
@@ -38,7 +32,7 @@ function useItemActions({base,item,label,save,remove,removeText,stayAfterSave=tr
       const err=save.validate?.();
       if(err)return toast(err,'error');
       let result;
-      try{result=await save.run();await shared?.save()}catch(err){return toast(saveError(err),'error')}
+      try{result=await save.run()}catch(err){return toast(saveError(err),'error')}
       item.setDirty(false);setDirty(false);
       toast(item.isNew?`${label} cread${o} y publicad${o}.`:'Cambios guardados y publicados.');
       if(save.next)navigate(save.next(result),{replace:true});
@@ -49,77 +43,139 @@ function useItemActions({base,item,label,save,remove,removeText,stayAfterSave=tr
       try{await remove()}catch(err){return toast(saveError(err),'error')}
       setDirty(false);toast(`${label} eliminad${o}.`);navigate(base);
     },
-    onDiscard:async()=>{if(await confirm({title:'¿Descartar los cambios?',ok:'Descartar'})){item.reset();shared?.reset()}},
+    onDiscard:async()=>{if(await confirm({title:'¿Descartar los cambios?',ok:'Descartar'}))item.reset()},
     deleteLabel:`Eliminar ${label.toLowerCase()}`
   };
 }
 
 const keyed=Component=>function Keyed(){const {index}=useParams();return <Component key={index}/>};
 const NotFound=({back})=>{const {go}=useAdminNav();return <div className="cms-page"><p className="cms-empty">Este elemento no existe. <button type="button" className="cms-btn" onClick={()=>go(back)}>Volver</button></p></div>};
-
-// Páginas de listas (colecciones, línea de tiempo): textos del elemento en edición y botón de imagen
-function useListEdit({draft,set,fields,items,index,count,imageLabel,aspect,pick}){
-  const [picking,setPicking]=useState(false);
-  const context={
-    items,index,count,pick,
-    // fields: clave → [nombre del campo, indicación en gris de qué escribir]
-    text:(key,{multiline=false}={})=><Editable key={key} value={draft[key]} onChange={v=>set({[key]:v})} multiline={multiline} wrap={!multiline}
-      placeholder={fields[key]?.[1]||'Escribe aquí…'} label={fields[key]?.[0]||key}/>,
-    slot:name=>name==='image'?<button key="image" type="button" className="cms-slot-btn is-image" onClick={e=>{e.preventDefault();e.stopPropagation();setPicking({aspect:aspectNear(e.currentTarget)||aspect})}}><ImagePlus/> {draft.image?imageLabel:'Añadir imagen'}</button>:null
-  };
-  const modals=picking&&<ImagePicker value={draft.image} aspect={picking.aspect} onPick={image=>set({image})} onRemove={draft.image?()=>set({image:''}):undefined} onClose={()=>setPicking(false)} title={imageLabel}/>;
-  return {context,modals,pickImage:()=>setPicking(true)};
-}
 const yearOf=e=>Number((/\d{4}/.exec(e.year)||[])[0])||0;
-// La lista con el borrador en su lugar (o al final si es nuevo)
-const withDraft=(list,item)=>item.isNew?[...list,item.draft]:list.map((x,j)=>j===item.i?item.draft:x);
+
+/* ---------- Formularios en ventana (colecciones y línea de tiempo) ---------- */
+
+// Ventana con los campos del elemento; se abre sobre su lista según la dirección (…/nuevo, …/3)
+// busy: mientras hay otra ventana encima (imagen, confirmación), Esc y el fondo no la cierran
+function ItemModal({item,title,base,label,male=false,validate,save,remove,removeText,children}){
+  const o=male?'o':'a';
+  const navigate=useNavigate(), {setDirty}=useAdminNav(), {toast,confirm}=useUi();
+  const busy=useRef(false), [saving,setSaving]=useState(false);
+  useEffect(()=>{setDirty(item.dirty)},[item.dirty,setDirty]);
+  useEffect(()=>()=>setDirty(false),[setDirty]);
+  const ask=async opts=>{busy.current=true;try{return await confirm(opts)}finally{setTimeout(()=>{busy.current=false})}};
+  const close=async()=>{
+    if(busy.current)return;
+    if(item.dirty&&!await ask({title:'¿Cerrar sin guardar?',text:'Los cambios de esta ventana se perderán.',ok:'Cerrar sin guardar',danger:true}))return;
+    setDirty(false);navigate(base);
+  };
+  const onSave=async e=>{
+    e.preventDefault();
+    const err=validate();
+    if(err)return toast(err,'error');
+    setSaving(true);
+    try{await save()}catch(err){setSaving(false);return toast(saveError(err),'error')}
+    setDirty(false);toast(item.isNew?`${label} cread${o} y publicad${o}.`:'Cambios guardados y publicados.');navigate(base);
+  };
+  const onDelete=async()=>{
+    if(!await ask({title:`¿Eliminar ${label.toLowerCase()}?`,text:removeText,ok:'Eliminar',danger:true}))return;
+    try{await remove()}catch(err){return toast(saveError(err),'error')}
+    setDirty(false);toast(`${label} eliminad${o}.`);navigate(base);
+  };
+  return <Modal onClose={close} title={title} className="cms-item-modal">
+    <form onSubmit={onSave} className="cms-item-form">
+      {children({busy})}
+      <div className="cms-modal-actions">
+        {!item.isNew&&<button type="button" className="cms-btn is-danger-outline cms-item-delete" onClick={onDelete}><Trash2/> Eliminar</button>}
+        <button type="button" className="cms-btn" onClick={close}>Cancelar</button>
+        <button type="submit" className="cms-btn is-primary" disabled={saving||(!item.dirty&&!item.isNew)}>{item.isNew?<><Plus/> Crear</>:'Guardar'}</button>
+      </div>
+    </form>
+  </Modal>;
+}
+
+const Field=({label,hint,children})=><label className="cms-field cms-item-field"><span>{label}</span>{children}{hint}</label>;
+
+// Imagen del elemento: miniatura con cambiar / quitar; el selector se abre encima de la ventana
+function ImageField({label,value,onChange,aspect,optional=false,busy}){
+  const [picking,setPicking]=useState(false);
+  const open=v=>{busy.current=v;setPicking(v)};
+  return <div className="cms-field cms-item-field"><span>{label}</span>
+    <div className="cms-item-image">
+      {value?<img src={value} alt="" style={{aspectRatio:aspect}}/>:<div className="cms-item-noimg" style={{aspectRatio:aspect}}><ImagePlus/></div>}
+      <div>
+        <button type="button" className="cms-btn" onClick={()=>open(true)}><ImagePlus/> {value?'Cambiar imagen':'Añadir imagen'}</button>
+        {value&&optional&&<button type="button" className="cms-btn is-ghost" onClick={()=>onChange('')}><X/> Quitar</button>}
+        {!value&&optional&&<p className="cms-help">Opcional: sin imagen se muestra un fondo liso.</p>}
+      </div>
+    </div>
+    {picking&&<ImagePicker value={value} aspect={aspect} onPick={onChange} onRemove={value&&optional?()=>onChange(''):undefined} onClose={()=>open(false)} title={label}/>}
+  </div>;
+}
+
+// Textos propios de la página pública (antetítulo, título e introducción)
+function PageTextsModal({keys,title,onClose}){
+  const {toast}=useUi();
+  const [texts,setTexts]=useState(()=>Object.fromEntries(keys.map(([k])=>[k,homeContent[k]||''])));
+  const onSave=async e=>{
+    e.preventDefault();
+    try{await setData({homeContent:{...homeContent,...texts}})}catch(err){return toast(saveError(err),'error')}
+    toast('Textos guardados y publicados.');onClose();
+  };
+  return <Modal onClose={onClose} title={title} className="cms-item-modal">
+    <form onSubmit={onSave} className="cms-item-form">
+      {keys.map(([k,label,multi])=><Field key={k} label={label}>{multi
+        ?<textarea rows={4} value={texts[k]} onChange={e=>setTexts(t=>({...t,[k]:e.target.value}))}/>
+        :<input value={texts[k]} onChange={e=>setTexts(t=>({...t,[k]:e.target.value}))}/>}</Field>)}
+      <p className="cms-help">Entre asteriscos se escribe en cursiva: *así*.</p>
+      <div className="cms-modal-actions"><button type="button" className="cms-btn" onClick={onClose}>Cancelar</button><button type="submit" className="cms-btn is-primary">Guardar</button></div>
+    </form>
+  </Modal>;
+}
 
 /* ================= Colecciones ================= */
 
 export function CollectionList(){
   useStoreVersion();
-  const {go}=useAdminNav();
+  const {go}=useAdminNav(), {index}=useParams(), [texts,setTexts]=useState(false);
   return <div className="cms-page">
-    <PageHead eyebrow="ORGANIZAR EL ARCHIVO" title="Colecciones" desc="Recorridos temáticos. Cada ficha pertenece a una colección."><button type="button" className="cms-btn is-primary" onClick={()=>go('/admin/colecciones/nuevo')}><Plus/> Nueva colección</button></PageHead>
+    <PageHead eyebrow="ORGANIZAR EL ARCHIVO" title="Colecciones" desc="Recorridos temáticos. Cada ficha pertenece a una colección.">
+      <button type="button" className="cms-btn" onClick={()=>setTexts(true)}><Type/> Textos de la página</button>
+      <button type="button" className="cms-btn is-primary" onClick={()=>go('/admin/colecciones/nuevo')}><Plus/> Nueva colección</button>
+    </PageHead>
     <div className="cms-collections">{collections.map((c,i)=><button type="button" key={c.slug||i} className="cms-collection" onClick={()=>go(`/admin/colecciones/${i}`)}>
       <img src={c.image} alt=""/><div className="cms-collection-shade"/>
       <span>{pad(i+1)} · {c.years}</span><h3>{c.title}</h3><b style={tagStyle(c.color)}>{countByCollection(c.title)} fichas</b>
     </button>)}</div>
+    {index!==undefined&&<CollectionModal key={index}/>}
+    {texts&&<PageTextsModal title="Textos de la página de colecciones" onClose={()=>setTexts(false)}
+      keys={[['collectionsKicker','Antetítulo'],['collectionsTitle','Título'],['collectionsIntro','Introducción',true]]}/>}
   </div>;
 }
 
-export const CollectionEditor=keyed(function CollectionEditor(){
-  useStoreVersion();
+function CollectionModal(){
   const item=useItemDraft(collections,()=>({slug:'',title:'',years:'',description:'',image:'',color:palette()[collections.length%palette().length]}));
-  const {draft:c,set}=item, {go}=useAdminNav(), shared=useSharedTexts(()=>item.setDirty(true));
+  const {draft:c,set}=item, {go}=useAdminNav();
   const count=item.existing?countByCollection(item.existing.title):0;
-  const actions=useItemActions({base:'/admin/colecciones',item,label:'Colección',shared,
-    save:{validate:()=>!c.title.trim()?'Escribe un nombre para la colección.':!c.image?'Añade una imagen de portada.':collections.some((x,j)=>j!==item.i&&x.title===c.title.trim())?'Ya existe una colección con ese nombre.':null,
-      // Al crearla queda al final de la lista; el editor sigue abierto en ella
-      run:async()=>{const at=item.isNew?collections.length:item.i;await saveCollection(item.i,{...c,title:c.title.trim(),slug:slugify(c.title)});return at},
-      next:at=>`/admin/colecciones/${at}`},
-    remove:()=>removeListItem('collections',item.i),removeText:count?`Tiene ${count} registros. Las fichas conservarán el nombre de la colección, pero esta dejará de aparecer en la página de colecciones.`:'Dejará de aparecer en la página de colecciones.'});
   const members=item.existing?records.filter(r=>r.collection===item.existing.title):[];
-  const edit=useListEdit({draft:c,set,items:withDraft(collections,item),index:item.isNew?collections.length:item.i,count,pick:i=>i<collections.length&&go(`/admin/colecciones/${i}`),
-    fields:{years:['Período','Escribe el período (ej. 1968—1990)'],title:['Nombre de la colección','Escribe el nombre de la colección'],description:['Descripción','Escribe de qué trata este recorrido']},imageLabel:'Cambiar portada',aspect:3/4});
-  if(!item.isNew&&!item.existing)return <NotFound back="/admin/colecciones"/>;
-  return <EditorShell crumb={`Colecciones · ${item.isNew?'Nueva':pad(item.i+1)}`} title={c.title} isNew={item.isNew} dirty={item.dirty}
-    onBack={()=>go('/admin/colecciones')} viewHref="/colecciones" {...actions}
-    hint="Es la página real de colecciones: la colección en edición está marcada; clic en sus textos para reescribirlos."
-    panel={<>
-      <PanelBlock title="Color"><ColorSwatches value={c.color} onChange={color=>set({color})}/></PanelBlock>
-      {item.existing&&item.existing.title!==c.title&&<PanelBlock title="Cambio de nombre"><p className="cms-help">Al guardar, las {count} fichas de esta colección se actualizarán con el nuevo nombre.</p></PanelBlock>}
-      <PanelBlock title={`Fichas de la colección · ${members.length}`}>
-        {members.length?<ul className="cms-mini-list">{members.slice(0,12).map(r=><li key={r.id}><button type="button" onClick={()=>go(`/admin/registros/${r.slug}/${r.id}`)}><img src={r.image} alt=""/><span>{r.title}<small>{r.type}</small></span></button></li>)}</ul>:<p className="cms-help">Asigna fichas a esta colección desde el editor de cada ficha.</p>}
-        {members.length>12&&<p className="cms-help">y {members.length-12} más…</p>}
-      </PanelBlock>
-    </>}>
-    <HomeEditContext.Provider value={shared.context}><EditContext.Provider value={edit.context}>
-      <SiteFrame className="is-list" path="/colecciones"><CollectionsPage/></SiteFrame>
-    </EditContext.Provider></HomeEditContext.Provider>
-    {edit.modals}
-  </EditorShell>;
-});
+  if(!item.isNew&&!item.existing)return <Modal onClose={()=>go('/admin/colecciones')} title="Colección no encontrada"><p className="cms-help">Esta colección ya no existe.</p></Modal>;
+  return <ItemModal item={item} base="/admin/colecciones" label="Colección" title={item.isNew?'Nueva colección':'Editar colección'}
+    validate={()=>!c.title.trim()?'Escribe un nombre para la colección.':!c.image?'Añade una imagen de portada.':collections.some((x,j)=>j!==item.i&&x.title===c.title.trim())?'Ya existe una colección con ese nombre.':null}
+    save={()=>saveCollection(item.i,{...c,title:c.title.trim(),slug:slugify(c.title)})}
+    remove={()=>removeListItem('collections',item.i)}
+    removeText={count?`Tiene ${count} registros. Las fichas conservarán el nombre de la colección, pero esta dejará de aparecer en la página de colecciones.`:'Dejará de aparecer en la página de colecciones.'}>
+    {({busy})=><>
+      <Field label="Nombre" hint={item.existing&&item.existing.title!==c.title&&count>0&&<small className="cms-help">Al guardar, las {count} fichas de esta colección se actualizarán con el nuevo nombre.</small>}>
+        <input value={c.title} onChange={e=>set({title:e.target.value})} placeholder="Ej. Cine club de Ovalle" autoFocus={item.isNew}/></Field>
+      <Field label="Período"><input value={c.years} onChange={e=>set({years:e.target.value})} placeholder="Ej. 1968—1990"/></Field>
+      <Field label="Descripción"><textarea rows={4} value={c.description} onChange={e=>set({description:e.target.value})} placeholder="De qué trata este recorrido"/></Field>
+      <ImageField label="Portada" value={c.image} onChange={image=>set({image})} aspect={3/4} busy={busy}/>
+      <div className="cms-field cms-item-field"><span>Color de la etiqueta</span><ColorSwatches value={c.color} onChange={color=>set({color})}/></div>
+      {item.existing&&<div className="cms-field cms-item-field"><span>Fichas de la colección · {members.length}</span>
+        {members.length?<p className="cms-help is-text">{members.slice(0,8).map(r=>r.title).join(' · ')}{members.length>8&&` y ${members.length-8} más`}</p>
+          :<p className="cms-help">Asigna fichas a esta colección desde el editor de cada ficha.</p>}</div>}
+    </>}
+  </ItemModal>;
+}
 
 /* ================= Línea de tiempo ================= */
 
@@ -127,13 +183,16 @@ const decadeOf=e=>{const y=yearOf(e);return y?`${Math.floor(y/10)*10}s`:'Sin añ
 
 export function TimelineList(){
   useStoreVersion();
-  const {go}=useAdminNav();
+  const {go}=useAdminNav(), {index}=useParams(), [texts,setTexts]=useState(false);
   // Agrupados por década; el índice real se conserva para abrir el editor
   const groups=[];
   timelineEvents.forEach((e,i)=>{const d=decadeOf(e), last=groups[groups.length-1];last&&last.decade===d?last.items.push({e,i}):groups.push({decade:d,items:[{e,i}]})});
   const add=year=>go(`/admin/linea-de-tiempo/nuevo${year?`?anio=${year}`:''}`);
   return <div className="cms-page">
-    <PageHead eyebrow="ORGANIZAR EL ARCHIVO" title="Línea de tiempo" desc={`${timelineEvents.length} hitos de la historia audiovisual. Se ordenan solos por año.`}><button type="button" className="cms-btn is-primary" onClick={()=>add()}><Plus/> Nuevo hito</button></PageHead>
+    <PageHead eyebrow="ORGANIZAR EL ARCHIVO" title="Línea de tiempo" desc={`${timelineEvents.length} hitos de la historia audiovisual. Se ordenan solos por año.`}>
+      <button type="button" className="cms-btn" onClick={()=>setTexts(true)}><Type/> Textos de la página</button>
+      <button type="button" className="cms-btn is-primary" onClick={()=>add()}><Plus/> Nuevo hito</button>
+    </PageHead>
     {timelineEvents.length?groups.map(g=><section key={g.decade} className="cms-timeline-group">
       <header><h2>{g.decade==='Sin año'?g.decade:`Década de ${g.decade.slice(0,-1)}`}</h2><small>{g.items.length} {g.items.length===1?'hito':'hitos'}</small>
         {g.decade!=='Sin año'&&<button type="button" className="cms-btn is-ghost is-small" onClick={()=>add(g.decade.slice(0,-1))}><Plus/> Agregar aquí</button>}</header>
@@ -141,62 +200,44 @@ export function TimelineList(){
         <b>{e.year}</b><i/>{e.image?<img src={e.image} alt=""/>:<span className="cms-timeline-noimg"><ImagePlus/></span>}<span><small>{e.type}</small><strong>{e.title||'Sin título'}</strong><em>{e.text||'Sin descripción'}</em></span><Pencil/>
       </button></li>)}</ol>
     </section>):<p className="cms-empty">Todavía no hay hitos. <button type="button" className="cms-btn is-primary" onClick={()=>add()}><Plus/> Crear el primero</button></p>}
+    {index!==undefined&&<TimelineModal key={index}/>}
+    {texts&&<PageTextsModal title="Textos de la línea de tiempo" onClose={()=>setTexts(false)}
+      keys={[['timelineKicker','Antetítulo'],['timelineTitle','Título'],['timelineIntro','Introducción',true]]}/>}
   </div>;
 }
 
-export const TimelineEditor=keyed(function TimelineEditor(){
-  useStoreVersion();
+function TimelineModal(){
   const [params]=useSearchParams();
   const item=useItemDraft(timelineEvents,()=>({year:params.get('anio')||'',title:'',text:'',type:'Hito',image:''}));
-  const {draft:e,set}=item, {go}=useAdminNav(), shared=useSharedTexts(()=>item.setDirty(true));
+  const {draft:e,set}=item, {go}=useAdminNav();
   const year=String(e.year||'').trim();
   const yearError=!year?'Escribe el año del hito.':!/^\d{4}(\s*[-–—]\s*\d{4})?$/.test(year)?'Usa un año de cuatro cifras (1972) o un período (1968—1973).':null;
-  const actions=useItemActions({base:'/admin/linea-de-tiempo',item,label:'Hito',male:true,shared,
-    save:{validate:()=>!e.title.trim()?'Escribe un título para el hito.':yearError,
-      run:()=>saveTimelineEvent(item.i,{...e,year,title:e.title.trim(),text:(e.text||'').trim()}),next:i=>`/admin/linea-de-tiempo/${i}`},
-    remove:()=>removeListItem('timelineEvents',item.i),removeText:'Dejará de mostrarse en la línea de tiempo.'});
   const types=[...new Set(['Hito','Exhibición','Película','Memoria','Preservación','Acceso',...timelineEvents.map(x=>x.type)])];
-  // La vista previa muestra el hito en su lugar según el año, igual que al guardar
+  // Dónde quedará según el año, igual que al guardar
   const self=item.isNew?timelineEvents.length:item.i;
-  const ordered=withDraft(timelineEvents,item).map((ev,i)=>({ev,i})).sort((a,b)=>yearOf(a.ev)-yearOf(b.ev));
+  const ordered=(item.isNew?[...timelineEvents,e]:timelineEvents.map((x,j)=>j===item.i?e:x)).map((ev,i)=>({ev,i})).sort((a,b)=>yearOf(a.ev)-yearOf(b.ev));
   const pos=ordered.findIndex(x=>x.i===self), before=ordered[pos-1], after=ordered[pos+1];
   const sameYear=timelineEvents.filter((x,j)=>j!==item.i&&yearOf(x)===yearOf(e)&&yearOf(e));
-  const edit=useListEdit({draft:e,set,items:ordered.map(x=>x.ev),index:pos,pick:k=>ordered[k].i!==self&&go(`/admin/linea-de-tiempo/${ordered[k].i}`),
-    fields:{year:['Año','Escribe el año (ej. 1972)'],title:['Título del hito','Escribe el título del hito'],text:['Texto','Escribe qué ocurrió y por qué importa']},imageLabel:'Cambiar imagen',aspect:16/9});
-  // Vecinos guardados (no el borrador) para saltar entre hitos
-  const saved=timelineEvents.map((ev,i)=>({ev,i})), cur=saved.findIndex(x=>x.i===item.i);
-  const prev=!item.isNew&&saved[cur-1], next=!item.isNew&&saved[cur+1];
   const neighbor=x=>x&&<span><b>{x.ev.year}</b> {x.ev.title}</span>;
-  if(!item.isNew&&!item.existing)return <NotFound back="/admin/linea-de-tiempo"/>;
-  return <EditorShell crumb={`Línea de tiempo · ${item.isNew?'Nuevo hito':e.year}`} title={e.title} isNew={item.isNew} dirty={item.dirty}
-    onBack={()=>go('/admin/linea-de-tiempo')} viewHref="/linea-de-tiempo" {...actions}
-    hint="Es la página real de la línea de tiempo con este hito seleccionado: clic en el título o el texto para reescribirlos. Al guardar se ordena por año."
-    panel={<>
-      <PanelBlock title="Año">
-        <label className="cms-field"><input value={e.year} onChange={ev=>set({year:ev.target.value})} inputMode="numeric" placeholder="Escribe el año (ej. 1972)" aria-label="Año del hito" aria-invalid={!!yearError}/></label>
-        {!year?<p className="cms-help">Con el año, el hito se ordena solo en la línea.</p>:yearError?<p className="cms-help is-error">{yearError}</p>
-          :<p className="cms-help is-text">{before&&after?<>Quedará entre {neighbor(before)} y {neighbor(after)}.</>:before?<>Quedará al final, después de {neighbor(before)}.</>:after?<>Quedará al comienzo, antes de {neighbor(after)}.</>:'Es el único hito.'}</p>}
-        {!yearError&&sameYear.length>0&&<p className="cms-help is-text">También en {yearOf(e)}: {sameYear.map(x=>x.title).join(', ')}.</p>}
-      </PanelBlock>
-      <PanelBlock title="Categoría"><Choice value={e.type} options={types} onChange={type=>set({type})} allowNew newLabel="Nueva categoría"/></PanelBlock>
-      <PanelBlock title="Imagen · opcional">
-        {e.image?<img className="cms-timeline-thumb" src={e.image} alt=""/>:<p className="cms-help">Sin imagen: en el sitio se muestra un fondo liso.</p>}
-        <button type="button" className="cms-btn is-block" onClick={edit.pickImage}><ImagePlus/> {e.image?'Cambiar imagen':'Añadir imagen'}</button>
-        {e.image&&<button type="button" className="cms-btn is-block is-ghost" onClick={()=>set({image:''})}><X/> Quitar imagen</button>}
-      </PanelBlock>
-      {(prev||next)&&<PanelBlock title="Otros hitos">
-        <div className="cms-timeline-nav">
-          {prev&&<button type="button" className="cms-btn is-ghost" onClick={()=>go(`/admin/linea-de-tiempo/${prev.i}`)}><ChevronLeft/>{neighbor(prev)}</button>}
-          {next&&<button type="button" className="cms-btn is-ghost" onClick={()=>go(`/admin/linea-de-tiempo/${next.i}`)}>{neighbor(next)}<ChevronRight/></button>}
-        </div>
-      </PanelBlock>}
-    </>}>
-    <HomeEditContext.Provider value={shared.context}><EditContext.Provider value={edit.context}>
-      <SiteFrame className="is-list" path="/linea-de-tiempo"><TimelinePage/></SiteFrame>
-    </EditContext.Provider></HomeEditContext.Provider>
-    {edit.modals}
-  </EditorShell>;
-});
+  if(!item.isNew&&!item.existing)return <Modal onClose={()=>go('/admin/linea-de-tiempo')} title="Hito no encontrado"><p className="cms-help">Este hito ya no existe.</p></Modal>;
+  return <ItemModal item={item} base="/admin/linea-de-tiempo" label="Hito" male title={item.isNew?'Nuevo hito':'Editar hito'}
+    validate={()=>!e.title.trim()?'Escribe un título para el hito.':yearError}
+    save={()=>saveTimelineEvent(item.i,{...e,year,title:e.title.trim(),text:(e.text||'').trim()})}
+    remove={()=>removeListItem('timelineEvents',item.i)} removeText="Dejará de mostrarse en la línea de tiempo.">
+    {({busy})=><>
+      <div className="cms-item-row">
+        <Field label="Año" hint={year&&yearError?<small className="cms-help is-error">{yearError}</small>:null}>
+          <input value={e.year} onChange={ev=>set({year:ev.target.value})} inputMode="numeric" placeholder="Ej. 1972" aria-invalid={!!(year&&yearError)} autoFocus={item.isNew&&!e.year}/></Field>
+        <div className="cms-field cms-item-field"><span>Categoría</span><Choice value={e.type} options={types} onChange={type=>set({type})} allowNew newLabel="Nueva categoría"/></div>
+      </div>
+      {!yearError&&<p className="cms-help is-text">{before&&after?<>Quedará entre {neighbor(before)} y {neighbor(after)}.</>:before?<>Quedará al final, después de {neighbor(before)}.</>:after?<>Quedará al comienzo, antes de {neighbor(after)}.</>:'Es el único hito.'}
+        {sameYear.length>0&&<> También en {yearOf(e)}: {sameYear.map(x=>x.title).join(', ')}.</>}</p>}
+      <Field label="Título"><input value={e.title} onChange={ev=>set({title:ev.target.value})} placeholder="Título del hito" autoFocus={item.isNew&&!!e.year}/></Field>
+      <Field label="Texto"><textarea rows={4} value={e.text} onChange={ev=>set({text:ev.target.value})} placeholder="Qué ocurrió y por qué importa"/></Field>
+      <ImageField label="Imagen" value={e.image} onChange={image=>set({image})} aspect={16/9} optional busy={busy}/>
+    </>}
+  </ItemModal>;
+}
 
 /* ================= Comunas ================= */
 

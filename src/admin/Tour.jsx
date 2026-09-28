@@ -13,8 +13,8 @@ export function tourViewOf(path){
   const [a,b,c]=path.split('/').filter(Boolean);
   if(!a)return 'dashboard';
   if(a==='registros')return c?'record':'list';
-  if(a==='colecciones')return b?'coleccion':'colecciones';
-  if(a==='linea-de-tiempo')return b?'hito':'linea';
+  if(a==='colecciones')return 'colecciones';
+  if(a==='linea-de-tiempo')return 'linea';
   if(a==='comunas')return b?'comuna':'comunas';
   return {inicio:'inicio',colores:'colores',respaldo:'respaldo',usuarios:'usuarios'}[a]||'dashboard';
 }
@@ -73,26 +73,13 @@ export const TOURS={
   ],
   colecciones:[
     {target:'.cms-head',title:'Colecciones',text:'Las colecciones agrupan fichas por tema. Cada ficha pertenece a una colección, que se elige desde el editor de la ficha.'},
-    {target:'.cms-head-actions',title:'Nueva colección',text:'Crea una colección nueva con su nombre, período, descripción, portada y color.'},
-    {target:'.cms-collections',title:'Editar una colección',text:'Haz clic en una tarjeta para editarla. La etiqueta de abajo indica cuántas fichas tiene.'}
-  ],
-  coleccion:[
-    BACK,
-    {...PREVIEW,text:'Es la página real de colecciones. La que estás editando está marcada: haz clic en su período, nombre o descripción para cambiarlos, y usa «Cambiar portada» para la imagen. Haz clic en otra colección para pasar a editarla.'},
-    {target:'[data-tour="Color"]',title:'Color',text:'El color de la etiqueta de la colección. Puedes usar los colores del sitio o elegir cualquier otro.'},
-    {target:'[data-tour="Fichas de la colección"]',title:'Sus fichas',text:'Las fichas que pertenecen a esta colección. Haz clic en una para abrirla. Si cambias el nombre de la colección, todas se actualizan al guardar.'},
-    DANGER,SAVE
+    {target:'.cms-head-actions',title:'Nueva colección',text:'Crea una colección nueva en una ventana con su nombre, período, descripción, portada y color. «Textos de la página» cambia el título y la introducción de la página pública.'},
+    {target:'.cms-collections',title:'Editar una colección',text:'Haz clic en una tarjeta para editarla en una ventana. La etiqueta de abajo indica cuántas fichas tiene.'}
   ],
   linea:[
     {target:'.cms-head',title:'Línea de tiempo',text:'Los hitos de la historia audiovisual. Se ordenan solos por año.'},
-    {target:'.cms-head-actions',title:'Nuevo hito',text:'Crea un hito con su año, título, texto y (si quieres) una imagen.'},
-    {target:'.cms-timeline',title:'Editar un hito',text:'Haz clic en un hito para editarlo.'}
-  ],
-  hito:[
-    BACK,
-    {...PREVIEW,text:'Es la página real de la línea de tiempo con este hito seleccionado. Haz clic en el año, el título o el texto para cambiarlos, y usa el botón de imagen para agregar o cambiar la foto (es opcional). Haz clic en otro hito de la izquierda para pasar a editarlo.'},
-    {target:'[data-tour="Categoría"]',title:'Categoría',text:'El tipo de hito (Exhibición, Película, Memoria…). Puedes escribir una categoría nueva.'},
-    DANGER,{...SAVE,text:'Al guardar, el hito se ubica según su año y te quedas en él. Con Ctrl + S también se guarda.'}
+    {target:'.cms-head-actions',title:'Nuevo hito',text:'Crea un hito en una ventana con su año, categoría, título, texto y (si quieres) una imagen. «Textos de la página» cambia el título y la introducción de la página pública.'},
+    {target:'.cms-timeline',title:'Editar un hito',text:'Haz clic en un hito para editarlo en una ventana. Al guardar se ordena solo por año.'}
   ],
   comunas:[
     {target:'.cms-head',title:'Comunas y mapa',text:'Los lugares que aparecen en el mapa del sitio. Las fichas se vinculan a ellos desde «Conexiones».'},

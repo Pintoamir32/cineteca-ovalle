@@ -11,7 +11,7 @@ import { LoginScreen, PasswordField } from './Login';
 import { TYPE_META, TYPES, code, extraOf, missingFields, typeBySlug, typeColor } from './meta';
 import { RecordEditor } from './RecordEditor';
 import { LogoMark } from '../Logo';
-import { CollectionEditor, CollectionList, LocationEditor, LocationList, TimelineEditor, TimelineList } from './SiteEditors';
+import { CollectionList, LocationEditor, LocationList, TimelineList } from './SiteEditors';
 import { HomeEditor } from './HomeEditor';
 import { TOURS, Tour, takeLegacySeen, tourViewOf } from './Tour';
 import { ThemeEditor } from './ThemeEditor';
@@ -161,9 +161,9 @@ function AdminShell({session,onLogout}){
           {/* Las diapositivas se editan dentro del Inicio */}
           <Route path="portada/*" element={<Navigate to="/admin/inicio" replace/>}/>
           <Route path="colecciones" element={<CollectionList/>}/>
-          <Route path="colecciones/:index" element={<CollectionEditor/>}/>
+          <Route path="colecciones/:index" element={<CollectionList/>}/>
           <Route path="linea-de-tiempo" element={<TimelineList/>}/>
-          <Route path="linea-de-tiempo/:index" element={<TimelineEditor/>}/>
+          <Route path="linea-de-tiempo/:index" element={<TimelineList/>}/>
           <Route path="comunas" element={<LocationList/>}/>
           <Route path="comunas/:index" element={<LocationEditor/>}/>
           <Route path="usuarios" element={<UsersPage session={session}/>}/>
