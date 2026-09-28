@@ -117,33 +117,6 @@ export function ArchivePage({kind='archivo'}){
 
 export function DetailPage(){const {id}=useParams();const item=getAllRecords().find(r=>r.id===Number(id));if(!item)return <Navigate to="/archivo"/>;const related=getAllRecords().filter(r=>r.id!==item.id).slice(0,3);return <main className="detail-page"><BackLink item={item}/><section className="detail-hero"><div className="detail-image"><img src={item.image} alt=""/><span style={tagStyle(item.color)}>{item.type}</span></div><div className="detail-copy"><span>FICHA CDO—{String(item.id).padStart(4,'0')}</span><h1>{item.title}</h1><p>{item.description}</p><dl><div><dt>Fecha</dt><dd>{item.year}</dd></div><div><dt>Autoría</dt><dd>{item.subtitle}</dd></div><div><dt>Formato</dt><dd>{item.format}</dd></div><div><dt>Colección</dt><dd>{item.collection}</dd></div></dl><button><CirclePlay/> Consultar archivo digital</button></div></section><section className="related-page"><div className="section-label"><span>+</span> RECURSOS RELACIONADOS</div><div className="record-grid">{related.map((r,i)=><RecordCard item={r} index={i} key={r.id}/>)}</div></section></main>}
 
-export function AboutPage(){
-  return <main className="about-page">
-    <section className="about-hero"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>NUESTRA HISTORIA</span><h1>Una memoria<br/>en <i>movimiento.</i></h1><p>La Cineteca de Ovalle preserva, investiga y comparte el patrimonio audiovisual de la Provincia del Limarí.</p></section>
-    <section className="about-body" data-reveal>
-      <div className="about-intro">
-        <div className="ficha-section-label"><span>01</span> LA CINETECA</div>
-        <h2>Las imágenes también construyen territorio.</h2>
-        <p>Desde las primeras funciones comunitarias hasta los procesos actuales de digitalización, este archivo reúne las huellas de una cultura cinematográfica profundamente vinculada con su gente.</p>
-        <p>Nuestra misión es conservar esas imágenes y devolverlas a la comunidad como una memoria abierta, accesible y viva.</p>
-      </div>
-      <div className="about-stats">
-        <div><strong><Counter value={1968}/></strong><span>Año de fundación</span></div>
-        <div><strong><Counter value={`${getAllRecords().length}+`}/></strong><span>Registros catalogados</span></div>
-        <div><strong><Counter value={locations.length}/></strong><span>Comunas del Limarí</span></div>
-      </div>
-    </section>
-    <section className="about-milestones" data-reveal>
-      <div className="ficha-relacionados-head"><div className="ficha-section-label"><span>02</span> HITOS</div></div>
-      <div className="about-milestones-list">
-        <article className="stagger-item" style={{transitionDelay:'0ms'}}><b>1968</b><h3>Primeras funciones</h3><p>Comienza una experiencia de exhibición y formación cinematográfica en Ovalle.</p></article>
-        <article className="stagger-item" style={{transitionDelay:'80ms'}}><b>1977</b><h3>Archivo ciudadano</h3><p>La comunidad conserva afiches, programas y registros de una década fundamental.</p></article>
-        <article className="stagger-item" style={{transitionDelay:'160ms'}}><b>2026</b><h3>Cineteca digital</h3><p>El patrimonio vuelve a circular mediante una plataforma abierta y conectada.</p></article>
-      </div>
-    </section>
-    <section className="about-cta" data-reveal><h2>Ven a conocer<br/><em>el archivo.</em></h2><div><Link to="/archivo">Explorar el archivo <ArrowRight/></Link><Link to="/mapa">Ver el mapa territorial <ArrowRight/></Link></div></section>
-  </main>
-}
 
 
 const DEFAULT_EXTRA={credits:[['Estado','Catalogado'],['Origen','Archivo CDO']],relations:[],location:'Ovalle',mediaType:'image'};
