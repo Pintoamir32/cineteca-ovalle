@@ -144,7 +144,7 @@ export function CollectionList(){
     </PageHead>
     <div className="cms-collections">{collections.map((c,i)=><button type="button" key={c.slug||i} className="cms-collection" onClick={()=>go(`/admin/colecciones/${i}`)}>
       <img src={c.image} alt=""/><div className="cms-collection-shade"/>
-      <span>{pad(i+1)} · {c.years}</span><h3>{c.title}</h3><b style={tagStyle(c.color)}>{countByCollection(c.title)} fichas</b>
+      <span>{pad(i+1)}</span><h3>{c.title}</h3><b style={tagStyle(c.color)}>{countByCollection(c.title)} fichas</b>
     </button>)}</div>
     {index!==undefined&&<CollectionModal key={index}/>}
     {texts&&<PageTextsModal title="Textos de la página de colecciones" onClose={()=>setTexts(false)}
@@ -153,7 +153,7 @@ export function CollectionList(){
 }
 
 function CollectionModal(){
-  const item=useItemDraft(collections,()=>({slug:'',title:'',years:'',description:'',image:'',color:palette()[collections.length%palette().length]}));
+  const item=useItemDraft(collections,()=>({slug:'',title:'',description:'',image:'',color:palette()[collections.length%palette().length]}));
   const {draft:c,set}=item, {go}=useAdminNav();
   const count=item.existing?countByCollection(item.existing.title):0;
   const members=item.existing?records.filter(r=>r.collection===item.existing.title):[];
@@ -166,7 +166,6 @@ function CollectionModal(){
     {({busy})=><>
       <Field label="Nombre" hint={item.existing&&item.existing.title!==c.title&&count>0&&<small className="cms-help">Al guardar, las {count} fichas de esta colección se actualizarán con el nuevo nombre.</small>}>
         <input value={c.title} onChange={e=>set({title:e.target.value})} placeholder="Ej. Cine club de Ovalle" autoFocus={item.isNew}/></Field>
-      <Field label="Período"><input value={c.years} onChange={e=>set({years:e.target.value})} placeholder="Ej. 1968—1990"/></Field>
       <Field label="Descripción"><textarea rows={4} value={c.description} onChange={e=>set({description:e.target.value})} placeholder="De qué trata este recorrido"/></Field>
       <ImageField label="Portada" value={c.image} onChange={image=>set({image})} aspect={3/4} busy={busy}/>
       <div className="cms-field cms-item-field"><span>Color de la etiqueta</span><ColorSwatches value={c.color} onChange={color=>set({color})}/></div>

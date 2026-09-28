@@ -73,7 +73,7 @@ export const TOURS={
   ],
   colecciones:[
     {target:'.cms-head',title:'Colecciones',text:'Las colecciones agrupan fichas por tema. Cada ficha pertenece a una colección, que se elige desde el editor de la ficha.'},
-    {target:'.cms-head-actions',title:'Nueva colección',text:'Crea una colección nueva en una ventana con su nombre, período, descripción, portada y color. «Textos de la página» cambia el título y la introducción de la página pública.'},
+    {target:'.cms-head-actions',title:'Nueva colección',text:'Crea una colección nueva en una ventana con su nombre, descripción, portada y color. «Textos de la página» cambia el título y la introducción de la página pública.'},
     {target:'.cms-collections',title:'Editar una colección',text:'Haz clic en una tarjeta para editarla en una ventana. La etiqueta de abajo indica cuántas fichas tiene.'}
   ],
   linea:[

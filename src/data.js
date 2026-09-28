@@ -115,10 +115,10 @@ export const recordExtras = {
 };
 
 export const collections = [
-  {slug:'memoria-rural',title:'Memoria rural',years:'1968—1989',description:'Paisajes, trabajos y comunidades campesinas registrados por el cine regional.',image:'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1400&q=88',color:'#d9ff43'},
-  {slug:'oficios-del-cine',title:'Oficios del cine',years:'1958—2004',description:'Las personas detrás de la cámara, la proyección, el sonido y la circulación.',image:'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=88',color:'#8ee6c4'},
-  {slug:'cineteca-1968-1977',title:'Cineteca 1968—1977',years:'1968—1977',description:'Una década de exhibiciones, encuentros y resistencia cultural en Ovalle.',image:'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1400&q=88',color:'#ffdc72'},
-  {slug:'realizadoras',title:'Realizadoras del Limarí',years:'1969—2026',description:'Películas, documentos y testimonios de mujeres creadoras del territorio.',image:'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=1400&q=88',color:'#ffc3d8'}
+  {slug:'memoria-rural',title:'Memoria rural',description:'Paisajes, trabajos y comunidades campesinas registrados por el cine regional.',image:'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1400&q=88',color:'#d9ff43'},
+  {slug:'oficios-del-cine',title:'Oficios del cine',description:'Las personas detrás de la cámara, la proyección, el sonido y la circulación.',image:'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1400&q=88',color:'#8ee6c4'},
+  {slug:'cineteca-1968-1977',title:'Cineteca 1968—1977',description:'Una década de exhibiciones, encuentros y resistencia cultural en Ovalle.',image:'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1400&q=88',color:'#ffdc72'},
+  {slug:'realizadoras',title:'Realizadoras del Limarí',description:'Películas, documentos y testimonios de mujeres creadoras del territorio.',image:'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=1400&q=88',color:'#ffc3d8'}
 ];
 
 export const timelineEvents = [
