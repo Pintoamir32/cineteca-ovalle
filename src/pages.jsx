@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpDown, CalendarDays, CirclePlay, Clapperboard, Clock, Film, Grid2X2, List, MapPin, Search, Settings2, Table2, X } from 'lucide-react';
 import { Counter, RecordCard, RecordRow } from './components';
@@ -305,18 +305,21 @@ export function TimelinePage(){
   const list=edit?.items||timelineEvents;
   // Por posición: dos hitos del mismo año no quedan marcados a la vez
   const [picked,setPicked]=useState(0);
+  // En pantallas angostas el detalle queda bajo la lista: al elegir un hito se lleva a la vista
+  const detailRef=useRef(null);
+  const pick=i=>{setPicked(i);if(window.matchMedia('(max-width:1000px)').matches)requestAnimationFrame(()=>detailRef.current?.scrollIntoView({behavior:'smooth',block:'start'}))};
   const current=edit?edit.index:Math.min(picked,list.length-1), active=list[current]||{}, isActive=(e,i)=>i===current;
   return <main className="timeline-page">
     <section className="discovery-hero"><img src="https://images.unsplash.com/photo-1586899028174-e7098604235b?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>{t('timelineKicker')}</span><h1>{t('timelineTitle')}</h1><p>{t('timelineIntro')}</p></section>
     <section className="timeline-layout" data-reveal>
       <div className="timeline-spine">
-        {list.map((e,i)=><button key={`${e.year}-${i}`} className={`timeline-entry${isActive(e,i)?' active':''} stagger-item`} style={{transitionDelay:`${(i%8)*50}ms`}} onClick={()=>edit?(i!==edit.index&&edit.pick?.(i)):setPicked(i)}>
+        {list.map((e,i)=><button key={`${e.year}-${i}`} className={`timeline-entry${isActive(e,i)?' active':''} stagger-item`} style={{transitionDelay:`${(i%8)*50}ms`}} onClick={()=>edit?(i!==edit.index&&edit.pick?.(i)):pick(i)}>
           <span className="timeline-entry-year">{e.year}</span>
           <span className="timeline-entry-line"><span className="timeline-entry-dot"/></span>
           <span className="timeline-entry-body"><small>{e.type}</small><strong>{e.title}</strong></span>
         </button>)}
       </div>
-      <aside className="timeline-detail">
+      <aside className="timeline-detail" ref={detailRef}>
         {active.image?<img src={active.image} alt="" loading="lazy" decoding="async"/>:<div className="timeline-detail-noimg"/>}
         {slot('image')}
         <div className="timeline-detail-copy">

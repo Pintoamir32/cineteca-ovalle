@@ -366,9 +366,9 @@ footer,
 .discovery-hero>span,.discovery-hero h1,.discovery-hero p,.about-hero>span,.about-hero h1,.about-hero p{position:relative;z-index:2}
 
 /* Línea de tiempo: espina vertical + panel de detalle fijo */
-.timeline-layout{display:grid;grid-template-columns:1fr 420px;align-items:start;margin:60px 24px 90px;background:#fff;border:1px solid var(--line)}
+.timeline-layout{display:grid;grid-template-columns:1fr 420px;align-items:stretch;margin:60px 24px 90px;background:#fff;border:1px solid var(--line)}
 .timeline-spine{padding:50px 5vw 60px;border-right:1px solid var(--line)}
-.timeline-detail{position:sticky;top:110px;background:var(--forest);color:#fff;overflow:hidden}
+.timeline-detail{position:sticky;top:110px;align-self:start;scroll-margin-top:96px;background:var(--forest);color:#fff;overflow:hidden}
 .timeline-detail>img{width:100%;height:300px;object-fit:cover;filter:grayscale(.35) contrast(1.05)}
 .timeline-detail-noimg{height:120px;background:repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 10px,transparent 10px 20px)}
 .timeline-detail-copy{padding:36px 34px 42px}
@@ -378,16 +378,16 @@ footer,
 .timeline-detail-copy a{margin-top:26px;display:flex;gap:12px;align-items:center;width:max-content;border-bottom:1px solid var(--acid);padding-bottom:8px;font-size:10px;font-weight:700;color:#fff}
 
 .timeline-entry{display:grid;grid-template-columns:70px 24px 1fr;align-items:stretch;width:100%;border:0;background:transparent;text-align:left;padding:0;cursor:pointer}
-.timeline-entry-year{padding:24px 12px 24px 0;font:700 13px 'IBM Plex Mono';color:#9a9f98;display:flex;align-items:center;transition:.2s}
+.timeline-entry-year{padding:24px 12px 24px 0;font:700 13px 'IBM Plex Mono';color:#7a7f78;display:flex;align-items:center;transition:.2s}
 .timeline-entry.active .timeline-entry-year{color:var(--forest)}
-.timeline-entry-line{position:relative;display:flex;justify-content:center}
+.timeline-entry-line{position:relative;display:flex;justify-content:center;align-items:center}
 .timeline-entry-line:before{content:'';position:absolute;top:0;bottom:0;left:50%;width:1px;background:var(--line);transform:translateX(-50%)}
-.timeline-entry:first-child .timeline-entry-line:before{top:27px}
-.timeline-entry:last-child .timeline-entry-line:before{bottom:calc(100% - 27px)}
-.timeline-entry-dot{position:relative;z-index:1;display:block;width:9px;height:9px;border-radius:50%;background:#c5c8bf;margin-top:23px;transition:.2s}
+.timeline-entry:first-child .timeline-entry-line:before{top:50%}
+.timeline-entry:last-child .timeline-entry-line:before{bottom:50%}
+.timeline-entry-dot{position:relative;z-index:1;display:block;width:9px;height:9px;border-radius:50%;background:#c5c8bf;transition:.2s}
 .timeline-entry.active .timeline-entry-dot{background:var(--acid);box-shadow:0 0 0 5px var(--forest)}
-.timeline-entry-body{display:flex;align-items:center;gap:18px;padding:18px 20px;margin:4px 0;border:1px solid transparent;transition:.2s}
-.timeline-entry-body small{font:700 8px 'IBM Plex Mono';text-transform:uppercase;letter-spacing:.08em;color:#9a9f98;width:88px;flex-shrink:0}
+.timeline-entry-body{display:flex;align-items:center;gap:18px;min-width:0;padding:18px 20px;margin:4px 0;border:1px solid transparent;transition:.2s}
+.timeline-entry-body small{font:700 9px 'IBM Plex Mono';text-transform:uppercase;letter-spacing:.08em;color:#6f746e;width:96px;flex-shrink:0}
 .timeline-entry-body strong{font:600 19px 'Syne';letter-spacing:-.02em;color:var(--black)}
 .timeline-entry:hover .timeline-entry-body{background:#f4f2eb;border-color:var(--line)}
 .timeline-entry.active .timeline-entry-body{background:#f4f2eb;border-color:var(--forest)}
@@ -401,8 +401,8 @@ footer,
   .timeline-spine{padding:30px 20px 40px}
   .timeline-entry{grid-template-columns:52px 20px 1fr}
   .timeline-entry-year{font-size:11px;padding:20px 8px 20px 0}
-  .timeline-entry-body{gap:10px;padding:16px 14px}
-  .timeline-entry-body small{width:64px;font-size:7px}
+  .timeline-entry-body{flex-direction:column;align-items:flex-start;gap:5px;padding:14px}
+  .timeline-entry-body small{width:auto;font-size:8px}
   .timeline-entry-body strong{font-size:15px}
   .timeline-detail-copy{padding:30px 24px 36px}
 }
