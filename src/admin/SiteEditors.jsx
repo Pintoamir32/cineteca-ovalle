@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Eye, ImagePlus, MapPin, Pencil, Plus, Trash2, Type, X } from 'lucide-react';
-import { collections, homeContent, locations, records, timelineEvents } from '../data';
+import { Eye, ImagePlus, MapPin, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { collections, locations, records, timelineEvents } from '../data';
 import { countByCollection, countByLocation } from '../repository';
-import { removeListItem, saveCollection, saveError, saveLocation, saveTimelineEvent, setData, useStoreVersion } from '../store';
+import { removeListItem, saveCollection, saveError, saveLocation, saveTimelineEvent, useStoreVersion } from '../store';
 import { tagStyle } from '../color';
 import { EditorShell, PageHead, PanelBlock, useAdminNav } from './AdminApp';
 import { Choice, ColorSwatches, Editable, ImagePicker, Modal, palette, useUi } from './fields';
@@ -115,34 +115,13 @@ function ImageField({label,value,onChange,aspect,optional=false,busy}){
   </div>;
 }
 
-// Textos propios de la página pública (antetítulo, título e introducción)
-function PageTextsModal({keys,title,onClose}){
-  const {toast}=useUi();
-  const [texts,setTexts]=useState(()=>Object.fromEntries(keys.map(([k])=>[k,homeContent[k]||''])));
-  const onSave=async e=>{
-    e.preventDefault();
-    try{await setData({homeContent:{...homeContent,...texts}})}catch(err){return toast(saveError(err),'error')}
-    toast('Textos guardados y publicados.');onClose();
-  };
-  return <Modal onClose={onClose} title={title} className="cms-item-modal">
-    <form onSubmit={onSave} className="cms-item-form">
-      {keys.map(([k,label,multi])=><Field key={k} label={label}>{multi
-        ?<textarea rows={4} value={texts[k]} onChange={e=>setTexts(t=>({...t,[k]:e.target.value}))}/>
-        :<input value={texts[k]} onChange={e=>setTexts(t=>({...t,[k]:e.target.value}))}/>}</Field>)}
-      <p className="cms-help">Entre asteriscos se escribe en cursiva: *así*.</p>
-      <div className="cms-modal-actions"><button type="button" className="cms-btn" onClick={onClose}>Cancelar</button><button type="submit" className="cms-btn is-primary">Guardar</button></div>
-    </form>
-  </Modal>;
-}
-
 /* ================= Colecciones ================= */
 
 export function CollectionList(){
   useStoreVersion();
-  const {go}=useAdminNav(), {index}=useParams(), [texts,setTexts]=useState(false);
+  const {go}=useAdminNav(), {index}=useParams();
   return <div className="cms-page">
     <PageHead eyebrow="ORGANIZAR EL ARCHIVO" title="Colecciones" desc="Recorridos temáticos. Cada ficha pertenece a una colección.">
-      <button type="button" className="cms-btn" onClick={()=>setTexts(true)}><Type/> Textos de la página</button>
       <button type="button" className="cms-btn is-primary" onClick={()=>go('/admin/colecciones/nuevo')}><Plus/> Nueva colección</button>
     </PageHead>
     <div className="cms-collections">{collections.map((c,i)=><button type="button" key={c.slug||i} className="cms-collection" onClick={()=>go(`/admin/colecciones/${i}`)}>
@@ -150,8 +129,6 @@ export function CollectionList(){
       <span>{pad(i+1)}</span><h3>{c.title}</h3><b style={tagStyle(c.color)}>{countByCollection(c.title)} fichas</b>
     </button>)}</div>
     {index!==undefined&&<CollectionModal key={index}/>}
-    {texts&&<PageTextsModal title="Textos de la página de colecciones" onClose={()=>setTexts(false)}
-      keys={[['collectionsKicker','Antetítulo'],['collectionsTitle','Título'],['collectionsIntro','Introducción',true]]}/>}
   </div>;
 }
 
@@ -185,7 +162,7 @@ const decadeOf=e=>{const y=yearOf(e);return y?`${Math.floor(y/10)*10}s`:'Sin añ
 
 export function TimelineList(){
   useStoreVersion();
-  const {go}=useAdminNav(), {index}=useParams(), [texts,setTexts]=useState(false), [preview,setPreview]=useState(false);
+  const {go}=useAdminNav(), {index}=useParams(), [preview,setPreview]=useState(false);
   // Agrupados por década; el índice real se conserva para abrir el editor
   const groups=[];
   timelineEvents.forEach((e,i)=>{const d=decadeOf(e), last=groups[groups.length-1];last&&last.decade===d?last.items.push({e,i}):groups.push({decade:d,items:[{e,i}]})});
@@ -193,7 +170,6 @@ export function TimelineList(){
   return <div className="cms-page">
     <PageHead eyebrow="ORGANIZAR EL ARCHIVO" title="Línea de tiempo" desc={`${timelineEvents.length} hitos de la historia audiovisual. Se ordenan solos por año.`}>
       <button type="button" className="cms-btn" onClick={()=>setPreview(true)} disabled={!timelineEvents.length}><Eye/> Vista previa</button>
-      <button type="button" className="cms-btn" onClick={()=>setTexts(true)}><Type/> Textos de la página</button>
       <button type="button" className="cms-btn is-primary" onClick={()=>add()}><Plus/> Nuevo hito</button>
     </PageHead>
     {timelineEvents.length?groups.map(g=><section key={g.decade} className="cms-timeline-group">
@@ -205,8 +181,6 @@ export function TimelineList(){
     </section>):<p className="cms-empty">Todavía no hay hitos. <button type="button" className="cms-btn is-primary" onClick={()=>add()}><Plus/> Crear el primero</button></p>}
     {index!==undefined&&<TimelineModal key={index}/>}
     {preview&&<TimelinePreview items={timelineEvents} onClose={()=>setPreview(false)}/>}
-    {texts&&<PageTextsModal title="Textos de la línea de tiempo" onClose={()=>setTexts(false)}
-      keys={[['timelineKicker','Antetítulo'],['timelineTitle','Título'],['timelineIntro','Introducción',true]]}/>}
   </div>;
 }
 

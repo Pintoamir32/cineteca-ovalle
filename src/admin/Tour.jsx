@@ -73,12 +73,12 @@ export const TOURS={
   ],
   colecciones:[
     {target:'.cms-head',title:'Colecciones',text:'Las colecciones agrupan fichas por tema. Cada ficha pertenece a una colección, que se elige desde el editor de la ficha.'},
-    {target:'.cms-head-actions',title:'Nueva colección',text:'Crea una colección nueva en una ventana con su nombre, descripción, portada y color. «Textos de la página» cambia el título y la introducción de la página pública.'},
+    {target:'.cms-head-actions',title:'Nueva colección',text:'Crea una colección nueva en una ventana con su nombre, descripción, portada y color.'},
     {target:'.cms-collections',title:'Editar una colección',text:'Haz clic en una tarjeta para editarla en una ventana. La etiqueta de abajo indica cuántas fichas tiene.'}
   ],
   linea:[
     {target:'.cms-head',title:'Línea de tiempo',text:'Los hitos de la historia audiovisual. Se ordenan solos por año.'},
-    {target:'.cms-head-actions',title:'Nuevo hito',text:'Crea un hito en una ventana con su año, categoría, título, texto y (si quieres) una imagen. «Textos de la página» cambia el título y la introducción de la página pública.'},
+    {target:'.cms-head-actions',title:'Nuevo hito',text:'Crea un hito en una ventana con su año, categoría, título, texto y (si quieres) una imagen.'},
     {target:'.cms-timeline',title:'Editar un hito',text:'Haz clic en un hito para editarlo en una ventana. Al guardar se ordena solo por año.'}
   ],
   comunas:[
