@@ -4,6 +4,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Layout } from './components';
 import { AboutPage, ArchivePage, CollectionsPage, MapPage, RichDetailPage, TimelinePage } from './pages';
 import { Home } from './home';
+import { LegalPage } from './legal';
 import './styles.css';
 import './responsive.css';
 import './map.css';
@@ -24,7 +25,7 @@ hydrate().finally(()=>createRoot(document.getElementById('root')).render(<Browse
     <Route path="/prensa" element={<ArchivePage kind="prensa"/>}/><Route path="/entrevistas" element={<ArchivePage kind="entrevistas"/>}/>
     <Route path="/articulos" element={<ArchivePage kind="articulos"/>}/><Route path="/nosotros" element={<AboutPage/>}/>
     <Route path="/colecciones" element={<CollectionsPage/>}/><Route path="/linea-de-tiempo" element={<TimelinePage/>}/><Route path="/mapa" element={<MapPage/>}/>
-    <Route path="/ficha/:id" element={<RichDetailPage/>}/><Route path="*" element={<NavigateHome/>}/>
+    <Route path="/ficha/:id" element={<RichDetailPage/>}/><Route path="/aviso-legal" element={<LegalPage/>}/><Route path="*" element={<NavigateHome/>}/>
   </Route>
   <Route path="/admin/*" element={<Suspense fallback={null}><AdminApp/></Suspense>}/>
 </Routes></BrowserRouter>));
