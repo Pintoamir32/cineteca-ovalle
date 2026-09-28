@@ -7,6 +7,7 @@ import { collections, locations, sections, site } from './data';
 import { countByType, getAllRecords, newestRecords, recordPath } from './repository';
 import { buildSearchIndex, matchIndex } from './search-index';
 import { SearchSelect } from './SearchSelect';
+import { filtersFor, optionsOf } from './filters';
 import { useSiteText } from './site-text';
 
 export { HomeEditContext, rich } from './site-text';
@@ -42,7 +43,8 @@ export function Home(){
   const numbers={};let n=0;for(const id of ['discovery','portal','spotlight','latest'])if(!c.hidden?.includes(id))numbers[id]=String(++n).padStart(2,'0');
 
   const [term,setTerm]=useState(''),[advanced,setAdvanced]=useState(false),[showResults,setShowResults]=useState(false); const nav=useNavigate(); const searchRef=useRef(null);
-  const [advType,setAdvType]=useState(''),[advYear,setAdvYear]=useState(''),[advCollection,setAdvCollection]=useState('');
+  // Búsqueda avanzada: el tipo elegido trae sus propios filtros (los mismos de su página)
+  const [advType,setAdvType]=useState(''),[adv,setAdv]=useState({});
   // En el gestor la diapositiva visible la controla el panel lateral
   const [ownSlide,setOwnSlide]=useState(0),[paused,setPaused]=useState(false);
   const slide=edit?edit.slide:ownSlide, setSlide=edit?edit.setSlide:setOwnSlide;
@@ -56,12 +58,12 @@ export function Home(){
   const nextSlide=()=>setSlide(s=>(s+1)%slides.length);
   const index=useMemo(()=>buildSearchIndex(),[]);
   const results=useMemo(()=>matchIndex(term,index),[term,index]);
-  const decadeOf=r=>{const m=/\d{4}/.exec(r.year);return m?Math.floor(Number(m[0])/10)*10:null};
   const allRecords=useMemo(()=>getAllRecords(),[]);
   const firstYear=useMemo(()=>Math.min(...allRecords.filter(r=>r.type==='Película').map(r=>Number((/\d{4}/.exec(r.year)||[])[0])).filter(Boolean)),[allRecords]);
-  const decadeOptions=useMemo(()=>[...new Set(allRecords.map(decadeOf).filter(d=>d!==null))].sort((a,b)=>a-b),[allRecords]);
-  const collectionOptions=useMemo(()=>[...new Set(allRecords.map(r=>r.collection))].sort((a,b)=>a.localeCompare(b,'es')),[allRecords]);
-  const submit=e=>{e.preventDefault();const p=new URLSearchParams();if(term)p.set('q',term);if(advType)p.set('type',advType);if(advYear)p.set('year',advYear);if(advCollection)p.set('collection',advCollection);nav(`/archivo?${p.toString()}`);setTerm('');setShowResults(false)};
+  const advFilters=useMemo(()=>{const pool=allRecords.filter(r=>!advType||r.type===advType);return filtersFor(advType).map(f=>({...f,options:optionsOf(f,pool)})).filter(f=>f.options.length)},[allRecords,advType]);
+  const pickType=v=>{setAdvType(v);setAdv({})};
+  // Con un tipo elegido se abre su página (con sus filtros); si no, el archivo completo
+  const submit=e=>{e.preventDefault();const p=new URLSearchParams();if(term)p.set('q',term);for(const [k,v] of Object.entries(adv))if(v&&advFilters.some(f=>f.key===k))p.set(k,v);const slug=sections.find(x=>x.type===advType)?.slug;const qs=p.toString();nav(`/${slug||'archivo'}${qs?`?${qs}`:''}`);setTerm('');setShowResults(false)};
   const goTo=path=>{nav(path);setTerm('');setShowResults(false)};
   useEffect(()=>{const onClick=e=>{if(searchRef.current&&!searchRef.current.contains(e.target))setShowResults(false)};document.addEventListener('mousedown',onClick);return()=>document.removeEventListener('mousedown',onClick)},[]);
   const years=Number.isFinite(firstYear)?Math.floor((new Date().getFullYear()-firstYear)/10)*10:0;
@@ -89,7 +91,7 @@ export function Home(){
       </div>
     </section>
 
-    {show('search')&&<section className={`search-stage${sectionClass('search')}`} data-reveal {...tag('search')}><div className="search-intro"><span>{t('searchKicker')}</span><p>{t('searchTitle')}</p></div><div className="searchbox-wrap" ref={searchRef}><form className="searchbox" onSubmit={submit}><Search/><input value={term} onChange={e=>{setTerm(e.target.value);setShowResults(true)}} onFocus={()=>term&&setShowResults(true)} placeholder={c.searchPlaceholder}/><button><ArrowRight/></button></form>{showResults&&term&&<SearchResults results={results} onPick={goTo} className="home-results"/>}</div><button className="advanced-trigger" onClick={()=>setAdvanced(!advanced)}><Settings2/> {t('searchAdvanced')}</button>{advanced&&<div className="advanced-box"><SearchSelect label="Tipo de registro" value={advType} onChange={setAdvType} options={[{value:'',label:'Cualquier tipo'},...sections.map(x=>({value:x.type,label:x.type}))]}/><SearchSelect label="Década" value={advYear} onChange={setAdvYear} options={[{value:'',label:'Cualquier fecha'},...decadeOptions.map(d=>({value:String(d),label:`Década de ${d}`}))]}/><SearchSelect label="Colección" value={advCollection} onChange={setAdvCollection} options={[{value:'',label:'Cualquier colección'},...collectionOptions.map(x=>({value:x,label:x}))]}/></div>}</section>}
+    {show('search')&&<section className={`search-stage${sectionClass('search')}`} data-reveal {...tag('search')}><div className="search-intro"><span>{t('searchKicker')}</span><p>{t('searchTitle')}</p></div><div className="searchbox-wrap" ref={searchRef}><form className="searchbox" onSubmit={submit}><Search/><input value={term} onChange={e=>{setTerm(e.target.value);setShowResults(true)}} onFocus={()=>term&&setShowResults(true)} placeholder={c.searchPlaceholder}/><button><ArrowRight/></button></form>{showResults&&term&&<SearchResults results={results} onPick={goTo} className="home-results"/>}</div><button className="advanced-trigger" onClick={()=>setAdvanced(!advanced)}><Settings2/> {t('searchAdvanced')}</button>{advanced&&<div className="advanced-box"><SearchSelect label="Tipo de registro" value={advType} onChange={pickType} options={[{value:'',label:'Cualquier tipo'},...sections.map(x=>({value:x.type,label:`${x.type} (${countByType(x.type)})`}))]}/>{advFilters.map(f=><SearchSelect key={f.key} label={f.label} value={adv[f.key]||''} onChange={v=>setAdv(a=>({...a,[f.key]:v}))} options={[{value:'',label:'Todos'},...f.options]}/>)}<button type="button" className="advanced-go" onClick={submit}><Search/> Buscar{advType?` en ${sections.find(x=>x.type===advType)?.label.toLowerCase()}`:''}</button></div>}</section>}
 
     {show('stats')&&<section className={`home-stats${sectionClass('stats')}`} data-reveal {...tag('stats')}>
       <div className="home-stats-head">

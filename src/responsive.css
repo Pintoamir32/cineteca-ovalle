@@ -480,3 +480,13 @@ footer,
 .timeline-page h1,.timeline-page h2,.timeline-page p,.timeline-entry-body strong,.timeline-detail-copy>span{overflow-wrap:anywhere;hyphens:auto}
 .timeline-detail-copy{min-width:0}
 .timeline-detail-copy p{white-space:pre-line}
+
+/* Filtros por sección (catálogos) y búsqueda avanzada del inicio */
+.filter-count{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--acid);color:var(--forest);font:700 11px 'Manrope'}
+.catalog-heading p{display:flex;flex-wrap:wrap;align-items:center;gap:8px 0}
+.catalog-chip.is-clear{background:transparent;border-style:dashed}
+.advanced-box{left:4vw!important;right:4vw!important;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))!important;align-items:end}
+.advanced-go{grid-column:-2/-1;height:44px;border:0;border-radius:var(--radius-sm);background:var(--forest);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font:700 13px 'Manrope';cursor:pointer}
+.advanced-go svg{width:16px}
+.advanced-go:hover{background:var(--black)}
+@media(max-width:760px){.advanced-box{left:auto!important;right:auto!important;grid-template-columns:1fr!important}.advanced-go{grid-column:auto}}

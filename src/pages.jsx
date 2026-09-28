@@ -9,6 +9,7 @@ import { useSiteText } from './site-text';
 import { SearchSelect } from './SearchSelect';
 import { BackLink, DocumentView, MediaViewer } from './record-views';
 import { tagStyle } from './color';
+import { filmPeopleNames, filtersFor, matches, optionsOf, valueLabel } from './filters';
 
 
 const PAGE_SIZE=8;
@@ -31,28 +32,13 @@ const pageInfo={
 };
 
 const formatParts=r=>(r.format||'').split(' · ');
-// Rangos de duración: minutos → categoría de metraje
-const METRAJES=[
-  {label:'Cortometraje',hint:'menos de 30 min',test:m=>m<30},
-  {label:'Mediometraje',hint:'30 a 59 min',test:m=>m>=30&&m<60},
-  {label:'Largometraje',hint:'60 min o más',test:m=>m>=60}
-];
-const metrajeOf=r=>{const m=Number((/(\d+)\s*min/.exec(formatParts(r)[1]||'')||[])[1]);return m?METRAJES.find(x=>x.test(m))?.label:undefined};
 // Minúsculas y sin tildes, para buscar "munoz" y encontrar "Muñoz"
 const fold=s=>String(s).normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
-// Personas vinculadas a una película (para filtrar y buscar)
-const filmPeopleNames=r=>r.type==='Película'?getFilmPeople(r).map(e=>e.person.title):[];
-const searchText=r=>fold([r.title,r.subtitle,r.year,r.collection,r.description,...(recordExtras[r.id]?.credits||[]).map(c=>c[1]),...filmPeopleNames(r)].join(' '));
-// Filtros exactos enlazados desde la ficha de película
-const FACETS=[
-  {key:'director',label:'Dirección',get:r=>r.subtitle},
+const searchText=r=>fold([r.title,r.subtitle,r.year,r.format,r.collection,r.description,...(recordExtras[r.id]?.credits||[]).map(c=>c[1]),...filmPeopleNames(r)].join(' '));
+// Filtros exactos que llegan desde los enlaces de la ficha (año y duración exactos)
+const LINK_FACETS=[
   {key:'anio',label:'Año',get:r=>r.year},
-  {key:'genero',label:'Género',get:r=>formatParts(r)[0]},
-  {key:'metraje',label:'Duración',get:metrajeOf},
-  {key:'duracion',label:'Duración',get:r=>formatParts(r)[1]},
-  {key:'soporte',label:'Soporte',get:r=>formatParts(r)[2]},
-  {key:'locacion',label:'Locación',get:r=>getLocations(r.id)},
-  {key:'persona',label:'Persona',get:r=>filmPeopleNames(r)}
+  {key:'duracion',label:'Duración',get:r=>formatParts(r)[1]}
 ];
 const FACET_KEY={Dirección:'director',Año:'anio',Género:'genero',Duración:'duracion',Soporte:'soporte'};
 
@@ -73,18 +59,17 @@ function tableColumns(kind){
 
 export function ArchivePage({kind='archivo'}){
   const [params,setParams]=useSearchParams(), [showFilters,setShowFilters]=useState(false); const info=pageInfo[kind], section=sections.find(s=>s.slug===kind); const q=params.get('q')||'';
-  const year=params.get('year')||'', collection=params.get('collection')||'', recordType=params.get('type')||'';
-  const activeFacets=FACETS.map(f=>({...f,value:params.get(f.key)||''})).filter(f=>f.value), facetSig=activeFacets.map(f=>`${f.key}=${f.value}`).join('&');
+  const recordType=section?'':params.get('type')||'';
   const reverseOrder=['personas','prensa','entrevistas','articulos'].includes(kind);
   const compactCards=reverseOrder;
-  const decadeOf=r=>{const m=/\d{4}/.exec(r.year);return m?Math.floor(Number(m[0])/10)*10:null};
-  const scoped=useMemo(()=>getAllRecords().filter(r=>!section||r.type===section.type),[section]);
-  const decadeOptions=useMemo(()=>[...new Set(scoped.map(decadeOf).filter(d=>d!==null))].sort((a,b)=>a-b),[scoped]);
-  const collectionOptions=useMemo(()=>[...new Set(scoped.map(r=>r.collection))].sort((a,b)=>a.localeCompare(b,'es')),[scoped]);
-  const directorOptions=useMemo(()=>[...new Set(scoped.map(r=>r.subtitle).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es')),[scoped]);
-  const personOptions=useMemo(()=>kind==='peliculas'?[...new Set(scoped.flatMap(filmPeopleNames))].sort((a,b)=>a.localeCompare(b,'es')):[],[scoped,kind]);
-  const genreOptions=useMemo(()=>[...new Set(scoped.map(r=>formatParts(r)[0]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es')),[scoped]);
-  const list=useMemo(()=>{const filtered=getAllRecords().filter(r=>(!section||r.type===section.type)&&(!recordType||r.type===recordType)&&(!year||decadeOf(r)===Number(year))&&(!collection||r.collection===collection)&&activeFacets.every(f=>{const v=f.get(r);return Array.isArray(v)?v.includes(f.value):v===f.value})&&searchText(r).includes(fold(q)));return reverseOrder?filtered.reverse():filtered},[q,section,year,collection,recordType,facetSig,reverseOrder]);
+  // Filtros propios de la sección (o del tipo elegido en el archivo completo)
+  const defs=useMemo(()=>filtersFor(section?.type||recordType),[section,recordType]);
+  const scoped=useMemo(()=>getAllRecords().filter(r=>(!section||r.type===section.type)&&(!recordType||r.type===recordType)),[section,recordType]);
+  const active=[...defs,...LINK_FACETS].map(f=>({...f,value:params.get(f.key)||''})).filter(f=>f.value);
+  const activeSig=active.map(f=>`${f.key}=${f.value}`).join('&');
+  const list=useMemo(()=>{const filtered=scoped.filter(r=>active.every(f=>matches(r,f,f.value))&&searchText(r).includes(fold(q)));return reverseOrder?filtered.reverse():filtered},[q,scoped,activeSig,reverseOrder]);// eslint-disable-line react-hooks/exhaustive-deps
+  const panelFilters=useMemo(()=>defs.map(f=>({...f,options:optionsOf(f,scoped)})).filter(f=>f.options.length),[defs,scoped]);
+  const chips=[...(recordType?[{key:'type',label:'Tipo',text:recordType}]:[]),...active.map(f=>({key:f.key,label:f.label,text:valueLabel(f,f.value)}))];
   const view=['list','table'].includes(params.get('view'))?params.get('view'):'grid';
   const columns=useMemo(()=>tableColumns(kind),[kind]);
   const sortKey=params.get('orden')||'', sortDir=params.get('dir')==='desc'?'desc':'asc';
@@ -103,12 +88,15 @@ export function ArchivePage({kind='archivo'}){
   const goToPage=n=>{const next=new URLSearchParams(params);n>1?next.set('page',n):next.delete('page');setParams(next);window.scrollTo({top:0,left:0,behavior:'instant'})};
   const update=e=>{const v=e.target.value,next=new URLSearchParams(params);v?next.set('q',v):next.delete('q');next.delete('page');setParams(next)};
   const setFilter=(key,value)=>{const next=new URLSearchParams(params);value?next.set(key,value):next.delete(key);next.delete('page');setParams(next)};
+  // Al cambiar de tipo en el archivo completo se quitan los filtros que eran de otro tipo
+  const setType=value=>{const next=new URLSearchParams();for(const k of ['q','view','orden','dir'])params.get(k)&&next.set(k,params.get(k));value&&next.set('type',value);setParams(next)};
+  const clearFilters=()=>{const next=new URLSearchParams();for(const k of ['q','view','orden','dir'])params.get(k)&&next.set(k,params.get(k));setParams(next)};
   const setView=v=>{const next=new URLSearchParams(params);v==='grid'?next.delete('view'):next.set('view',v);setParams(next)};
   const headerCount=section?countByType(section.type):getAllRecords().length;
   return <main className="catalog-page"><section className="page-hero"><img src={info.image} alt=""/><div className="page-hero-shade"/><div><span>{info.eyebrow}</span><h1>{info.title}</h1><p>{info.desc}</p></div><b><Counter value={headerCount} pad={3}/><small>REGISTROS</small></b></section>
-    <section className="catalog-content" data-reveal><div className="catalog-tools"><div className="catalog-search"><Search/><input value={q} onChange={update} placeholder={kind==='peliculas'?'Buscar por título, director o persona…':`Buscar en ${info.title.toLowerCase()}…`}/>{q&&<button onClick={()=>setParams({})}><X/></button>}</div><button className="filter-toggle" onClick={()=>setShowFilters(!showFilters)}><Settings2/> Filtros</button></div>
-    {showFilters&&<div className={`filter-panel${kind==='peliculas'?' filter-panel-wide':section?' filter-panel-two':''}`}>{!section&&<SearchSelect label="Tipo de registro" value={recordType} onChange={v=>setFilter('type',v)} options={[{value:'',label:'Todos'},...sections.map(s=>({value:s.type,label:s.type}))]}/>}<SearchSelect label="Año" value={year} onChange={v=>setFilter('year',v)} options={[{value:'',label:'Todos los años'},...decadeOptions.map(d=>({value:String(d),label:`Década de ${d}`}))]}/>{kind==='peliculas'&&<><SearchSelect label="Género" value={params.get('genero')||''} onChange={v=>setFilter('genero',v)} options={[{value:'',label:'Todos los géneros'},...genreOptions.map(g=>({value:g,label:`${g} (${scoped.filter(r=>formatParts(r)[0]===g).length})`}))]}/><SearchSelect label="Duración" value={params.get('metraje')||''} onChange={v=>setFilter('metraje',v)} options={[{value:'',label:'Cualquier duración'},...METRAJES.map(m=>({value:m.label,label:`${m.label} · ${m.hint} (${scoped.filter(r=>metrajeOf(r)===m.label).length})`}))]}/></>}{kind==='peliculas'&&<><SearchSelect label="Dirección" value={params.get('director')||''} onChange={v=>setFilter('director',v)} options={[{value:'',label:'Todas las direcciones'},...directorOptions.map(d=>({value:d,label:d}))]}/><SearchSelect label="Persona" value={params.get('persona')||''} onChange={v=>setFilter('persona',v)} options={[{value:'',label:'Cualquier persona'},...personOptions.map(n=>({value:n,label:`${n} (${scoped.filter(r=>filmPeopleNames(r).includes(n)).length})`}))]}/></>}{!['prensa','entrevistas','articulos'].includes(kind)&&<SearchSelect label="Colección" value={collection} onChange={v=>setFilter('collection',v)} options={[{value:'',label:'Todas las colecciones'},...collectionOptions.map(c=>({value:c,label:c}))]}/>}</div>}
-    <div className="catalog-heading"><p><b>{list.length}</b> resultados {q&&<>para “{q}”</>}{activeFacets.map(f=><button key={f.key} className="catalog-chip" onClick={()=>setFilter(f.key,'')}>{f.label}: {f.value} <X/></button>)}</p><div className="view-toggle"><button className={view==='grid'?'active':''} onClick={()=>setView('grid')} aria-label="Vista de cuadrícula"><Grid2X2/></button><button className={view==='list'?'active':''} onClick={()=>setView('list')} aria-label="Vista de lista"><List/></button><button className={view==='table'?'active':''} onClick={()=>setView('table')} aria-label="Vista de tabla" title="Tabla ordenable"><Table2/></button></div></div>
+    <section className="catalog-content" data-reveal><div className="catalog-tools"><div className="catalog-search"><Search/><input value={q} onChange={update} placeholder={kind==='peliculas'?'Buscar por título, director o persona…':`Buscar en ${info.title.toLowerCase()}…`}/>{q&&<button onClick={()=>setParams({})}><X/></button>}</div><button className="filter-toggle" onClick={()=>setShowFilters(!showFilters)} aria-expanded={showFilters}><Settings2/> Filtros{chips.length>0&&<b className="filter-count">{chips.length}</b>}</button></div>
+    {showFilters&&<div className="filter-panel filter-panel-wide">{!section&&<SearchSelect label="Tipo de registro" value={recordType} onChange={setType} options={[{value:'',label:'Todos los tipos'},...sections.map(x=>({value:x.type,label:`${x.type} (${countByType(x.type)})`}))]}/>}{panelFilters.map(f=><SearchSelect key={f.key} label={f.label} value={params.get(f.key)||''} onChange={v=>setFilter(f.key,v)} options={[{value:'',label:'Todos'},...f.options]}/>)}</div>}
+    <div className="catalog-heading"><p><b>{list.length}</b> resultados {q&&<>para “{q}”</>}{chips.map(f=><button key={f.key} className="catalog-chip" onClick={()=>f.key==='type'?setType(''):setFilter(f.key,'')}>{f.label}: {f.text} <X/></button>)}{chips.length>1&&<button className="catalog-chip is-clear" onClick={clearFilters}>Quitar filtros</button>}</p><div className="view-toggle"><button className={view==='grid'?'active':''} onClick={()=>setView('grid')} aria-label="Vista de cuadrícula"><Grid2X2/></button><button className={view==='list'?'active':''} onClick={()=>setView('list')} aria-label="Vista de lista"><List/></button><button className={view==='table'?'active':''} onClick={()=>setView('table')} aria-label="Vista de tabla" title="Tabla ordenable"><Table2/></button></div></div>
     {view==='grid'
       ?<div className={`record-grid${compactCards?' record-grid-compact':''}${kind==='peliculas'?' record-grid-poster':''}`}>{pagedList.map((r,i)=><RecordCard item={r} index={i} key={r.id}/>)}</div>
       :view==='list'?<div className="record-list">{pagedList.map((r,i)=><RecordRow item={r} index={i} key={r.id}/>)}</div>
