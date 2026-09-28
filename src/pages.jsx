@@ -305,9 +305,9 @@ export function TimelinePage(){
   const list=edit?.items||timelineEvents;
   // Por posición: dos hitos del mismo año no quedan marcados a la vez
   const [picked,setPicked]=useState(0);
-  // En pantallas angostas el detalle queda bajo la lista: al elegir un hito se lleva a la vista
+  // Si el detalle no está a la vista (en móvil queda bajo la lista), al elegir un hito se lleva a él
   const detailRef=useRef(null);
-  const pick=i=>{setPicked(i);if(window.matchMedia('(max-width:1000px)').matches)requestAnimationFrame(()=>detailRef.current?.scrollIntoView({behavior:'smooth',block:'start'}))};
+  const pick=i=>{setPicked(i);requestAnimationFrame(()=>{const el=detailRef.current, r=el?.getBoundingClientRect();if(r&&(r.top<90||r.top>window.innerHeight*.6))el.scrollIntoView({behavior:'smooth',block:'start'})})};
   const current=edit?edit.index:Math.min(picked,list.length-1), active=list[current]||{}, isActive=(e,i)=>i===current;
   return <main className="timeline-page">
     <section className="discovery-hero"><img src="https://images.unsplash.com/photo-1586899028174-e7098604235b?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>{t('timelineKicker')}</span><h1>{t('timelineTitle')}</h1><p>{t('timelineIntro')}</p></section>
