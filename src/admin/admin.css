@@ -937,5 +937,9 @@ html:has(.cms-preview-doc){overflow:hidden}
 .cms-item-image>div{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .cms-item-image .cms-help{flex-basis:100%;margin:0}
 .cms-item-form .cms-modal-actions{position:sticky;bottom:-24px;margin:4px -24px -24px;padding:14px 24px;background:var(--paper);border-top:1px solid var(--line)}
-.cms-item-delete{margin-right:auto}
+
 @media(max-width:560px){.cms-item-row{grid-template-columns:1fr}.cms-item-image{align-items:flex-start}.cms-item-image>img,.cms-item-noimg{width:90px}}
+.cms-item-left{display:flex;gap:8px;margin-right:auto}
+.cms-modal.cms-preview-modal{width:min(1180px,100%);background:var(--canvas)}
+.cms-preview-modal .cms-site-frame{margin-top:6px}
+@media(max-width:560px){.cms-item-form .cms-modal-actions{flex-wrap:wrap}}

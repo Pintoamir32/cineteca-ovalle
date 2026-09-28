@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ImagePlus, MapPin, Pencil, Plus, Trash2, Type, X } from 'lucide-react';
+import { Eye, ImagePlus, MapPin, Pencil, Plus, Trash2, Type, X } from 'lucide-react';
 import { collections, homeContent, locations, records, timelineEvents } from '../data';
 import { countByCollection, countByLocation } from '../repository';
 import { removeListItem, saveCollection, saveError, saveLocation, saveTimelineEvent, setData, useStoreVersion } from '../store';
@@ -8,6 +8,9 @@ import { tagStyle } from '../color';
 import { EditorShell, PageHead, PanelBlock, useAdminNav } from './AdminApp';
 import { Choice, ColorSwatches, Editable, ImagePicker, Modal, palette, useUi } from './fields';
 import { LocationPicker } from './LocationPicker';
+import { SiteFrame } from './SiteFrame';
+import { EditContext } from '../edit-context';
+import { TimelinePage } from '../pages';
 
 const pad=n=>String(n).padStart(2,'0');
 const slugify=s=>s.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -56,7 +59,7 @@ const yearOf=e=>Number((/\d{4}/.exec(e.year)||[])[0])||0;
 
 // Ventana con los campos del elemento; se abre sobre su lista según la dirección (…/nuevo, …/3)
 // busy: mientras hay otra ventana encima (imagen, confirmación), Esc y el fondo no la cierran
-function ItemModal({item,title,base,label,male=false,validate,save,remove,removeText,children}){
+function ItemModal({item,title,base,label,male=false,validate,save,remove,removeText,extra,children}){
   const o=male?'o':'a';
   const navigate=useNavigate(), {setDirty}=useAdminNav(), {toast,confirm}=useUi();
   const busy=useRef(false), [saving,setSaving]=useState(false);
@@ -85,7 +88,7 @@ function ItemModal({item,title,base,label,male=false,validate,save,remove,remove
     <form onSubmit={onSave} className="cms-item-form">
       {children({busy})}
       <div className="cms-modal-actions">
-        {!item.isNew&&<button type="button" className="cms-btn is-danger-outline cms-item-delete" onClick={onDelete}><Trash2/> Eliminar</button>}
+        <div className="cms-item-left">{!item.isNew&&<button type="button" className="cms-btn is-danger-outline" onClick={onDelete}><Trash2/> Eliminar</button>}{extra?.({busy})}</div>
         <button type="button" className="cms-btn" onClick={close}>Cancelar</button>
         <button type="submit" className="cms-btn is-primary" disabled={saving||(!item.dirty&&!item.isNew)}>{item.isNew?<><Plus/> Crear</>:'Guardar'}</button>
       </div>
@@ -182,13 +185,14 @@ const decadeOf=e=>{const y=yearOf(e);return y?`${Math.floor(y/10)*10}s`:'Sin añ
 
 export function TimelineList(){
   useStoreVersion();
-  const {go}=useAdminNav(), {index}=useParams(), [texts,setTexts]=useState(false);
+  const {go}=useAdminNav(), {index}=useParams(), [texts,setTexts]=useState(false), [preview,setPreview]=useState(false);
   // Agrupados por década; el índice real se conserva para abrir el editor
   const groups=[];
   timelineEvents.forEach((e,i)=>{const d=decadeOf(e), last=groups[groups.length-1];last&&last.decade===d?last.items.push({e,i}):groups.push({decade:d,items:[{e,i}]})});
   const add=year=>go(`/admin/linea-de-tiempo/nuevo${year?`?anio=${year}`:''}`);
   return <div className="cms-page">
     <PageHead eyebrow="ORGANIZAR EL ARCHIVO" title="Línea de tiempo" desc={`${timelineEvents.length} hitos de la historia audiovisual. Se ordenan solos por año.`}>
+      <button type="button" className="cms-btn" onClick={()=>setPreview(true)} disabled={!timelineEvents.length}><Eye/> Vista previa</button>
       <button type="button" className="cms-btn" onClick={()=>setTexts(true)}><Type/> Textos de la página</button>
       <button type="button" className="cms-btn is-primary" onClick={()=>add()}><Plus/> Nuevo hito</button>
     </PageHead>
@@ -200,6 +204,7 @@ export function TimelineList(){
       </button></li>)}</ol>
     </section>):<p className="cms-empty">Todavía no hay hitos. <button type="button" className="cms-btn is-primary" onClick={()=>add()}><Plus/> Crear el primero</button></p>}
     {index!==undefined&&<TimelineModal key={index}/>}
+    {preview&&<TimelinePreview items={timelineEvents} onClose={()=>setPreview(false)}/>}
     {texts&&<PageTextsModal title="Textos de la línea de tiempo" onClose={()=>setTexts(false)}
       keys={[['timelineKicker','Antetítulo'],['timelineTitle','Título'],['timelineIntro','Introducción',true]]}/>}
   </div>;
@@ -222,7 +227,8 @@ function TimelineModal(){
   return <ItemModal item={item} base="/admin/linea-de-tiempo" label="Hito" male title={item.isNew?'Nuevo hito':'Editar hito'}
     validate={()=>!e.title.trim()?'Escribe un título para el hito.':yearError}
     save={()=>saveTimelineEvent(item.i,{...e,year,title:e.title.trim(),text:(e.text||'').trim()})}
-    remove={()=>removeListItem('timelineEvents',item.i)} removeText="Dejará de mostrarse en la línea de tiempo.">
+    remove={()=>removeListItem('timelineEvents',item.i)} removeText="Dejará de mostrarse en la línea de tiempo."
+    extra={({busy})=><PreviewButton busy={busy} items={ordered.map(x=>x.ev)} index={pos}/>}>
     {({busy})=><>
       <div className="cms-item-row">
         <Field label="Año" hint={year&&yearError?<small className="cms-help is-error">{yearError}</small>:null}>
@@ -236,6 +242,23 @@ function TimelineModal(){
       <ImageField label="Imagen" value={e.image} onChange={image=>set({image})} aspect={16/9} optional busy={busy}/>
     </>}
   </ItemModal>;
+}
+
+// Vista previa de la línea de tiempo tal como se verá en el sitio (incluye el hito sin guardar)
+function TimelinePreview({items,index=0,onClose}){
+  const [current,setCurrent]=useState(index);
+  const context={items,index:current,pick:setCurrent,text:key=>items[current]?.[key]};
+  return <Modal onClose={onClose} title="Vista previa · Línea de tiempo" className="cms-preview-modal">
+    <p className="cms-help">Así se verá en el sitio. Haz clic en otro hito para verlo; aquí no se edita nada.</p>
+    <EditContext.Provider value={context}><SiteFrame className="is-list" path="/linea-de-tiempo"><TimelinePage/></SiteFrame></EditContext.Provider>
+  </Modal>;
+}
+
+function PreviewButton({busy,items,index}){
+  const [open,setOpen]=useState(false);
+  const toggle=v=>{busy.current=v;setOpen(v)};
+  return <><button type="button" className="cms-btn is-ghost" onClick={()=>toggle(true)}><Eye/> Vista previa</button>
+    {open&&<TimelinePreview items={items} index={index} onClose={()=>toggle(false)}/>}</>;
 }
 
 /* ================= Comunas ================= */
