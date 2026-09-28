@@ -5,7 +5,7 @@ import { HOME_SECTIONS, HomeEditContext, rich } from '../home';
 import { getPath } from '../site-text';
 import { originalHome, saveError, setData, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
-import { aspectNear, Choice, Editable, ImagePicker, RecordPicker, thumb, useUi } from './fields';
+import { aspectNear, Choice, Editable, ImagePicker, RecordPicker, thumb, useUi, useAskRemove } from './fields';
 import { SiteFrame } from './SiteFrame';
 import { slideFromRecord, slideLinkOptions } from './meta';
 import { newestRecords } from '../repository';
@@ -34,7 +34,7 @@ function HomeImageButton({label,className,value,fallback,onChange,aspect}){
 
 export function HomeEditor(){
   useStoreVersion();
-  const {go,setDirty:setNavDirty}=useAdminNav(), {toast,confirm}=useUi();
+  const {go,setDirty:setNavDirty}=useAdminNav(), {toast,confirm}=useUi(), ask=useAskRemove();
   const load=()=>({...structuredClone(homeContent),slides:structuredClone(heroSlides),featuredId:site.featuredId});
   const [draft,setDraft]=useState(load), [dirty,setDirty]=useState(false), [picker,setPicker]=useState(null);
   const [slide,setSlide]=useState(0), [real,setReal]=useState(false), [openSec,setOpenSec]=useState('hero');
@@ -134,7 +134,7 @@ export function HomeEditor(){
           <img src={thumb(r.image,120)} alt=""/><span>{r.title}<small>{r.type}</small></span>
           <button type="button" className="cms-icon-btn" disabled={i===0} onClick={()=>moveLatest(i,-1)} aria-label="Subir"><ArrowUp/></button>
           <button type="button" className="cms-icon-btn" disabled={i===latest.length-1} onClick={()=>moveLatest(i,1)} aria-label="Bajar"><ArrowDown/></button>
-          <button type="button" className="cms-icon-btn is-danger-text" onClick={()=>set('latestIds',latestIds.filter(x=>x!==r.id))} aria-label="Quitar"><X/></button>
+          <button type="button" className="cms-icon-btn is-danger-text" onClick={ask(`«${r.title}» de «Recién catalogado»`,()=>set('latestIds',latestIds.filter(x=>x!==r.id)))} aria-label="Quitar"><X/></button>
         </li>)}</ul>
         {latestIds.length<8&&<button type="button" className="cms-btn is-block" onClick={()=>setPicker('latest')}><Plus/> Añadir ficha</button>}
       </>}

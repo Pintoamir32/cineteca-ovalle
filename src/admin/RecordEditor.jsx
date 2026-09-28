@@ -8,7 +8,7 @@ import { RecordDetail } from '../pages';
 import { getFilmography, getInterviewee, INTERVIEW_FORMATS, interviewFormat } from '../repository';
 import { deleteRecord, nextId, saveError, saveRecord, setData, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
-import { aspectNear, Choice, ColorSwatches, Editable, EditableChoice, EditableImage, ImagePicker, MEDIA_TYPES, MediaPicker, RecordPicker, thumb, useUi } from './fields';
+import { aspectNear, Choice, ColorSwatches, Editable, EditableChoice, EditableImage, ImagePicker, MEDIA_TYPES, MediaPicker, RecordPicker, thumb, useUi, useAskRemove } from './fields';
 import { SiteFrame } from './SiteFrame';
 import { HomeEditContext } from '../site-text';
 import { useSharedTexts } from './shared-text';
@@ -256,6 +256,7 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
 // Filmografía de una persona: las películas donde figura en dirección o en un cargo con su nombre
 // aparecen solas; otras se vinculan a mano (y solo esas se pueden quitar aquí)
 function PersonWorks({r,e,setE,openPicker}){
+  const ask=useAskRemove();
   const works=getFilmography(r,e), written=e.works||[];
   const setWork=(i,patch)=>setE({works:written.map((w,j)=>j===i?{...w,...patch}:w)});
   // Al escribir una nueva, el cursor queda en su título
@@ -265,14 +266,14 @@ function PersonWorks({r,e,setE,openPicker}){
     <label className="cms-panel-label">Del archivo · con enlace a su ficha</label>
     {works.length>0?<ul className="cms-mini-list">{works.map(({film,roles})=>{const manual=(e.relations||[]).includes(film.id)&&roles.join()==='Participación';return <li key={film.id}>
       <img src={thumb(film.image,120)} alt=""/><span>{film.title}<small>{film.year}</small></span>
-      {manual&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({relations:e.relations.filter(id=>id!==film.id)})} aria-label={`Quitar ${film.title}`} title="Quitar de su filmografía"><X/></button>}
+      {manual&&<button type="button" className="cms-icon-btn is-danger-text" onClick={ask(`«${film.title}» de su filmografía`,()=>setE({relations:e.relations.filter(id=>id!==film.id)}))} aria-label={`Quitar ${film.title}`} title="Quitar de su filmografía"><X/></button>}
     </li>})}</ul>:<p className="cms-help">Ninguna todavía.</p>}
     <button type="button" className="cms-btn is-block" onClick={()=>openPicker('work')}><Plus/> Vincular película del archivo</button>
     <label className="cms-panel-label">Escritas a mano · sin enlace</label>
     {written.length>0&&<ul className="cms-cargos cms-written" ref={listRef}>{written.map((w,i)=><li key={i}>
       <input data-title value={w.title||''} onChange={ev=>setWork(i,{title:ev.target.value})} placeholder="Título" aria-label={`Título de la película ${i+1}`}/>
       <input value={w.year||''} onChange={ev=>setWork(i,{year:ev.target.value})} placeholder="Año" inputMode="numeric" aria-label="Año"/>
-      <button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({works:written.filter((_,j)=>j!==i)})} aria-label="Quitar" title="Quitar"><X/></button>
+      <button type="button" className="cms-icon-btn is-danger-text" onClick={ask('esta obra',()=>setE({works:written.filter((_,j)=>j!==i)}))} aria-label="Quitar" title="Quitar"><X/></button>
     </li>)}</ul>}
     <button type="button" className="cms-btn is-block" onClick={()=>{focusNew.current=true;setE({works:[...written,{title:'',year:''}]})}}><Plus/> Escribir película</button>
     <p className="cms-help is-text">Las del archivo aparecen solas cuando figura con este mismo nombre en «Dirigida por» o en un cargo, o al vincularlas. Las escritas a mano se muestran sin enlace, para películas que no tienen ficha.</p>
@@ -281,22 +282,23 @@ function PersonWorks({r,e,setE,openPicker}){
 
 // Prensa: el documento digitalizado (imagen principal y PDF opcional) y sus vínculos a películas y personas
 function PressPanel({r,e,setR,setE,openPicker}){
+  const ask=useAskRemove();
   const linked=(e.relations||[]).map(id=>records.find(x=>x.id===id)).filter(x=>x&&['Película','Persona'].includes(x.type));
   return <>
     <PanelBlock title="Documento digitalizado">
       <label className="cms-panel-label">Imagen</label>
       <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('image')}><ImagePlus/> {r.image?'Cambiar imagen':'Subir imagen'}</button>
-        {r.image&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setR({image:''})} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}</div>
+        {r.image&&<button type="button" className="cms-icon-btn is-danger-text" onClick={ask('la imagen',()=>setR({image:''}))} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}</div>
       <label className="cms-panel-label">PDF · opcional</label>
       <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('media')}><FileText/> {e.media?'Cambiar PDF':'Subir PDF'}</button>
-        {e.media&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({media:''})} aria-label="Quitar PDF" title="Quitar PDF"><Trash2/></button>}</div>
+        {e.media&&<button type="button" className="cms-icon-btn is-danger-text" onClick={ask('el PDF',()=>setE({media:''}))} aria-label="Quitar PDF" title="Quitar PDF"><Trash2/></button>}</div>
       <p className="cms-help">La imagen se muestra en el sitio y en los listados; el PDF, si lo hay, se puede abrir y descargar.</p>
       <GalleryEditor e={e} setE={setE} openPicker={openPicker}/>
     </PanelBlock>
     <PanelBlock title={`Películas y personas · ${linked.length}`}>
       {linked.length>0?<ul className="cms-mini-list">{linked.map(x=><li key={x.id}>
         <img src={thumb(x.image,120)} alt=""/><span>{x.title}<small>{x.type}</small></span>
-        <button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({relations:e.relations.filter(id=>id!==x.id)})} aria-label={`Quitar ${x.title}`} title="Quitar vínculo"><X/></button>
+        <button type="button" className="cms-icon-btn is-danger-text" onClick={ask(`el vínculo con «${x.title}»`,()=>setE({relations:e.relations.filter(id=>id!==x.id)}))} aria-label={`Quitar ${x.title}`} title="Quitar vínculo"><X/></button>
       </li>)}</ul>:<p className="cms-help">Ninguna todavía.</p>}
       <button type="button" className="cms-btn is-block" onClick={()=>openPicker('link')}><Plus/> Vincular película o persona</button>
     </PanelBlock>
@@ -305,6 +307,7 @@ function PressPanel({r,e,setR,setE,openPicker}){
 
 // Entrevista: la persona entrevistada (de las fichas de persona), el formato y el contenido o archivo
 function InterviewPanel({r,e,setR,setE,openPicker}){
+  const ask=useAskRemove();
   const person=records.find(x=>x.id===e.interviewee&&x.type==='Persona');
   const isText=e.mediaType==='text';
   return <>
@@ -312,7 +315,7 @@ function InterviewPanel({r,e,setR,setE,openPicker}){
       {person?<>
         <ul className="cms-mini-list"><li>
           <img src={thumb(person.image,120)} alt=""/><span>{person.title}<small>Con enlace a su ficha</small></span>
-          <button type="button" className="cms-icon-btn is-danger-text" onClick={()=>{setE({interviewee:null});setR({subtitle:'',title:''})}} aria-label={`Quitar ${person.title}`} title="Quitar"><X/></button>
+          <button type="button" className="cms-icon-btn is-danger-text" onClick={ask(`a ${person.title} de la entrevista`,()=>{setE({interviewee:null});setR({subtitle:'',title:''})})} aria-label={`Quitar ${person.title}`} title="Quitar"><X/></button>
         </li></ul>
         <button type="button" className="cms-btn is-block" onClick={()=>openPicker('interviewee')}><Plus/> Cambiar persona</button>
       </>:<>
@@ -327,13 +330,13 @@ function InterviewPanel({r,e,setR,setE,openPicker}){
       <div className="cms-segment is-small cms-seg-block">{INTERVIEW_FORMATS.map(([v,l])=><button key={v} type="button" className={e.mediaType===v?'active':''} onClick={()=>setE({mediaType:v,...(v!==e.mediaType&&{media:''})})}>{l}</button>)}</div>
       {!isText&&<><label className="cms-panel-label">Archivo adjunto</label>
         <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('media')}>{e.media?`Cambiar ${e.mediaType==='audio'?'audio':'video'}`:`Agregar ${e.mediaType==='audio'?'audio':'video'}`}</button>
-          {e.media&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({media:''})} aria-label="Quitar archivo" title="Quitar archivo"><Trash2/></button>}</div></>}
+          {e.media&&<button type="button" className="cms-icon-btn is-danger-text" onClick={ask('el archivo',()=>setE({media:''}))} aria-label="Quitar archivo" title="Quitar archivo"><Trash2/></button>}</div></>}
       <p className="cms-help">{isText?'Escribe la entrevista en la ficha, en «Contenido».':'El texto es opcional: escríbelo en la ficha, en «Contenido». Si queda vacío, no aparece en el sitio.'}</p>
     </PanelBlock>
     <PanelBlock title="Imagen y galería">
       <label className="cms-panel-label">Imagen principal</label>
       <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('image')}><ImagePlus/> {r.image?'Cambiar imagen':'Subir imagen'}</button>
-        {r.image&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setR({image:''})} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}</div>
+        {r.image&&<button type="button" className="cms-icon-btn is-danger-text" onClick={ask('la imagen',()=>setR({image:''}))} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}</div>
       {!r.image&&person&&<p className="cms-help">Sin imagen propia se usa la fotografía de {person.title}.</p>}
       <GalleryEditor e={e} setE={setE} openPicker={openPicker}/>
     </PanelBlock>
@@ -342,19 +345,20 @@ function InterviewPanel({r,e,setR,setE,openPicker}){
 
 // Artículo: películas referenciadas (con enlace a sus fichas), imagen principal y galería
 function ArticlePanel({r,e,setR,setE,openPicker}){
+  const ask=useAskRemove();
   const films=(e.relations||[]).map(id=>records.find(x=>x.id===id&&x.type==='Película')).filter(Boolean);
   return <>
     <PanelBlock title={`Películas referenciadas · ${films.length}`}>
       {films.length>0?<ul className="cms-mini-list">{films.map(x=><li key={x.id}>
         <img src={thumb(x.image,120)} alt=""/><span>{x.title}<small>{x.year}</small></span>
-        <button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({relations:e.relations.filter(id=>id!==x.id)})} aria-label={`Quitar ${x.title}`} title="Quitar"><X/></button>
+        <button type="button" className="cms-icon-btn is-danger-text" onClick={ask(`el vínculo con «${x.title}»`,()=>setE({relations:e.relations.filter(id=>id!==x.id)}))} aria-label={`Quitar ${x.title}`} title="Quitar"><X/></button>
       </li>)}</ul>:<p className="cms-help">Ninguna todavía.</p>}
       <button type="button" className="cms-btn is-block" onClick={()=>openPicker('film')}><Plus/> Vincular película</button>
     </PanelBlock>
     <PanelBlock title="Imagen y galería">
       <label className="cms-panel-label">Imagen principal</label>
       <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('image')}><ImagePlus/> {r.image?'Cambiar imagen':'Subir imagen'}</button>
-        {r.image&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setR({image:''})} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}</div>
+        {r.image&&<button type="button" className="cms-icon-btn is-danger-text" onClick={ask('la imagen',()=>setR({image:''}))} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}</div>
       <GalleryEditor e={e} setE={setE} openPicker={openPicker}/>
     </PanelBlock>
   </>;
@@ -362,6 +366,7 @@ function ArticlePanel({r,e,setR,setE,openPicker}){
 
 // Galería de la ficha: miniaturas para editar, reordenar o quitar, y botón para añadir
 function GalleryEditor({e,setE,openPicker}){
+  const ask=useAskRemove();
   const gallery=e.gallery||[];
   const move=(i,d)=>{const g=[...gallery];[g[i],g[i+d]]=[g[i+d],g[i]];setE({gallery:g})};
   return <>
@@ -371,7 +376,7 @@ function GalleryEditor({e,setE,openPicker}){
       <span>
         <button type="button" disabled={i===0} onClick={()=>move(i,-1)} aria-label="Mover antes"><ArrowLeft/></button>
         <button type="button" disabled={i===gallery.length-1} onClick={()=>move(i,1)} aria-label="Mover después"><ArrowRight/></button>
-        <button type="button" onClick={()=>setE({gallery:gallery.filter((_,j)=>j!==i)})} aria-label="Quitar"><X/></button>
+        <button type="button" onClick={ask('esta imagen de la galería',()=>setE({gallery:gallery.filter((_,j)=>j!==i)}))} aria-label="Quitar"><X/></button>
       </span>
     </div>)}</div>}
     <button type="button" className="cms-btn is-block" onClick={()=>openPicker({gallery:-1})}><Images/> Añadir imágenes</button>
@@ -380,6 +385,7 @@ function GalleryEditor({e,setE,openPicker}){
 
 // Contenido y conexiones de la ficha: aquí se agregan, ordenan y quitan todas sus listas
 function RecordPanelBlocks({r,e,meta,setE,openPicker}){
+  const ask=useAskRemove();
   const credits=e.credits||[], places=e.locations||[];
   const related=(e.relations||[]).map(id=>records.find(x=>x.id===id)).filter(Boolean);
   const setCredit=(i,j,v)=>setE({credits:credits.map((c,k)=>k===i?(j===0?[v,c[1]]:[c[0],v]):c)});
@@ -397,13 +403,13 @@ function RecordPanelBlocks({r,e,meta,setE,openPicker}){
         <input data-cargo value={k} onChange={ev=>setCredit(i,0,ev.target.value)} placeholder="Cargo" aria-label={`Cargo ${i+1}`}/>
         <input value={v} onChange={ev=>setCredit(i,1,ev.target.value)} placeholder="Nombre" aria-label={`Nombre para ${k||`el cargo ${i+1}`}`}
           onKeyDown={ev=>{if(ev.key==='Enter'){ev.preventDefault();addCredit()}}}/>
-        <button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({credits:credits.filter((_,j)=>j!==i)})} aria-label={`Quitar ${k||'cargo'}`} title="Quitar cargo"><X/></button>
+        <button type="button" className="cms-icon-btn is-danger-text" onClick={ask(k?`el cargo «${k}»`:'este cargo',()=>setE({credits:credits.filter((_,j)=>j!==i)}))} aria-label={`Quitar ${k||'cargo'}`} title="Quitar cargo"><X/></button>
       </li>)}</ul>}
       <button type="button" className="cms-btn is-block" onClick={addCredit}><Plus/> Añadir cargo</button>
       <p className="cms-help">{credits.length?'Ej.: Fotografía · María Cortés. Si falta el cargo o el nombre, esa fila no se guarda.':'Agrega cada cargo (fotografía, montaje…) y quién lo ocupó.'}</p>
       {needsFile&&<><label className="cms-panel-label">Archivo digital</label>
       <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('media')}><MediaIcon/> {media.label}{e.mediaType==='video'?(e.media?' · cambiar película':' · agregar enlace'):needsFile?(e.media?' · cambiar archivo':' · subir archivo'):' · cambiar tipo'}</button>
-        {e.media&&<button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({media:''})} aria-label="Quitar archivo" title="Quitar archivo"><Trash2/></button>}</div></>}
+        {e.media&&<button type="button" className="cms-icon-btn is-danger-text" onClick={ask('el archivo',()=>setE({media:''}))} aria-label="Quitar archivo" title="Quitar archivo"><Trash2/></button>}</div></>}
       <GalleryEditor e={e} setE={setE} openPicker={openPicker}/>
       {r.type==='Persona'&&<><label className="cms-panel-label">Filmografía</label><p className="cms-help">Se arma sola: aparecen las películas cuyo director o créditos coinciden con el nombre de esta persona, o que están en «Relacionados».</p></>}
     </PanelBlock>
@@ -411,11 +417,11 @@ function RecordPanelBlocks({r,e,meta,setE,openPicker}){
       <label className="cms-panel-label">Relacionados · {related.length}</label>
       {related.length>0&&<ul className="cms-mini-list">{related.map(x=><li key={x.id}>
         <img src={thumb(x.image,120)} alt=""/><span>{x.title}<small>{x.type}</small></span>
-        <button type="button" className="cms-icon-btn is-danger-text" onClick={()=>setE({relations:e.relations.filter(id=>id!==x.id)})} aria-label={`Quitar ${x.title}`}><X/></button>
+        <button type="button" className="cms-icon-btn is-danger-text" onClick={ask(`el vínculo con «${x.title}»`,()=>setE({relations:e.relations.filter(id=>id!==x.id)}))} aria-label={`Quitar ${x.title}`}><X/></button>
       </li>)}</ul>}
       <button type="button" className="cms-btn is-block" onClick={()=>openPicker('relation')}><Plus/> Vincular otra ficha</button>
       <label className="cms-panel-label">{r.type==='Película'?'Locaciones':'Territorios'} · {places.length}</label>
-      {places.length>0&&<div className="pv-chips">{places.map(l=><span key={l} className="pv-chip"><MapPin/>{l}<button type="button" onClick={()=>setE({locations:places.filter(x=>x!==l)})} aria-label={`Quitar ${l}`}><X/></button></span>)}</div>}
+      {places.length>0&&<div className="pv-chips">{places.map(l=><span key={l} className="pv-chip"><MapPin/>{l}<button type="button" onClick={ask(`«${l}»`,()=>setE({locations:places.filter(x=>x!==l)}))} aria-label={`Quitar ${l}`}><X/></button></span>)}</div>}
       {free.length>0&&<Choice value="" placeholder="+ Añadir comuna" options={free} onChange={n=>setE({locations:[...places,n]})}/>}
     </PanelBlock>
   </>;

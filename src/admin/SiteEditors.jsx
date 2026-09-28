@@ -6,7 +6,7 @@ import { countByCollection, countByLocation } from '../repository';
 import { removeListItem, saveCollection, saveError, saveLocation, saveTimelineEvent, useStoreVersion } from '../store';
 import { tagStyle } from '../color';
 import { EditorShell, PageHead, PanelBlock, useAdminNav } from './AdminApp';
-import { Choice, ColorSwatches, Editable, ImagePicker, Modal, palette, useUi } from './fields';
+import { Choice, ColorSwatches, Editable, ImagePicker, Modal, palette, useAskRemove, useUi } from './fields';
 import { LocationPicker } from './LocationPicker';
 import { SiteFrame } from './SiteFrame';
 import { EditContext } from '../edit-context';
@@ -100,14 +100,16 @@ const Field=({label,hint,children})=><label className="cms-field cms-item-field"
 
 // Imagen del elemento: miniatura con cambiar / quitar; el selector se abre encima de la ventana
 function ImageField({label,value,onChange,aspect,optional=false,busy}){
-  const [picking,setPicking]=useState(false);
+  const [picking,setPicking]=useState(false), confirmAsk=useAskRemove();
+  // Mientras la confirmación está abierta, Esc no cierra la ventana del hito
+  const ask=(what,fn,text)=>async()=>{busy.current=true;try{await confirmAsk(what,fn,text)()}finally{setTimeout(()=>{busy.current=false})}};
   const open=v=>{busy.current=v;setPicking(v)};
   return <div className="cms-field cms-item-field"><span>{label}</span>
     <div className="cms-item-image">
       {value?<img src={value} alt="" style={{aspectRatio:aspect}}/>:<div className="cms-item-noimg" style={{aspectRatio:aspect}}><ImagePlus/></div>}
       <div>
         <button type="button" className="cms-btn" onClick={()=>open(true)}><ImagePlus/> {value?'Cambiar imagen':'Añadir imagen'}</button>
-        {value&&optional&&<button type="button" className="cms-btn is-ghost" onClick={()=>onChange('')}><X/> Quitar</button>}
+        {value&&optional&&<button type="button" className="cms-btn is-ghost" onClick={ask('la imagen',()=>onChange(''),'Se aplica al guardar el hito.')}><X/> Quitar</button>}
         {!value&&optional&&<p className="cms-help">Opcional: sin imagen se muestra un fondo liso.</p>}
       </div>
     </div>

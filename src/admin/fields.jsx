@@ -55,6 +55,14 @@ export function UiProvider({children}){
   </UiContext.Provider>;
 }
 
+// Confirmación antes de quitar algo del borrador: ask('la imagen',()=>…) devuelve el manejador del clic
+export function useAskRemove(){
+  const {confirm}=useUi();
+  return (what,fn,text)=>async()=>{
+    if(await confirm({title:`¿Quitar ${what}?`,text:text||'El cambio se publica al guardar. Si te arrepientes, puedes descartar los cambios antes.',ok:'Quitar',danger:true}))fn();
+  };
+}
+
 export function Modal({children,onClose,className='',title}){
   useEffect(()=>{
     const onKey=e=>{if(e.key==='Escape'){e.stopPropagation();onClose()}};
@@ -196,6 +204,7 @@ export function aspectNear(el){
 }
 
 export function ImagePicker({value,onPick,onPickMany,multiple=false,onClose,title,onRemove,aspect=null}){
+  const ask=useAskRemove();
   const [tab,setTab]=useState('upload'), [urls,setUrls]=useState(isUploaded(value)||multiple?'':value||''), [error,setError]=useState(''), [over,setOver]=useState(false);
   const [editing,setEditing]=useState(null), [selected,setSelected]=useState([]);
   const inputRef=useRef(null), direct=useRef([]);
@@ -223,7 +232,7 @@ export function ImagePicker({value,onPick,onPickMany,multiple=false,onClose,titl
       <img src={thumb(value,200)} alt=""/>
       <span><strong>Imagen actual</strong><small>Puedes recortarla, girarla o ajustar su luz sin reemplazarla.</small></span>
       <button type="button" className="cms-btn" onClick={()=>edit([{src:value}])}><SlidersHorizontal/> Editar</button>
-      {onRemove&&<button type="button" className="cms-btn is-danger-text" onClick={()=>{onRemove();onClose()}} title="Quitar esta imagen"><Trash2/> Quitar</button>}
+      {onRemove&&<button type="button" className="cms-btn is-danger-text" onClick={ask('esta imagen',()=>{onRemove();onClose()})} title="Quitar esta imagen"><Trash2/> Quitar</button>}
     </div>}
     <div className="cms-tabs" role="tablist">
       {[['upload',Upload,'Subir desde el equipo'],['url',Link2,multiple?'Pegar enlaces':'Pegar enlace'],['library',ImagePlus,`Biblioteca · ${library.length}`]].map(([k,Icon,l])=><button key={k} type="button" role="tab" aria-selected={tab===k} className={tab===k?'active':''} onClick={()=>{setTab(k);setError('')}}><Icon/>{l}</button>)}
@@ -260,14 +269,14 @@ export function ImagePicker({value,onPick,onPickMany,multiple=false,onClose,titl
 
 // Imagen de la vista previa: se puede editar la actual o reemplazarla
 export function EditableImage({src,onChange,className='',label='Cambiar imagen',children,alt='',aspect=null,removable=true}){
-  const [open,setOpen]=useState(null);
+  const [open,setOpen]=useState(null), ask=useAskRemove();
   return <div className={`cms-image ${src?'':'is-empty'} ${className}`}>
     {src?<img src={src} alt={alt} onClick={()=>setOpen('pick')}/>:<button type="button" className="cms-image-empty" onClick={()=>setOpen('pick')}><ImagePlus/><span>Añadir imagen</span></button>}
     {children}
     {src&&<div className="cms-image-tools">
       <button type="button" className="cms-image-btn" onClick={()=>setOpen('edit')}><SlidersHorizontal/> Editar</button>
       <button type="button" className="cms-image-btn" onClick={()=>setOpen('pick')}><ImagePlus/> {label}</button>
-      {removable&&<button type="button" className="cms-image-btn" onClick={()=>onChange('')} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}
+      {removable&&<button type="button" className="cms-image-btn" onClick={ask('la imagen',()=>onChange(''))} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}
     </div>}
     {open==='pick'&&<ImagePicker value={src} aspect={aspect} onPick={onChange} onRemove={removable?()=>onChange(''):undefined} onClose={()=>setOpen(null)}/>}
     {open==='edit'&&<ImageEditor sources={[{src}]} aspect={aspect} onDone={([out])=>{onChange(out);setOpen(null)}} onClose={()=>setOpen(null)}/>}
@@ -287,6 +296,7 @@ export const MEDIA_TYPES=[
 const MAX_MEDIA=40*1048576;
 
 export function MediaPicker({mediaType,media,onChange,onClose}){
+  const ask=useAskRemove();
   // El tipo de archivo lo fija la ficha (película → video, entrevista → audio, prensa → documento)
   const type=mediaType||'image';
   const [url,setUrl]=useState(isUploaded(media)?'':media||''), [uploaded,setUploaded]=useState(isUploaded(media)?media:''), [error,setError]=useState(''), [busy,setBusy]=useState(false);
@@ -319,7 +329,7 @@ export function MediaPicker({mediaType,media,onChange,onClose}){
         {src&&type==='video'&&<VideoPlayer url={src}/>}
         {src&&type==='audio'&&<audio src={src} controls preload="metadata"/>}
         {src&&type==='document'&&<a href={src} target="_blank" rel="noreferrer"><FileText/> Abrir documento</a>}
-        {src&&<button type="button" className="cms-btn is-danger-text" onClick={()=>{setUploaded('');setUrl('')}}><Trash2/> Quitar {type==='video'?'película':'archivo'}</button>}
+        {src&&<button type="button" className="cms-btn is-danger-text" onClick={ask(type==='video'?'la película':'el archivo',()=>{setUploaded('');setUrl('')})}><Trash2/> Quitar {type==='video'?'película':'archivo'}</button>}
       </div>
     </>}
     {error&&<p className="cms-error">{error}</p>}
