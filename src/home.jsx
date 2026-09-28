@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowDownRight, ArrowRight, BookOpen, ChevronLeft, ChevronRight, CirclePlay, FileText, Film, Grid2X2, Layers, MapPin, Mic2, Search, Settings2, Sparkles, UserRound } from 'lucide-react';
-import { Counter, RecordCard, SearchResults } from './components';
+import { tagStyle } from './color';
+import { Counter, SearchResults } from './components';
 import { collections, locations, sections, site } from './data';
 import { countByType, getAllRecords, newestRecords, recordPath } from './repository';
 import { buildSearchIndex, matchIndex } from './search-index';
@@ -107,7 +108,7 @@ export function Home(){
 
     {show('spotlight')&&<Spotlight t={t} c={c} edit={edit} featuredId={featuredId} number={numbers.spotlight} extraClass={sectionClass('spotlight')} tag={tag('spotlight')}/>}
 
-    {show('latest')&&<section className={`home-latest${sectionClass('latest')}`} data-reveal {...tag('latest')}><div className="section-label"><span>{numbers.latest}</span> {t('latestLabel')}</div><div className="home-latest-head"><h2>{t('latestTitle')}</h2><Link to="/archivo">{t('latestLink')} <ArrowRight/></Link></div><div className="record-grid">{latest.map((r,i)=><RecordCard item={r} index={i} key={r.id}/>)}</div></section>}
+    {show('latest')&&<Latest t={t} items={latest} number={numbers.latest} extraClass={sectionClass('latest')} tag={tag('latest')}/>}
 
     {show('manifesto')&&<section className={`manifesto${sectionClass('manifesto')}`} data-reveal {...tag('manifesto')}><div className="manifesto-mark">“</div><p>{t('manifestoText')}</p><div><span>{t('manifestoSign')}</span><small>{t('manifestoSub')}</small></div></section>}
   </main>
@@ -122,4 +123,31 @@ function Spotlight({t,c,edit,featuredId,number,extraClass,tag}){
   const kicker=[genre,item.year,support].filter(Boolean).join(' · ').toUpperCase();
   const image=c.spotlightImage||item.image;
   return <section className={`spotlight${extraClass}`} data-reveal {...tag}><div className="spotlight-copy"><div className="section-label light"><span>{number}</span> {t('spotlightLabel')}</div><span className="spot-kicker">{kicker}</span><h2>{words.slice(0,cut).join(' ')}{words.length>1&&<><br/><i>{words.slice(cut).join(' ')}</i></>}</h2><p>{item.description}</p><dl><div><dt>{item.type==='Película'?'Dirección':'Autoría'}</dt><dd>{item.subtitle}</dd></div><div><dt>Colección</dt><dd>{item.collection}</dd></div></dl><Link to={recordPath(item)}>{t('spotlightCta')} <ArrowRight/></Link></div><div className="spotlight-image"><img src={image} alt={item.title} loading="lazy" decoding="async"/>{edit&&edit.image('spotlightImage',{label:c.spotlightImage?'Cambiar imagen':'Usar otra imagen',fallback:item.image,className:'home-edit-spot-img'})}<div className="film-code">CDO · {String(item.id).padStart(4,'0')}</div><span className="restore-tag"><Sparkles/> {t('spotlightTag')}</span><Link className="spot-play" to={recordPath(item)}><CirclePlay/></Link></div></section>;
+}
+
+// Recién catalogado: índice de fichas; la fila activa cambia la imagen de la izquierda
+function Latest({t,items,number,extraClass,tag}){
+  const [active,setActive]=useState(0);
+  const current=items[Math.min(active,items.length-1)];
+  if(!current)return null;
+  return <section className={`home-new${extraClass}`} data-reveal {...tag}>
+    <div className="home-new-aside">
+      <div className="section-label"><span>{number}</span> {t('latestLabel')}</div>
+      <h2>{t('latestTitle')}</h2>
+      <Link className="home-new-preview" to={recordPath(current)} tabIndex={-1} aria-hidden="true">
+        {items.map((r,i)=><img key={r.id} src={r.image} alt="" loading="lazy" decoding="async" className={i===active?'is-on':''}/>)}
+        <span>CDO · {String(current.id).padStart(4,'0')}</span>
+      </Link>
+      <Link className="home-new-all" to="/archivo">{t('latestLink')} <ArrowRight/></Link>
+    </div>
+    <ol className="home-new-list">{items.map((r,i)=><li key={r.id} className="stagger-item" style={{transitionDelay:`${i*60}ms`}}>
+      <Link to={recordPath(r)} className={i===active?'is-active':''} onMouseEnter={()=>setActive(i)} onFocus={()=>setActive(i)}>
+        <span className="home-new-num">{String(i+1).padStart(2,'0')}</span>
+        <img className="home-new-thumb" src={r.image} alt="" loading="lazy" decoding="async"/>
+        <div className="home-new-body"><span className="home-new-tag" style={tagStyle(r.color)}>{r.type}</span><h3>{r.title}</h3><p>{r.subtitle}</p></div>
+        <div className="home-new-meta"><b>{r.year}</b><small>{r.collection}</small></div>
+        <ArrowRight className="home-new-arrow"/>
+      </Link>
+    </li>)}</ol>
+  </section>;
 }

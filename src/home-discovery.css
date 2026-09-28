@@ -51,17 +51,47 @@
 .home-page .spotlight dl{margin:18px 0 26px;padding-top:16px}
 .home-page .spotlight-image{margin:28px 28px 28px 0;min-height:380px;max-height:520px}
 .home-page .spot-play{width:72px;height:72px}.home-page .spot-play svg{width:28px;height:28px}
-.home-page>.home-latest{padding-top:64px;padding-bottom:64px}
-.home-page .home-latest-head{margin:26px 0 28px}
-.home-page .home-latest-head h2{font-size:clamp(34px,3.4vw,52px)}
-.home-page .home-latest .record-photo{aspect-ratio:4/3}
-.home-page .home-latest .record-data{padding:14px 14px!important}
-.home-page .home-latest .record-data h3{font-size:19px}
 @media(max-width:760px){
   .home-page>.spotlight{display:flex}
   .home-page .spotlight-image{margin:14px 14px 0;height:300px;min-height:0}
   .home-page .spotlight-copy{padding:36px 20px}
   .home-page .spotlight h2{font-size:44px}
-  .home-page>.home-latest{padding-top:48px;padding-bottom:48px}
-  .home-page .home-latest-head h2{font-size:34px}
+}
+
+/* Recién catalogado: índice con vista previa */
+.home-page>.home-new{order:6}
+.home-new{display:grid;grid-template-columns:minmax(280px,34%) 1fr;gap:5vw;padding:72px 5vw;background:#f6f4ed;align-items:start}
+.home-new-aside{position:sticky;top:120px;display:flex;flex-direction:column;gap:22px}
+.home-new-aside h2{font:700 clamp(34px,3.4vw,52px)/1.1 'Manrope',sans-serif;letter-spacing:-.055em;margin:0}
+.home-new-preview{position:relative;display:block;aspect-ratio:4/3;overflow:hidden;background:var(--forest)}
+.home-new-preview img{position:absolute;inset:0;height:100%;object-fit:cover;opacity:0;transform:scale(1.04);transition:opacity .45s ease,transform .8s cubic-bezier(.16,.8,.3,1);filter:saturate(.7)}
+.home-new-preview img.is-on{opacity:1;transform:none}
+.home-new-preview span{position:absolute;left:14px;bottom:12px;z-index:1;font:500 9px 'IBM Plex Mono';letter-spacing:.18em;color:white;background:rgba(16,18,16,.55);padding:6px 9px}
+.home-new-all{width:max-content;display:flex;align-items:center;gap:18px;border-bottom:1px solid var(--black);padding-bottom:8px;font-size:12px;font-weight:700}
+.home-new-all svg{width:16px;transition:transform .28s cubic-bezier(.16,.8,.3,1)}.home-new-all:hover svg{transform:translateX(5px)}
+.home-new-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--black)}
+.home-new-list li{border-bottom:1px solid var(--line)}
+.home-new-list a{display:grid;grid-template-columns:34px 88px minmax(0,1fr) auto 22px;align-items:center;gap:22px;padding:18px 16px;transition:background .25s,color .25s}
+.home-new-num{font:500 10px 'IBM Plex Mono';color:#7c817b}
+.home-new-thumb{width:88px;height:66px;object-fit:cover;filter:grayscale(.35)}
+.home-new-body{min-width:0}
+.home-new-tag{display:inline-block;font:600 9px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;padding:4px 8px;margin-bottom:8px}
+.home-new-body h3{font:700 clamp(19px,1.6vw,24px)/1.15 'Manrope',sans-serif;letter-spacing:-.03em;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-new-body p{margin:4px 0 0;font-size:13px;color:#5d625c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-new-meta{text-align:right;display:grid;gap:4px}
+.home-new-meta b{font:500 12px 'IBM Plex Mono'}
+.home-new-meta small{font-size:11px;color:#6f746e;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-new-arrow{width:18px;transition:transform .28s cubic-bezier(.16,.8,.3,1)}
+.home-new-list a.is-active,.home-new-list a:hover{background:var(--forest);color:white}
+.home-new-list a.is-active .home-new-num,.home-new-list a:hover .home-new-num,.home-new-list a.is-active .home-new-arrow{color:var(--acid)}
+.home-new-list a.is-active p,.home-new-list a.is-active small,.home-new-list a:hover p,.home-new-list a:hover small{color:#b9c7c0}
+.home-new-list a.is-active .home-new-thumb{filter:none}
+.home-new-list a.is-active .home-new-arrow{transform:translateX(4px)}
+@media(max-width:1000px){.home-new{grid-template-columns:1fr;gap:30px}.home-new-aside{position:static}.home-new-preview{display:none}.home-new-meta small{display:none}}
+@media(max-width:760px){
+  .home-new{padding:48px 20px}
+  .home-new-list a{grid-template-columns:72px minmax(0,1fr) 18px;gap:14px;padding:14px 8px}
+  .home-new-num,.home-new-meta{display:none}
+  .home-new-thumb{width:72px;height:72px}
+  .home-new-body h3{white-space:normal}
 }
