@@ -124,7 +124,7 @@
 .ficha-film-related a:hover{border-color:var(--forest)}
 .ficha-film-related a:hover img{filter:none}
 @media(max-width:1000px){.ficha-film .ficha-film-aside{display:grid;grid-template-columns:minmax(0,280px) 1fr;gap:0 28px;align-items:start}.ficha-film .ficha-film-aside>.ficha-poster{grid-row:1/span 20}.ficha-film .ficha-film-aside>:not(.ficha-poster){grid-column:2}}
-@media(max-width:600px){.ficha-film-aside{display:block}.ficha-film-aside>.ficha-poster{max-width:320px;margin-bottom:16px}}
+@media(max-width:600px){.ficha-film .ficha-film-aside{display:block}.ficha-film .ficha-film-aside>.ficha-poster{width:100%;max-width:360px;margin:0 auto 20px}}
 @media(max-width:760px){.ficha-film .ficha-body{margin-top:14px}.ficha-film-head{margin-bottom:48px}.ficha-film-top{margin-bottom:36px}.ficha-film-director{padding-right:0;border-right:0}}
 .ficha-film-director{color:var(--black);transition:color .2s}
 .ficha-film-director strong{text-decoration:underline;text-decoration-color:transparent;text-underline-offset:4px;transition:text-decoration-color .2s}
