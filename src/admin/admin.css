@@ -739,8 +739,10 @@ html:has(.cms-preview-doc){overflow:hidden}
 .cms-hsec.is-off .cms-toggle-eye{color:var(--muted)}
 .cms-hsec-body{padding:4px 14px 14px;border-top:1px solid var(--line)}
 .cms-hsec-body>.cms-help:first-child{margin-top:10px}
-.cms-inline-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:6px;margin:10px 0}
-.cms-inline-actions .cms-btn{justify-content:center;min-width:0;padding-inline:10px;white-space:nowrap}
+.cms-inline-actions{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.cms-inline-actions .cms-btn{flex:1 1 auto;justify-content:center;min-width:0;padding-inline:12px}
+/* En el panel lateral los botones nunca se salen del ancho: el texto largo baja de línea */
+.cms-panel .cms-btn{max-width:100%;min-width:0;white-space:normal;text-align:center;line-height:1.25}
 .cms-subblock{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
 .cms-subblock-head{display:flex;align-items:center;justify-content:space-between}
 .cms-subblock-head strong{font-size:13px}
