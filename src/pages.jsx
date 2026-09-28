@@ -320,7 +320,7 @@ export function TimelinePage(){
         </button>)}
       </div>
       <aside className="timeline-detail" ref={detailRef}>
-        {active.image?<img src={active.image} alt="" loading="lazy" decoding="async"/>:<div className="timeline-detail-noimg"/>}
+        {active.image?<img key={active.image} src={active.image} alt={active.title||""} decoding="async"/>:<div className="timeline-detail-noimg"/>}
         {slot('image')}
         <div className="timeline-detail-copy">
           <span>{active.type} · {f('year',active.year,{placeholder:'1970'})}</span>
