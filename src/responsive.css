@@ -490,3 +490,11 @@ footer,
 .advanced-go svg{width:16px}
 .advanced-go:hover{background:var(--black)}
 @media(max-width:760px){.advanced-box{left:auto!important;right:auto!important;grid-template-columns:1fr!important}.advanced-go{grid-column:auto}}
+
+/* Pie de página: navegación completa en tres columnas */
+footer .footer-links{grid-template-columns:repeat(3,minmax(0,1fr));gap:24px 32px}
+@media(min-width:1101px){footer .footer-main{grid-template-columns:.7fr 1fr 1.4fr}}
+footer .footer-links a{transition:color .2s}
+footer .footer-links a:hover{color:var(--acid)}
+@media(max-width:1100px){footer .footer-main{grid-template-columns:1fr 1fr}footer .footer-main .footer-links{grid-column:1/-1}}
+@media(max-width:760px){footer .footer-main{grid-template-columns:1fr}footer .footer-links{grid-template-columns:1fr 1fr}}
