@@ -129,12 +129,12 @@ export function DocumentView({item,extra,related,people}){
       </button>
       {slot('image')}
     </figure>
-    <div className="ficha-aside-label">{cfg.factsLabel}</div>
-    <Facts rows={cfg.facts}/>
-    {pressFilms.length>0&&<><div className="ficha-aside-label">Películas vinculadas</div><div className="ficha-film-related">{pressFilms.map(r=><Link to={recordPath(r)} key={r.id}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><small>{r.type}</small><strong>{r.title}</strong></div><ArrowRight/></Link>)}</div></>}
     {cfg.press&&<><div className="ficha-aside-label">Personas vinculadas</div>
       {people.length?<div className="ficha-film-related">{people.map(({person,roles})=><Link to={recordPath(person)} key={person.id}><img src={person.image} alt="" loading="lazy" decoding="async"/><div><small>{roles.join(' · ')||person.subtitle}</small><strong>{person.title}</strong></div><ArrowRight/></Link>)}</div>
       :<p className="ficha-filmography-empty">Aún no hay personas vinculadas a este registro.</p>}</>}
+    <div className="ficha-aside-label">{cfg.factsLabel}</div>
+    <Facts rows={cfg.facts}/>
+    {pressFilms.length>0&&<><div className="ficha-aside-label">Películas vinculadas</div><div className="ficha-film-related">{pressFilms.map(r=><Link to={recordPath(r)} key={r.id}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><small>{r.type}</small><strong>{r.title}</strong></div><ArrowRight/></Link>)}</div></>}
   </div></aside>;
   return <main className={`ficha-page doc-page doc-press doc-${item.slug}`}>
     <div className="doc-grid"><div className="doc-content">
