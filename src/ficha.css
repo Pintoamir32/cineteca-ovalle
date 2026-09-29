@@ -20,6 +20,8 @@
 .ficha-credits>div{padding:18px 16px 18px 0;border-bottom:1px solid var(--line)}
 .ficha-credits small{display:block;font:700 8px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:#8a908a;margin-bottom:8px}
 .ficha-credits strong{font:600 14px 'Manrope'}
+.ficha-credit-link{color:inherit;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:4px;transition:text-decoration-color .2s}
+.ficha-credit-link:hover,.ficha-credit-link:focus-visible{text-decoration-color:currentColor}
 .ficha-media{margin-top:64px}
 .ficha-media .media-viewer{margin-top:0}
 .ficha-gallery{margin-top:64px}

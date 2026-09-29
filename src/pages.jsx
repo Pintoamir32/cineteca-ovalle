@@ -130,6 +130,12 @@ export function RichDetailPage(){
 }
 
 // Ficha pública de un registro. El gestor la usa también como vista previa editable (ver edit-context)
+// Nombre de un cargo: lleva a la ficha de esa persona si está en el archivo; si no, lo busca en el archivo
+function CreditName({name}){
+  const person=getAllRecords().find(r=>r.type==='Persona'&&r.title.trim().toLowerCase()===name.trim().toLowerCase());
+  return <Link className="ficha-credit-link" to={person?recordPath(person):`/archivo?q=${encodeURIComponent(name)}`} title={person?`Ver la ficha de ${name}`:`Buscar ${name} en el archivo`}>{name}</Link>
+}
+
 export function RecordDetail({item,extra}){
   const {t}=useSiteText();
   const {edit,f,slot}=useEdit();
@@ -140,7 +146,6 @@ export function RecordDetail({item,extra}){
   // Filmografía: películas del archivo (con enlace) y las escritas a mano (sin enlace), por año
   const yearNum=y=>Number((/\d{4}/.exec(y||'')||[])[0])||9999;
   const works=isPerson?[...filmography.map(({film})=>({film,year:film.year})),...(extra.works||[]).map((w,i)=>({...w,i})).filter(w=>String(w.title||'').trim())].sort((a,b)=>yearNum(a.year)-yearNum(b.year)):[];
-  const people=isPerson?[]:getRecordPeople(item,extra);
   const credits=extra.credits||[], gallery=extra.gallery||[];
   const [genre,duration,medium]=(item.format||'').split(' · ');
   // En el gestor se muestran los tres datos aunque estén vacíos, para poder completarlos
@@ -207,7 +212,7 @@ export function RecordDetail({item,extra}){
         <div className="ficha-section-label"><span>01</span> {isFilm?'SINOPSIS':'DESCRIPCIÓN'}</div>
         {!isFilm&&<h2>{t('fichaLeadTitle')}</h2>}
         <p>{f('description',item.description,{multiline:true})}</p>
-        <div className="ficha-credits">{credits.map(([k,v],i)=><div key={`${k}-${i}`} className="stagger-item" style={{transitionDelay:`${i*60}ms`}}><small>{f(`creditKey.${i}`,k,{placeholder:'Dato'})}</small><strong>{f(`credits.${i}`,v,{placeholder:'Completar…'})}</strong></div>)}{slot('credits')}</div>
+        <div className="ficha-credits">{credits.map(([k,v],i)=><div key={`${k}-${i}`} className="stagger-item" style={{transitionDelay:`${i*60}ms`}}><small>{f(`creditKey.${i}`,k,{placeholder:'Dato'})}</small><strong>{edit||!v?f(`credits.${i}`,v,{placeholder:'Completar…'}):<CreditName name={v}/>}</strong></div>)}{slot('credits')}</div>
         {isPerson?<div className="ficha-media ficha-filmography" id="filmografia">
           <div className="ficha-filmography-head"><div className="ficha-section-label"><span>02</span> FILMOGRAFÍA</div><span>{String(filmography.length).padStart(2,'0')} {filmography.length===1?'PELÍCULA':'PELÍCULAS'}</span></div>
           {filmography.length?<ol className="ficha-filmography-list">{filmography.map(({film,roles})=>{const [fGenre,fDuration]=(film.format||'').split(' · ');return <li key={film.id}>
@@ -224,16 +229,8 @@ export function RecordDetail({item,extra}){
           <MediaViewer item={item} extra={extra}/>
           {slot('media')}
         </div>}
-        {isFilm&&<div className="ficha-people" id="personas">
-          <div className="ficha-filmography-head"><div className="ficha-section-label"><span>03</span> ELENCO</div><span>{String(people.length).padStart(2,'0')} {people.length===1?'PERSONA':'PERSONAS'}</span></div>
-          {people.length?<div className="ficha-people-grid">{people.map(({person,roles})=><Link key={person.id} to={recordPath(person)} className="ficha-person-card">
-            <img src={person.image} alt="" loading="lazy" decoding="async"/>
-            <div><h3>{person.title}</h3><small>{person.subtitle}</small><div className="ficha-filmography-roles">{roles.map(r=><span key={r}>{r}</span>)}</div></div>
-            <ArrowRight/>
-          </Link>)}</div>:<p className="ficha-filmography-empty">Aún no hay elenco vinculado a esta película en el archivo.</p>}
-        </div>}
         {(gallery.length>0||(edit&&!isPerson))&&<div className="ficha-gallery">
-          <div className="ficha-section-label"><span>{isFilm?'04':'03'}</span> GALERÍA</div>
+          <div className="ficha-section-label"><span>03</span> GALERÍA</div>
           <div className="ficha-gallery-grid">{gallery.map((src,i)=><img src={src} alt={`${item.title} · imagen ${i+1}`} key={`${i}-${src.slice(-24)}`} loading="lazy" decoding="async"/>)}</div>
           {slot('gallery')}
         </div>}
