@@ -138,9 +138,17 @@ export function DocumentView({item,extra,related,people}){
   const skipMain=cfg.press||cfg.interview||cfg.article?1:0, shownGallery=gallery.slice(skipMain);
   // Entrevista: el reproductor va junto a la ficha (columna derecha), no bajo la foto
   const player=cfg.player&&<div className="press-player" id="media"><MediaViewer item={{...item,image:cfg.image||item.image}} extra={extra}/>{slot('media')}</div>;
-  // Panel derecho, como el de las películas, solo con los campos propios de cada tipo (y en prensa, sus películas vinculadas)
+  // Panel derecho, como el de las películas: la imagen principal y los campos propios de cada tipo (y en prensa, sus películas vinculadas)
   const pressFilms=cfg.press?related.filter(r=>r.type==='Película'):[];
   const aside=<aside className="ficha-aside ficha-film-aside doc-aside"><div className="doc-aside-inner">
+    <figure className="press-clipping doc-aside-image">
+      <button type="button" onClick={()=>setZoom(0)} aria-label="Ampliar imagen">
+        <img src={cfg.image||item.image} alt={item.title} decoding="async"/>
+        <span className="press-zoom"><Maximize2/> Ampliar</span>
+      </button>
+      {slot('image')}
+      <figcaption>{cfg.caption}</figcaption>
+    </figure>
     <div className="ficha-aside-label">{cfg.factsLabel}</div>
     <Facts rows={cfg.facts}/>
     {pressFilms.length>0&&<><div className="ficha-aside-label">Películas vinculadas</div><div className="ficha-film-related">{pressFilms.map(r=><Link to={recordPath(r)} key={r.id}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><small>{r.type}</small><strong>{r.title}</strong></div><ArrowRight/></Link>)}</div></>}
@@ -154,17 +162,6 @@ export function DocumentView({item,extra,related,people}){
         <div>{[cfg.source,...cfg.meta].filter(Boolean).map(m=><span key={m}>{m}</span>)}</div>
       </header>
       <div className="press-layout">
-        <div className="press-side">
-          <figure className="press-clipping">
-            <button type="button" onClick={()=>setZoom(0)} aria-label="Ampliar imagen">
-              <img src={cfg.image||item.image} alt={item.title} decoding="async"/>
-              <span className="press-zoom"><Maximize2/> Ampliar</span>
-            </button>
-            {slot('image')}
-            <figcaption>{cfg.caption}</figcaption>
-          </figure>
-          {!cfg.interview&&player}
-        </div>
         <article className="press-article">
           <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
           <h1>{cfg.interview?cfg.title:f('title',item.title)}</h1>

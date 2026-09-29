@@ -214,3 +214,12 @@
   .doc-press .doc-grid .doc-shell{padding:24px 20px 36px}
   .doc-aside.ficha-aside{padding:28px 20px 32px}
 }
+/* Imagen principal en el panel derecho: el contenido queda en una sola columna */
+.doc-grid .press-layout,.doc-entrevistas .doc-grid .press-layout,.doc-articulos .doc-grid .press-layout{grid-template-columns:minmax(0,1fr)}
+.doc-aside-image{margin:0 0 34px}
+.doc-aside-image>button:first-child{padding:10px}
+.doc-aside-image>button:first-child::before,.doc-aside-image>button:first-child::after{width:64px;height:20px}
+.doc-aside-image .press-zoom{right:18px;bottom:18px}
+.doc-aside-image figcaption{margin-top:18px}
+.doc-articulos .doc-aside-image img{aspect-ratio:4/3}
+@media(max-width:1000px){.doc-aside-image{max-width:420px;margin:0 auto 34px}}
