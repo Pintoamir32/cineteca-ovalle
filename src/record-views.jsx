@@ -78,20 +78,18 @@ function docConfig(item,extra){
     const person=getInterviewee(item,extra), name=person?.title||item.subtitle, format=interviewFormat(extra);
     return {
       interview:true,person,title:name?`Entrevista a ${name}`:item.title,image:item.image||person?.image,
-      caption:'Registro de memoria oral · Archivo CDO',
       facts:[['Entrevistado(a)',person?<Link to={recordPath(person)}>{name}</Link>:name,true],['Fecha',item.year,false,'year'],['Formato',format]],
       factsLabel:'Ficha de la entrevista',textLabel:'CONTENIDO',player:extra.mediaType!=='text'
     };
   }
   // Artículo: título, autor(a), fecha de publicación, películas referenciadas, cuerpo del artículo, imagen principal y galería
   if(item.type==='Artículo')return {
-    article:true,caption:'Imagen del artículo · Archivo CDO',
+    article:true,
     facts:[['Autor(a)',item.subtitle,true,'subtitle'],['Fecha de publicación',item.year,true,'year']],
     factsLabel:'Ficha del artículo'
   };
   // Prensa: título/fuente, fecha, medio de origen, documento digitalizado y vínculos a películas y personas
   return {
-    caption:'Documento digitalizado · Archivo CDO',
     facts:[['Medio de origen',item.subtitle,true,'subtitle'],['Fecha',item.year,true,'year']],
     factsLabel:'Ficha del documento',press:true
   };
@@ -102,10 +100,10 @@ export function DocumentView({item,extra,related,people}){
   const cfg=docConfig(item,extra);
   // Galería: imagen principal, material propio del registro e imágenes de sus relacionados
   const gallery=useMemo(()=>[
-    {src:cfg.image||item.image,caption:cfg.caption,kind:'Imagen principal'},
+    {src:cfg.image||item.image,caption:'',alt:item.title,kind:'Imagen principal'},
     ...(extra.gallery||[]).map((src,i)=>({src,caption:'',alt:`${item.title} · imagen ${i+1}`})),
     ...(cfg.press||cfg.interview||cfg.article?[]:related).map(r=>({src:r.image,caption:r.title,kind:`Ver también · ${r.type}`,to:recordPath(r)}))
-  ],[item,extra,related,cfg.caption,cfg.image,cfg.press,cfg.interview,cfg.article]);
+  ],[item,extra,related,cfg.image,cfg.press,cfg.interview,cfg.article]);
   const [zoom,setZoom]=useState(null);
   const open=zoom!==null, shown=open?gallery[zoom]:null;
   const step=d=>setZoom(z=>(z+d+gallery.length)%gallery.length);
@@ -130,7 +128,6 @@ export function DocumentView({item,extra,related,people}){
         <span className="press-zoom"><Maximize2/> Ampliar</span>
       </button>
       {slot('image')}
-      <figcaption>{cfg.caption}</figcaption>
     </figure>
     <div className="ficha-aside-label">{cfg.factsLabel}</div>
     <Facts rows={cfg.facts}/>
