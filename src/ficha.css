@@ -208,3 +208,5 @@ a.back-link.back-link:hover .back-link-icon{background:var(--acid);color:var(--b
 .ficha-filmography-noimg{display:grid;place-items:center;width:64px;aspect-ratio:2/3;background:#ebe9e1;color:#8b8f89}
 @media(max-width:600px){.ficha-filmography-noimg{width:52px}}
 .ficha-filmography-noimg svg{width:22px;height:22px}
+/* Textos largos de las fichas (películas, personas, prensa, entrevistas y artículos): justificados */
+.ficha-main>p,.ficha-person-bio,.press-dek,.press-transcript p,.interview-text-body{text-align:justify;hyphens:auto;-webkit-hyphens:auto}
