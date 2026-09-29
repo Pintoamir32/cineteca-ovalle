@@ -11,7 +11,7 @@
 
 /* ---------- Prensa ---------- */
 .doc-press .doc-shell{margin:24px 24px 0;padding:36px 5vw 64px;background:#f8f7f1;border:1px solid var(--line)}
-.press-masthead{text-align:center;padding:26px 0 18px;margin-bottom:48px;border-top:3px double var(--black);border-bottom:1px solid var(--black)}
+.press-masthead{text-align:center;padding:16px 0;margin-bottom:48px;border-top:3px double var(--black);border-bottom:1px solid var(--black)}
 .press-masthead h2{font:700 clamp(34px,4.6vw,64px)/1 Georgia,'Times New Roman',serif;letter-spacing:-.01em;margin:0 0 14px}
 .press-masthead>div{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 22px;font:700 9px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:#6b716c}
 .press-masthead>div span+span::before{content:'·';margin-right:22px;color:var(--line)}

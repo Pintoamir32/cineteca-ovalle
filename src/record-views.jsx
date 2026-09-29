@@ -158,7 +158,6 @@ export function DocumentView({item,extra,related,people}){
     <section className="doc-shell" data-reveal>
       <div className="ficha-film-top"><BackLink item={item}/><span className="ficha-code">{code(item)}</span></div>
       <header className="press-masthead">
-        <h2>La Cineteca de Ovalle</h2>
         <div>{[cfg.source,...cfg.meta].filter(Boolean).map(m=><span key={m}>{m}</span>)}</div>
       </header>
       <div className="press-layout">
