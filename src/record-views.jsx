@@ -54,17 +54,6 @@ function Facts({rows}){
   return <dl className="ficha-film-facts">{rows.filter(([,v,,key])=>v||(edit&&key)).map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>;
 }
 
-function PeopleCards({people,title='Personas mencionadas',number}){
-  return <section className="doc-people">
-    <div className="ficha-filmography-head"><div className="ficha-section-label">{number&&<span>{number}</span>} {title.toUpperCase()}</div><span>{String(people.length).padStart(2,'0')} {people.length===1?'PERSONA':'PERSONAS'}</span></div>
-    {people.length?<div className="ficha-people-grid">{people.map(({person,roles})=><Link key={person.id} to={recordPath(person)} className="ficha-person-card">
-      <img src={person.image} alt="" loading="lazy" decoding="async"/>
-      <div><h3>{person.title}</h3><small>{person.subtitle}</small><div className="ficha-filmography-roles">{roles.map(r=><span key={r}>{r}</span>)}</div></div>
-      <ArrowRight/>
-    </Link>)}</div>:<p className="ficha-filmography-empty">Aún no hay personas vinculadas a este registro.</p>}
-  </section>;
-}
-
 // Relacionados como índice de diario: miniatura en papel, titular con serifa
 function RelatedList({related,title='Ver también'}){
   if(!related.length)return null;
@@ -146,6 +135,9 @@ export function DocumentView({item,extra,related,people}){
     <div className="ficha-aside-label">{cfg.factsLabel}</div>
     <Facts rows={cfg.facts}/>
     {pressFilms.length>0&&<><div className="ficha-aside-label">Películas vinculadas</div><div className="ficha-film-related">{pressFilms.map(r=><Link to={recordPath(r)} key={r.id}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><small>{r.type}</small><strong>{r.title}</strong></div><ArrowRight/></Link>)}</div></>}
+    {cfg.press&&<><div className="ficha-aside-label">Personas vinculadas</div>
+      {people.length?<div className="ficha-film-related">{people.map(({person,roles})=><Link to={recordPath(person)} key={person.id}><img src={person.image} alt="" loading="lazy" decoding="async"/><div><small>{roles.join(' · ')||person.subtitle}</small><strong>{person.title}</strong></div><ArrowRight/></Link>)}</div>
+      :<p className="ficha-filmography-empty">Aún no hay personas vinculadas a este registro.</p>}</>}
   </div></aside>;
   return <main className={`ficha-page doc-page doc-press doc-${item.slug}`}>
     <div className="doc-grid"><div className="doc-content">
@@ -191,9 +183,6 @@ export function DocumentView({item,extra,related,people}){
         <button type="button" onClick={()=>setZoom(i+skipMain)} aria-label={`Ampliar: ${g.caption||g.alt}`}><img src={g.src} alt={g.caption||g.alt} loading="lazy" decoding="async"/><span className="press-zoom"><Maximize2/> Ampliar</span></button>
         {g.caption&&<figcaption><small>{String(i+1).padStart(2,'0')}{skipMain?'':` · ${g.kind}`}</small>{g.to?<Link to={g.to}>{g.caption}</Link>:<span>{g.caption}</span>}</figcaption>}
       </figure>)}</div>
-    </section>}
-    {!cfg.interview&&!cfg.article&&<section className="doc-footer is-single" data-reveal>
-      <div className="doc-footer-main"><PeopleCards people={people} number={cfg.press?(edit||extra.gallery?.length>0?'02':'01'):'03'} title={cfg.press?'Personas vinculadas':undefined}/></div>
     </section>}
     </div>{aside}</div>
     {open&&<div className="press-lightbox" role="dialog" aria-modal="true" aria-label={shown.caption||shown.alt} onClick={()=>setZoom(null)}>

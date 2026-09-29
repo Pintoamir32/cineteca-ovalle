@@ -6,7 +6,6 @@
 .doc-ghost-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:17px 20px;border:1px solid var(--line);background:#fff;font:700 10px 'IBM Plex Mono';letter-spacing:.08em;text-transform:uppercase;color:var(--black);cursor:pointer;transition:border-color .2s}
 .doc-ghost-btn svg{width:16px}
 .doc-ghost-btn:hover{border-color:var(--forest)}
-.doc-people{margin-top:56px}
 .doc-text{font-size:14px;line-height:1.9;color:#575d58;max-width:720px}
 
 /* ---------- Prensa ---------- */
@@ -219,3 +218,4 @@
 .doc-aside-image figcaption{margin-top:18px}
 .doc-articulos .doc-aside-image img{aspect-ratio:4/3}
 @media(max-width:1000px){.doc-aside-image{max-width:420px;margin:0 auto 34px}}
+.doc-aside .ficha-filmography-empty{padding:16px;margin:0 0 20px}
