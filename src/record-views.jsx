@@ -144,7 +144,23 @@ export function DocumentView({item,extra,related,people}){
   const skipMain=cfg.press||cfg.interview||cfg.article?1:0, shownGallery=gallery.slice(skipMain);
   // Entrevista: el reproductor va junto a la ficha (columna derecha), no bajo la foto
   const player=cfg.player&&<div className="press-player" id="media"><MediaViewer item={{...item,image:cfg.image||item.image}} extra={extra}/>{slot('media')}</div>;
+  // Panel derecho, como el de las películas: acción principal, relacionados, ficha y territorio
+  const hasText=(cfg.interview||cfg.article)&&!!item.description?.trim();
+  const [asideHref,AsideIcon,asideText]=hasPdf?['#documento',FileText,'Ver documento']
+    :cfg.player?['#media',extra.mediaType==='audio'?Headphones:CirclePlay,extra.mediaType==='audio'?'Escuchar entrevista':'Ver entrevista']
+    :hasText?['#texto',FileText,cfg.interview?'Leer entrevista':'Leer artículo']
+    :[null,Maximize2,cfg.press?'Ampliar documento':'Ampliar imagen'];
+  // El artículo ya muestra sus películas referenciadas en el cuerpo; aquí va el resto
+  const asideRelated=cfg.article?related.filter(r=>r.type!=='Película'):related;
+  const aside=<aside className="ficha-aside ficha-film-aside doc-aside"><div className="doc-aside-inner">
+    {asideHref?<a className="ficha-cta" href={asideHref}><AsideIcon/> {asideText}</a>:<button type="button" className="ficha-cta" onClick={()=>setZoom(0)}><AsideIcon/> {asideText}</button>}
+    {(asideRelated.length>0||edit)&&<><div className="ficha-aside-label">Relacionados</div><div className="ficha-film-related">{asideRelated.map(r=><Link to={recordPath(r)} key={r.id}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><small>{r.type}</small><strong>{r.title}</strong></div><ArrowRight/></Link>)}</div>{slot('relations')}</>}
+    <div className="ficha-aside-label">{cfg.factsLabel}</div>
+    <Facts rows={[...cfg.facts,['Colección',item.collection,true]]}/>
+    <Places item={item} places={placesOf(extra)} slot={slot}/>
+  </div></aside>;
   return <main className={`ficha-page doc-page doc-press doc-${item.slug}`}>
+    <div className="doc-grid"><div className="doc-content">
     <section className="doc-shell" data-reveal>
       <div className="ficha-film-top"><BackLink item={item}/><span className="ficha-code">{code(item)}</span></div>
       <header className="press-masthead">
@@ -171,8 +187,6 @@ export function DocumentView({item,extra,related,people}){
             {CtaIcon&&(ctaHref?<a className="ficha-cta" href={ctaHref}><CtaIcon/> {ctaText}</a>:<button type="button" className="ficha-cta" onClick={()=>setZoom(0)}><CtaIcon/> {ctaText}</button>)}
             {!cfg.player&&slot('media')}
           </div>}
-          <div className="ficha-aside-label">{cfg.factsLabel}</div>
-          <Facts rows={cfg.facts}/>
           {cfg.interview&&player}
           {!cfg.press&&!cfg.interview&&!cfg.article&&<><div className="ficha-section-label" id="texto"><span>01</span> {cfg.textLabel}</div>
           <div className="press-transcript"><p>{f('description',item.description,{multiline:true})}</p></div></>}
@@ -205,11 +219,10 @@ export function DocumentView({item,extra,related,people}){
         {g.caption&&<figcaption><small>{String(i+1).padStart(2,'0')}{skipMain?'':` · ${g.kind}`}</small>{g.to?<Link to={g.to}>{g.caption}</Link>:<span>{g.caption}</span>}</figcaption>}
       </figure>)}</div>
     </section>}
-    {!cfg.interview&&!cfg.article&&<section className="doc-footer" data-reveal>
+    {!cfg.interview&&!cfg.article&&<section className="doc-footer is-single" data-reveal>
       <div className="doc-footer-main"><PeopleCards people={people} number={cfg.press?(edit||extra.gallery?.length>0?'02':'01'):'03'} title={cfg.press?'Personas vinculadas':undefined}/></div>
-      <aside className="doc-footer-side">{cfg.press?<RelatedList related={related.filter(r=>r.type==='Película')} title="Películas vinculadas"/>
-        :<><RelatedList related={related}/>{slot('relations')}<Places item={item} places={placesOf(extra)} slot={slot}/></>}</aside>
     </section>}
+    </div>{aside}</div>
     {open&&<div className="press-lightbox" role="dialog" aria-modal="true" aria-label={shown.caption||shown.alt} onClick={()=>setZoom(null)}>
       <figure onClick={e=>e.stopPropagation()}>
         <img src={shown.src} alt={shown.caption||shown.alt}/>
