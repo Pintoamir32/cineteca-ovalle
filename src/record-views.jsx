@@ -89,8 +89,6 @@ function docConfig(item,extra){
     const person=getInterviewee(item,extra), name=person?.title||item.subtitle, format=interviewFormat(extra);
     return {
       interview:true,person,title:name?`Entrevista a ${name}`:item.title,image:item.image||person?.image,
-      source:name&&`Entrevista a ${name}`,
-      meta:[item.year,format],
       caption:'Registro de memoria oral · Archivo CDO',
       facts:[['Entrevistado(a)',person?<Link to={recordPath(person)}>{name}</Link>:name,true],['Fecha',item.year,false,'year'],['Formato',format]],
       factsLabel:'Ficha de la entrevista',textLabel:'CONTENIDO',player:extra.mediaType!=='text'
@@ -99,15 +97,11 @@ function docConfig(item,extra){
   // Artículo: título, autor(a), fecha de publicación, películas referenciadas, cuerpo del artículo, imagen principal y galería
   if(item.type==='Artículo')return {
     article:true,caption:'Imagen del artículo · Archivo CDO',
-    source:item.subtitle,
-    meta:[item.year],
     facts:[['Autor(a)',item.subtitle,true,'subtitle'],['Fecha de publicación',item.year,true,'year']],
     factsLabel:'Ficha del artículo'
   };
   // Prensa: título/fuente, fecha, medio de origen, documento digitalizado y vínculos a películas y personas
   return {
-    source:item.subtitle,
-    meta:[item.year],
     caption:'Documento digitalizado · Archivo CDO',
     facts:[['Medio de origen',item.subtitle,true,'subtitle'],['Fecha',item.year,true,'year']],
     factsLabel:'Ficha del documento',press:true
@@ -157,9 +151,6 @@ export function DocumentView({item,extra,related,people}){
     <div className="doc-grid"><div className="doc-content">
     <section className="doc-shell" data-reveal>
       <div className="ficha-film-top"><BackLink item={item}/><span className="ficha-code">{code(item)}</span></div>
-      <header className="press-masthead">
-        <div>{[cfg.source,...cfg.meta].filter(Boolean).map(m=><span key={m}>{m}</span>)}</div>
-      </header>
       <div className="press-layout">
         <article className="press-article">
           <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
