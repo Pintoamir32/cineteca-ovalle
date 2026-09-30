@@ -25,10 +25,10 @@ export function VideoPlayer({url,poster,title='Película'}){
 }
 
 export function MediaViewer({item,extra}){
-  if(extra?.mediaType==='video')return <div className="media-viewer"><VideoPlayer url={extra.media} poster={item.image} title={item.title}/><span>VERSIÓN DE CONSULTA · ARCHIVO CDO</span></div>;
+  if(extra?.mediaType==='video')return <div className="media-viewer"><VideoPlayer url={extra.media} poster={item.image} title={item.title}/></div>;
   if(extra?.mediaType==='audio')return <div className="media-viewer audio-viewer"><img src={item.image} alt="" loading="lazy" decoding="async"/><div><Headphones/><h3>Escuchar entrevista</h3><audio controls preload="none" src={extra.media||undefined}/></div></div>;
-  if(extra?.mediaType==='document')return <div className="media-viewer document-viewer"><FileText/><span>DOCUMENTO DIGITALIZADO</span><h3>{item.title}</h3><p>Vista previa del documento · {item.format}</p>{extra.media?<a className="doc-download" href={extra.media} download={`${item.title}.pdf`} target="_blank" rel="noreferrer"><Download/> Descargar PDF</a>:<button disabled><Download/> Descargar PDF</button>}</div>;
-  return <div className="media-viewer"><img src={item.image} alt={item.title} loading="lazy" decoding="async"/><span>IMAGEN DIGITALIZADA · ARCHIVO CDO</span></div>;
+  if(extra?.mediaType==='document')return <div className="media-viewer document-viewer"><FileText/><h3>{item.title}</h3><p>Vista previa del documento · {item.format}</p>{extra.media?<a className="doc-download" href={extra.media} download={`${item.title}.pdf`} target="_blank" rel="noreferrer"><Download/> Descargar PDF</a>:<button disabled><Download/> Descargar PDF</button>}</div>;
+  return <div className="media-viewer"><img src={item.image} alt={item.title} loading="lazy" decoding="async"/></div>;
 }
 
 // Documento de prensa en pantalla: los de Google Drive por su vista previa; el resto, con el visor del navegador
