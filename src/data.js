@@ -210,6 +210,9 @@ export const homeContent = {
       {title:'Investiga con nosotros',text:'Estudiantes, docentes e investigadores pueden solicitar acceso a materiales y apoyo para sus proyectos.',cta:'Consultar'}
     ],
     contactLabel:'CONTACTO', contactTitle:'Conversemos.', contactText:'Para consultas, visitas, aportes o proyectos en conjunto, escríbenos o síguenos en redes.',
+    // El correo y el Instagram son los mismos del pie de página (footerEmail y footerInstagram)
+    contactEmailLabel:'Correo', contactInstagramLabel:'Instagram', contactPhoneLabel:'Teléfono', contactPhone:'',
+    contactPlaceLabel:'Dónde estamos', contactPlace:'Ovalle, Coquimbo, Chile',
     ctaTitle:'Ven a conocer\n*el archivo.*', ctaExplore:'Explorar el archivo', ctaMap:'Ver el mapa territorial',
     hidden:[]
   }

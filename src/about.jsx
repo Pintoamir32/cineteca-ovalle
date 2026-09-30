@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Archive, ArrowRight, ArrowUpRight, BookOpen, CalendarRange, FileText, Film, GraduationCap, Instagram, Layers, Mail, MapPin, Microscope, Mic2, Package, PenLine, Search, Share2, UserRound } from 'lucide-react';
+import { Archive, ArrowRight, ArrowUpRight, BookOpen, CalendarRange, FileText, Film, GraduationCap, Instagram, Layers, Mail, MapPin, Microscope, Mic2, Package, PenLine, Phone, Search, Share2, UserRound } from 'lucide-react';
 import { Counter } from './components';
 import { collections, locations, timelineEvents } from './data';
 import { countByCollection, countByType, getAllRecords } from './repository';
@@ -126,9 +126,10 @@ export function AboutPage(){
         <p>{t('about.contactText')}</p>
       </div>
       <ul>
-        {email&&<li><Mail/><div><small>Correo</small><a href={`mailto:${email}`}>{email}</a></div></li>}
-        {instagram&&<li><Instagram/><div><small>Instagram</small><a href={instagram} target="_blank" rel="noreferrer">{handle}</a></div></li>}
-        <li><MapPin/><div><small>Dónde estamos</small><span>{c.footerPlace?c.footerPlace.replace(/\s*·\s*/g,', ').toLowerCase().replace(/(^|, )(\p{L})/gu,(m,x,y)=>x+y.toUpperCase()):'Ovalle, Coquimbo, Chile'}</span></div></li>
+        {email&&<li><Mail/><div><small>{t('about.contactEmailLabel')}</small><a href={`mailto:${email}`}>{email}</a></div></li>}
+        {instagram&&<li><Instagram/><div><small>{t('about.contactInstagramLabel')}</small><a href={instagram} target="_blank" rel="noreferrer">{handle}</a></div></li>}
+        {(edit||a.contactPhone?.trim())&&<li><Phone/><div><small>{t('about.contactPhoneLabel')}</small>{edit?t('about.contactPhone'):<a href={`tel:${a.contactPhone.replace(/[^\d+]/g,'')}`}>{a.contactPhone}</a>}</div></li>}
+        {(edit||a.contactPlace?.trim())&&<li><MapPin/><div><small>{t('about.contactPlaceLabel')}</small><span>{t('about.contactPlace')}</span></div></li>}
       </ul>
     </section>}
 

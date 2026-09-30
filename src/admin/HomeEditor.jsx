@@ -246,8 +246,20 @@ export function AboutEditor(){
         </section>})}
       </div>
     </PanelBlock>
+    <PanelBlock title="Contacto">
+      <label className="cms-panel-label">Correo</label>
+      <Editable className="cms-panel-edit" type="email" value={draft.footerEmail} onChange={v=>set('footerEmail',v)} placeholder="correo@dominio.cl" label="Correo de contacto"/>
+      <label className="cms-panel-label">Enlace de Instagram</label>
+      <Editable className="cms-panel-edit" value={draft.footerInstagram} onChange={v=>set('footerInstagram',v)} placeholder="https://instagram.com/…" label="Enlace de Instagram"/>
+      <label className="cms-panel-label">Teléfono · opcional</label>
+      <Editable className="cms-panel-edit" type="tel" value={a.contactPhone} onChange={v=>set('about.contactPhone',v)} placeholder="+56 9 1234 5678" label="Teléfono de contacto"/>
+      <label className="cms-panel-label">Dónde estamos</label>
+      <Editable className="cms-panel-edit" value={a.contactPlace} onChange={v=>set('about.contactPlace',v)} placeholder="Ovalle, Coquimbo, Chile" label="Dónde estamos"/>
+      <p className="cms-help">El correo y el Instagram son los mismos del pie de página de todo el sitio. Si un dato queda vacío, no se muestra. Los títulos de cada dato se cambian con clic en la vista previa.</p>
+      <button type="button" className="cms-btn is-block" onClick={()=>reveal('.about2-contact')}>Ver en la vista previa</button>
+    </PanelBlock>
     <PanelBlock title="Datos que vienen de otras secciones">
-      <p className="cms-help">Las cifras se calculan solas. Los hitos salen de «Línea de tiempo» y las colecciones, de «Colecciones». El correo e Instagram de contacto se cambian en «Inicio y carrusel» → Pie de página.</p>
+      <p className="cms-help">Las cifras se calculan solas. Los hitos salen de «Línea de tiempo» y las colecciones, de «Colecciones».</p>
     </PanelBlock>
     <PanelBlock title="Textos originales">
       <button type="button" className="cms-btn is-ghost is-block" onClick={restore}><RotateCcw/> Volver a los textos originales</button>
