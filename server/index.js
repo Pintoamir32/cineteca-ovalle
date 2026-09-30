@@ -210,6 +210,43 @@ async function newUser({name,user,password}){
   return u;
 }
 
+/* ---------- Inscribe tu obra ----------
+   Cualquier visitante puede enviar una obra; solo quien inició sesión en el gestor las ve. */
+const SUBMISSION_FIELDS={
+  // campo: [largo máximo, obligatorio]
+  name:[120,true], phone:[40,true], email:[160,true], title:[200,true], synopsis:[4000,true], link:[500,false],
+  year:[20,false], duration:[40,false], genre:[80,false], format:[120,false], direction:[200,false],
+  production:[200,false], place:[200,false], credits:[2000,false]
+};
+const SUBMISSION_STATUS=['nueva','revisada','archivada'];
+const sent=new Map();// envíos por dirección en la última hora: frena el correo basura
+api.post('/submissions',async(req,res)=>{
+  const body=req.body||{};
+  // Campo oculto: una persona no lo ve ni lo llena; un robot sí. Se responde como si todo fuera bien.
+  if(body.website)return res.json({ok:true});
+  const ip=req.ip, now=Date.now(), recent=(sent.get(ip)||[]).filter(t=>now-t<3600e3);
+  if(recent.length>=5)return res.status(429).json({error:'Recibimos varias inscripciones desde tu conexión. Espera un rato e inténtalo de nuevo.'});
+  const data={};
+  for(const [k,[max,required]] of Object.entries(SUBMISSION_FIELDS)){
+    const v=String(body[k]??'').trim();
+    if(required&&!v)return res.status(400).json({error:'Completa todos los campos obligatorios.'});
+    if(v.length>max)return res.status(400).json({error:'Uno de los textos es demasiado largo.'});
+    if(v)data[k]=v;
+  }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email))return res.status(400).json({error:'Revisa el correo: no parece válido.'});
+  if(data.link&&!/^https?:\/\/\S+$/i.test(data.link))return res.status(400).json({error:'El enlace debe empezar con http:// o https://'});
+  if(!body.consent)return res.status(400).json({error:'Debes aceptar que la Cineteca te contacte por esta inscripción.'});
+  await db.addSubmission(crypto.randomBytes(12).toString('hex'),data);
+  sent.set(ip,[...recent,now]);
+  res.json({ok:true});
+});
+api.get('/submissions',needUser,async(req,res)=>res.json({submissions:await db.submissions()}));
+api.put('/submissions/:id',needUser,async(req,res)=>{
+  if(!SUBMISSION_STATUS.includes(req.body?.status))return res.status(400).json({error:'Estado no válido.'});
+  await db.setSubmissionStatus(req.params.id,req.body.status);res.json({ok:true});
+});
+api.delete('/submissions/:id',needUser,async(req,res)=>{await db.deleteSubmission(req.params.id);res.json({ok:true})});
+
 /* Contenido: un solo documento con todo lo editable del sitio.
    Quien no inició sesión no recibe las fichas en borrador. */
 api.get('/content',async(req,res)=>{

@@ -12,6 +12,7 @@ const staticPages = [
   { title:'Colecciones', group:'Página', path:'/colecciones' },
   { title:'Línea de tiempo', group:'Página', path:'/linea-de-tiempo' },
   { title:'Mapa territorial', group:'Página', path:'/mapa' },
+  { title:'Inscribe tu obra', group:'Página', path:'/inscribe-tu-obra' },
   { title:'La Cineteca', group:'Página', path:'/nosotros' },
   { title:'Equipo', group:'Página', path:'/admin' }
 ];

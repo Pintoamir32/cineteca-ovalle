@@ -22,7 +22,11 @@ const TABLES=[
   ) CHARACTER SET utf8mb4`,
   `CREATE TABLE IF NOT EXISTS cms_media(
     id CHAR(32) PRIMARY KEY, mime VARCHAR(80) NOT NULL, size INT NOT NULL, data LONGBLOB NOT NULL, created_at DATETIME NOT NULL
-  )`
+  )`,
+  // Obras inscritas desde el sitio («Inscribe tu obra»); se revisan en el gestor
+  `CREATE TABLE IF NOT EXISTS cms_submissions(
+    id CHAR(24) PRIMARY KEY, data TEXT NOT NULL, status VARCHAR(20) NOT NULL, created_at DATETIME NOT NULL, INDEX(created_at)
+  ) CHARACTER SET utf8mb4`
 ];
 
 async function mysqlStore(){
@@ -63,7 +67,11 @@ async function mysqlStore(){
       return r.affectedRows?baseVersion+1:null;
     },
     putMedia:(id,mime,buf)=>pool.query('INSERT INTO cms_media(id,mime,size,data,created_at) VALUES(?,?,?,?,?)',[id,mime,buf.length,buf,new Date()]),
-    media:id=>one('SELECT mime,data FROM cms_media WHERE id=?',[id])
+    media:id=>one('SELECT mime,data FROM cms_media WHERE id=?',[id]),
+    addSubmission:(id,data)=>pool.query('INSERT INTO cms_submissions(id,data,status,created_at) VALUES(?,?,?,?)',[id,JSON.stringify(data),'nueva',new Date()]),
+    submissions:async()=>(await pool.query('SELECT id,data,status,created_at AS createdAt FROM cms_submissions ORDER BY created_at DESC'))[0].map(r=>({id:r.id,status:r.status,createdAt:new Date(r.createdAt).toISOString(),...JSON.parse(r.data)})),
+    setSubmissionStatus:(id,status)=>pool.query('UPDATE cms_submissions SET status=? WHERE id=?',[status,id]),
+    deleteSubmission:id=>pool.query('DELETE FROM cms_submissions WHERE id=?',[id])
   };
 }
 
@@ -100,7 +108,11 @@ async function fileStore(){
       return version;
     },
     putMedia:async(id,mime,buf)=>{await fs.writeFile(path.join(dir,'media',id),buf);await write(`media-${id}`,{mime})},
-    media:async id=>{try{const {mime}=await read(`media-${id}`,{});return {mime,data:await fs.readFile(path.join(dir,'media',id))}}catch{return null}}
+    media:async id=>{try{const {mime}=await read(`media-${id}`,{});return {mime,data:await fs.readFile(path.join(dir,'media',id))}}catch{return null}},
+    addSubmission:async(id,data)=>write('submissions',[{id,status:'nueva',createdAt:new Date().toISOString(),...data},...await read('submissions',[])]),
+    submissions:()=>read('submissions',[]),
+    setSubmissionStatus:async(id,status)=>write('submissions',(await read('submissions',[])).map(x=>x.id===id?{...x,status}:x)),
+    deleteSubmission:async id=>write('submissions',(await read('submissions',[])).filter(x=>x.id!==id))
   };
 }
 

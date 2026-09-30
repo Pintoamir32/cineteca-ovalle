@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { AlertCircle, Info, ArrowLeft, ArrowUpRight, BookOpen, CalendarRange, Check, CircleCheck, CircleHelp, Database, LogOut, UserPlus, Download, ExternalLink, Eye, EyeOff, FileText, Film, Home, Layers, LayoutDashboard, MapPin, Menu, Mic2, Palette, Plus, RotateCcw, Save, Search, Trash2, Upload, UserRound, Users, X } from 'lucide-react';
+import { AlertCircle, Inbox, Info, ArrowLeft, ArrowUpRight, BookOpen, CalendarRange, Check, CircleCheck, CircleHelp, Database, LogOut, UserPlus, Download, ExternalLink, Eye, EyeOff, FileText, Film, Home, Layers, LayoutDashboard, MapPin, Menu, Mic2, Palette, Plus, RotateCcw, Save, Search, Trash2, Upload, UserRound, Users, X } from 'lucide-react';
 import { collections, heroSlides, locations, recordExtras, records, timelineEvents } from '../data';
 import { emptyArchive, exportData, getLastSaved, hydrate, importData, newVersionAvailable, resetData, saveError, setRecordPublished, useStoreVersion } from '../store';
 import { tagStyle } from '../color';
@@ -16,6 +16,7 @@ import { CollectionList, LocationEditor, LocationList, TimelineList } from './Si
 import { AboutEditor, HomeEditor } from './HomeEditor';
 import { TOURS, Tour, takeLegacySeen, tourViewOf } from './Tour';
 import { ThemeEditor } from './ThemeEditor';
+import { SubmissionsPage, listSubmissions } from './Submissions';
 import './admin.css';
 
 const TYPE_ICONS={Película:Film,Persona:UserRound,Prensa:FileText,Entrevista:Mic2,Artículo:BookOpen};
@@ -75,6 +76,13 @@ function AdminShell({session,onLogout}){
     window.addEventListener('beforeunload',onUnload);return()=>window.removeEventListener('beforeunload',onUnload);
   },[]);
   useEffect(()=>{document.title='Gestión · Cineteca de Ovalle'},[]);
+  // Inscripciones nuevas desde el sitio: el número aparece junto a «Inscripciones» en el menú
+  const [newSubs,setNewSubs]=useState(0);
+  useEffect(()=>{
+    const onCount=e=>setNewSubs(e.detail);
+    listSubmissions().then(l=>setNewSubs(l.filter(x=>x.status==='nueva').length)).catch(()=>{});
+    window.addEventListener('cms-submissions',onCount);return()=>window.removeEventListener('cms-submissions',onCount);
+  },[]);
   // En pantallas angostas el menú se cierra con Esc
   useEffect(()=>{if(!menu)return;const onKey=e=>{if(e.key==='Escape')setMenu(false)};window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey)},[menu]);
   const path=location.pathname.replace(/^\/admin\/?/,'');
@@ -124,6 +132,7 @@ function AdminShell({session,onLogout}){
         <nav className="cms-side-nav" aria-label="Secciones del gestor">
           {item('',LayoutDashboard,'Resumen')}
           {group('Archivo',TYPES.map(t=>item(`registros/${TYPE_META[t].slug}`,TYPE_ICONS[t],TYPE_META[t].label,records.filter(r=>r.type===t).length)))}
+          {group('Recepción',item('inscripciones',Inbox,'Inscripciones',newSubs||undefined))}
           {group('Organizar el archivo',<>
             {item('colecciones',Layers,'Colecciones',collections.length)}
             {item('linea-de-tiempo',CalendarRange,'Línea de tiempo',timelineEvents.length)}
@@ -171,6 +180,7 @@ function AdminShell({session,onLogout}){
           <Route path="linea-de-tiempo/:index" element={<TimelineList/>}/>
           <Route path="comunas" element={<LocationList/>}/>
           <Route path="comunas/:index" element={<LocationEditor/>}/>
+          <Route path="inscripciones" element={<SubmissionsPage/>}/>
           <Route path="usuarios" element={<UsersPage session={session}/>}/>
           <Route path="respaldo" element={<Backup/>}/>
           <Route path="*" element={<Dashboard/>}/>

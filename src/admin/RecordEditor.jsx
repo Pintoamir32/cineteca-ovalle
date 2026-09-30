@@ -13,15 +13,20 @@ import { SiteFrame } from './SiteFrame';
 import { HomeEditContext } from '../site-text';
 import { useSharedTexts } from './shared-text';
 import { TYPE_META, code, extraOf, missingFields, typeBySlug, typeColor } from './meta';
+import { PREFILL_KEY } from './Submissions';
 
 
 function blankDraft(type){
   const meta=TYPE_META[type];
-  return {
+  const draft={
     // Todo vacío: cada campo muestra en gris cómo completarlo
     record:{id:nextId(),type,slug:meta.slug,title:'',subtitle:'',year:'',format:'',collection:'',color:typeColor(type),image:'',description:''},
     extra:{credits:[],relations:[],locations:[],mediaType:meta.media,media:'',gallery:[]}
   };
+  // Película creada desde una inscripción: parte con sus datos (se usa una sola vez)
+  let prefill=null;
+  try{prefill=type==='Película'&&JSON.parse(sessionStorage.getItem(PREFILL_KEY)||'null');sessionStorage.removeItem(PREFILL_KEY)}catch{/* sin almacenamiento */}
+  return prefill?{record:{...draft.record,...prefill.record},extra:{...draft.extra,...prefill.extra}}:draft;
 }
 
 // La clave reinicia el borrador al pasar de una ficha a otra
