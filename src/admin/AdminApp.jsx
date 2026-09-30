@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle, Info, ArrowLeft, ArrowUpRight, BookOpen, CalendarRange, Check, CircleCheck, CircleHelp, Database, LogOut, UserPlus, Download, ExternalLink, Eye, EyeOff, FileText, Film, Home, Layers, LayoutDashboard, MapPin, Menu, Mic2, Palette, Plus, RotateCcw, Save, Search, Trash2, Upload, UserRound, Users, X } from 'lucide-react';
 import { collections, heroSlides, locations, recordExtras, records, timelineEvents } from '../data';
-import { emptyArchive, exportData, getLastSaved, hydrate, importData, resetData, saveError, setRecordPublished, useStoreVersion } from '../store';
+import { emptyArchive, exportData, getLastSaved, hydrate, importData, newVersionAvailable, resetData, saveError, setRecordPublished, useStoreVersion } from '../store';
 import { tagStyle } from '../color';
 import { Modal, UiProvider, thumb, useUi } from './fields';
 import { authStatus, changePassword, logout as endSession, markTutorials } from './auth';
@@ -54,19 +54,21 @@ function AdminShell({session,onLogout}){
   const dirty=useRef(false), [menu,setMenu]=useState(false), [account,setAccount]=useState(false);
   useEffect(()=>{
     const onConflict=async()=>{
-      if(await confirm({title:'Otra persona guardó cambios',text:'Mientras editabas, alguien más guardó el contenido. Para no borrar su trabajo, tu último cambio no se guardó. Recarga la página para ver la versión más reciente y vuelve a hacer tu cambio.',ok:'Recargar ahora',cancel:'Más tarde'})){dirty.current=false;location.reload()}
+      if(await confirm({title:'Otra persona guardó cambios',text:'Mientras editabas, alguien más guardó el contenido. Para no borrar su trabajo, tu último cambio no se guardó. Recarga la página para ver la versión más reciente y vuelve a hacer tu cambio.',ok:'Recargar ahora',cancel:'Más tarde'})){markDirty(false);window.location.reload()}
     };
     window.addEventListener('cms-conflict',onConflict);return()=>window.removeEventListener('cms-conflict',onConflict);
   },[]);// eslint-disable-line react-hooks/exhaustive-deps
   const logout=async()=>{
     if(dirty.current&&!await confirm({title:'¿Cerrar sesión sin guardar?',text:'Tienes cambios sin guardar. Si cierras la sesión ahora se perderán.',ok:'Cerrar sesión',danger:true}))return;
-    dirty.current=false;onLogout();
+    markDirty(false);onLogout();
   };
   const go=async to=>{
     if(dirty.current&&!await confirm({title:'¿Salir sin guardar?',text:'Tienes cambios sin guardar. Si sales ahora se perderán.',ok:'Salir sin guardar',danger:true}))return;
-    dirty.current=false;setMenu(false);navigate(to);
+    markDirty(false);setMenu(false);navigate(to);
   };
-  const nav=useMemo(()=>({go,setDirty:v=>{dirty.current=v}}),[]);// eslint-disable-line react-hooks/exhaustive-deps
+  // El estado de «cambios sin guardar» también lo leen el aviso de versión nueva y la recarga automática (main.jsx)
+  const markDirty=v=>{dirty.current=v;window.__cmsDirty=v;window.dispatchEvent(new CustomEvent('cms-dirty',{detail:v}))};
+  const nav=useMemo(()=>({go,setDirty:markDirty}),[]);// eslint-disable-line react-hooks/exhaustive-deps
   useEffect(()=>{
     const onUnload=e=>{if(dirty.current){e.preventDefault();e.returnValue=''}};
     window.addEventListener('beforeunload',onUnload);return()=>window.removeEventListener('beforeunload',onUnload);
@@ -173,8 +175,44 @@ function AdminShell({session,onLogout}){
           <Route path="*" element={<Dashboard/>}/>
         </Routes>
       </main>
+      <ServerNotices/>
     </div>
   </NavContext.Provider>;
+}
+
+/* ---------- Avisos del servidor: actualización en curso y versión nueva publicada ----------
+   Mientras se publica una versión nueva, el servidor se reinicia unos segundos: los guardados esperan y
+   se completan solos (ver store.js). Después, el gestor abierto sigue con la versión anterior hasta recargar. */
+function ServerNotices(){
+  const {confirm}=useUi();
+  const [busy,setBusy]=useState(false), [fresh,setFresh]=useState(false), [dirty,setDirty]=useState(!!window.__cmsDirty);
+  useEffect(()=>{
+    let alive=true;
+    const check=async()=>{if(alive&&!document.hidden&&await newVersionAvailable()&&alive)setFresh(true)};
+    const onBusy=e=>{setBusy(e.detail);if(!e.detail)check()};
+    const onFresh=()=>setFresh(true), onDirty=e=>setDirty(e.detail);
+    const onVisible=()=>{if(!document.hidden)check()};
+    window.addEventListener('cms-server-busy',onBusy);window.addEventListener('cms-new-version',onFresh);window.addEventListener('cms-dirty',onDirty);
+    document.addEventListener('visibilitychange',onVisible);window.addEventListener('focus',onVisible);
+    const timer=setInterval(check,60e3);
+    return()=>{alive=false;clearInterval(timer);window.removeEventListener('cms-server-busy',onBusy);window.removeEventListener('cms-new-version',onFresh);window.removeEventListener('cms-dirty',onDirty);
+      document.removeEventListener('visibilitychange',onVisible);window.removeEventListener('focus',onVisible)};
+  },[]);
+  const reload=async()=>{
+    if(window.__cmsDirty&&!await confirm({title:'¿Recargar sin guardar?',text:'Tienes cambios sin guardar en esta pantalla. Si recargas ahora se perderán. Mejor pulsa «Guardar» primero y luego recarga.',ok:'Recargar de todos modos',danger:true}))return;
+    window.__cmsDirty=false;window.location.reload();
+  };
+  if(busy)return <div className="cms-server-notice is-busy" role="status" aria-live="polite">
+    <span className="cms-spinner" aria-hidden="true"/>
+    <div><strong>El servidor se está actualizando</strong><p>Tus cambios están a salvo en pantalla y se guardarán solos en cuanto vuelva (suele tardar menos de un minuto). No cierres ni recargues esta página.</p></div>
+  </div>;
+  if(fresh)return <div className="cms-server-notice is-fresh" role="alert">
+    <CircleCheck aria-hidden="true"/>
+    <div><strong>Se publicó una versión nueva del gestor</strong><p>{dirty?'Tienes cambios sin guardar: pulsa «Guardar» primero y después recarga la página.':'Recarga la página para usar la versión nueva. No perderás nada de lo que ya guardaste.'}</p></div>
+    <button type="button" className="cms-btn is-primary" onClick={reload}><RotateCcw/> Recargar</button>
+    <button type="button" className="cms-icon-btn" onClick={()=>setFresh(false)} aria-label="Cerrar aviso" title="Recordar más tarde"><X/></button>
+  </div>;
+  return null;
 }
 
 const initials=name=>String(name||'?').split(/\s+/).filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase();

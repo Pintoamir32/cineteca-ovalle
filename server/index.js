@@ -79,6 +79,17 @@ api.use(express.json({limit:'25mb'}));
 // Nada de la API se guarda en caché
 api.use((req,res,next)=>{res.setHeader('Cache-Control','no-store');next()});
 
+// Versión publicada del sitio: cambia con cada despliegue (la huella de dist/index.html, que nombra
+// los archivos compilados). El gestor la consulta para avisar que hay una versión nueva y hay que recargar.
+let build=null;
+const currentBuild=()=>{
+  if(build)return build;
+  try{build=PROD?crypto.createHash('sha1').update(fs.readFileSync(path.join(ROOT,'dist','index.html'))).digest('hex').slice(0,12):'dev'}
+  catch{return 'desconocida'}
+  return build;
+};
+api.get('/version',(req,res)=>res.json({build:currentBuild()}));
+
 api.get('/auth/status',async(req,res)=>{
   const user=await sessionUser(req);
   res.json({hasUsers:(await db.countUsers())>0,user:await sessionInfo(user)});
@@ -203,14 +214,14 @@ async function newUser({name,user,password}){
    Quien no inició sesión no recibe las fichas en borrador. */
 api.get('/content',async(req,res)=>{
   const saved=await db.content();
-  if(!saved)return res.json({data:null,version:0});
+  if(!saved)return res.json({data:null,version:0,build:currentBuild()});
   const user=await sessionUser(req);
   let data=saved.data;
   if(!user&&Array.isArray(data.records)){
     const hidden=new Set(data.records.filter(r=>r.draft).map(r=>String(r.id)));
     data={...data,records:data.records.filter(r=>!r.draft),recordExtras:Object.fromEntries(Object.entries(data.recordExtras||{}).filter(([id])=>!hidden.has(id)))};
   }
-  res.json({data,version:saved.version,updatedAt:saved.updatedAt});
+  res.json({data,version:saved.version,updatedAt:saved.updatedAt,build:currentBuild()});
 });
 
 api.put('/content',needUser,async(req,res)=>{

@@ -39,18 +39,37 @@ const signal=(type,detail)=>window.dispatchEvent(new CustomEvent(type,{detail}))
 // Mientras se publica una versión nueva del sitio el servidor se reinicia y por unos segundos no
 // responde (o responde 502/503/504): en ese caso se reintenta durante un par de minutos antes de fallar.
 const TRANSIENT=new Set([502,503,504]), RETRY_FOR=150e3;
+// Mientras alguna petición espera que el servidor vuelva, el gestor muestra un aviso (ver AdminApp)
+let waiting=0;
+const busy=delta=>{const was=waiting>0;waiting+=delta;if(was!==(waiting>0))signal('cms-server-busy',waiting>0)};
 async function request(url,options){
   const start=Date.now();
-  for(let wait=2000;;wait=Math.min(wait*1.5,15000)){
-    let res=null;
-    try{res=await fetch(url,{credentials:'same-origin',...options})}catch{/* sin conexión: se reintenta */}
-    if(res&&!TRANSIENT.has(res.status))return handle(res);
-    if(Date.now()-start>RETRY_FOR){
-      if(res)return handle(res);
-      throw new Error('No se pudo conectar con el servidor.');
+  let retrying=false;
+  try{
+    for(let wait=2000;;wait=Math.min(wait*1.5,15000)){
+      let res=null;
+      try{res=await fetch(url,{credentials:'same-origin',...options})}catch{/* sin conexión: se reintenta */}
+      if(res&&!TRANSIENT.has(res.status))return await handle(res);
+      if(Date.now()-start>RETRY_FOR){
+        if(res)return await handle(res);
+        throw new Error('No se pudo conectar con el servidor.');
+      }
+      if(!retrying){retrying=true;busy(1)}
+      await new Promise(r=>setTimeout(r,wait));
     }
-    await new Promise(r=>setTimeout(r,wait));
-  }
+  }finally{if(retrying)busy(-1)}
+}
+
+// Versión publicada del sitio (cambia con cada despliegue). Sin conexión devuelve null.
+let loadedBuild=null;
+export async function serverBuild(){
+  try{const res=await fetch('/api/version',{cache:'no-store'});return res.ok?(await res.json()).build||null:null}catch{return null}
+}
+// ¿Se publicó una versión nueva desde que se abrió esta página?
+export async function newVersionAvailable(){
+  const now=await serverBuild();
+  if(!loadedBuild){loadedBuild=now;return false}
+  return !!now&&now!==loadedBuild;
 }
 async function handle(res){
   const body=await res.json().catch(()=>({}));
@@ -74,6 +93,8 @@ export async function hydrate(){
   try{
     const saved=await request('/api/content');
     serverVersion=saved.version||0;
+    // La versión del sitio con que se abrió esta página (la primera carga), para detectar despliegues nuevos
+    if(!loadedBuild&&saved.build)loadedBuild=saved.build;
     if(saved.data){
       for(const k of Object.keys(LIVE))if(saved.data[k])apply(k,k==='homeContent'?withoutPlaceholders({...ORIGINAL.homeContent,...saved.data[k]}):saved.data[k]);
       lastSaved=saved.updatedAt||null;
