@@ -212,3 +212,10 @@ a.back-link.back-link:hover .back-link-icon{background:var(--acid);color:var(--b
 .ficha-filmography-noimg svg{width:22px;height:22px}
 /* Textos largos de las fichas (películas, personas, prensa, entrevistas y artículos): justificados */
 .ficha-main>p,.ficha-person-bio,.press-dek,.press-transcript p,.interview-text-body{text-align:justify;hyphens:auto;-webkit-hyphens:auto}
+
+/* Persona: el nombre y los roles sobre la foto se alinean a la izquierda (por defecto), al centro o a la derecha,
+   para no tapar el rostro. */
+.ficha-hero.is-align-center .ficha-hero-content{margin:0 auto;text-align:center}
+.ficha-hero.is-align-center .ficha-hero-content>p{margin-left:auto;margin-right:auto}
+.ficha-hero.is-align-right .ficha-hero-content{margin-left:auto;text-align:right}
+.ficha-hero.is-align-right .ficha-hero-content>p{margin-left:auto}

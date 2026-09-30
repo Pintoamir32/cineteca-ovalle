@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Circle, Eye, EyeOff, FileText, ImagePlus, Images, MapPin, Plus, Star, Trash2, X } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Circle, Eye, EyeOff, FileText, ImagePlus, Images, MapPin, Plus, Star, Trash2, X } from 'lucide-react';
 import { RecordCard, RecordRow } from '../components';
 import { collections, locations, records, site } from '../data';
 import { EditContext } from '../edit-context';
@@ -132,7 +132,7 @@ function RecordEditorInner(){
     <PanelBlock title="Estado de la ficha" aside={<b className={miss.length?'cms-count-warn':'cms-count-ok'}>{miss.length?`${miss.length} pendiente${miss.length>1?'s':''}`:'Completa'}</b>}>
       <ul className="cms-checklist">{checklist.map(k=><li key={k} className={miss.includes(k)?'':'done'}>{miss.includes(k)?<Circle/>:<Check/>}{checkName(k)}{REQUIRED.includes(k)&&miss.includes(k)&&<small>obligatorio para guardar</small>}{k==='Descripción'&&miss.includes(k)&&<small>mín. 40 caracteres</small>}</li>)}</ul>
     </PanelBlock>
-    {isPerson?<PersonWorks r={r} e={e} setE={setE} openPicker={edit.open}/>:isPress?<PressPanel r={r} e={e} setR={setR} setE={setE} openPicker={edit.open}/>
+    {isPerson?<><HeroAlign e={e} setE={setE}/><PersonWorks r={r} e={e} setE={setE} openPicker={edit.open}/></>:isPress?<PressPanel r={r} e={e} setR={setR} setE={setE} openPicker={edit.open}/>
       :isInterview?<InterviewPanel r={r} e={e} setR={setR} setE={setE} openPicker={edit.open}/>
       :isArticle?<ArticlePanel r={r} e={e} setR={setR} setE={setE} openPicker={edit.open}/>:<>
     <PanelBlock title="Clasificación">
@@ -258,6 +258,18 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
       onClose={()=>setPicker(null)}/>}
   </>;
   return {context,modals,open:setPicker};
+}
+
+// Persona: alineación del nombre y los roles sobre la fotografía, para no tapar el rostro
+const ALIGNS=[['left','Izquierda',AlignLeft],['center','Centro',AlignCenter],['right','Derecha',AlignRight]];
+function HeroAlign({e,setE}){
+  const value=e.heroAlign||'left';
+  return <PanelBlock title="Texto sobre la foto">
+    <div className="cms-segment is-small cms-seg-block" role="group" aria-label="Alineación del nombre y los roles">
+      {ALIGNS.map(([v,l,Icon])=><button key={v} type="button" className={value===v?'active':''} aria-pressed={value===v} onClick={()=>setE({heroAlign:v==='left'?undefined:v})}><Icon/> {l}</button>)}
+    </div>
+    <p className="cms-help">Mueve el nombre y los roles para que no tapen el rostro de la fotografía.</p>
+  </PanelBlock>;
 }
 
 // Filmografía de una persona: las películas donde figura en dirección o en un cargo con su nombre

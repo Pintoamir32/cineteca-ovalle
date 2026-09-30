@@ -161,7 +161,7 @@ export function RecordDetail({item,extra}){
   // «Dirigida por» lleva a la ficha de esa persona si está en el archivo
   const director=isFilm&&item.subtitle?getAllRecords().find(r=>r.type==='Persona'&&r.title.trim().toLowerCase()===item.subtitle.trim().toLowerCase()):null;
   return <main className={`ficha-page${isFilm?' ficha-film':' ficha-person'}`}>
-    {!isFilm&&<section className="ficha-hero">
+    {!isFilm&&<section className={`ficha-hero${isPerson&&['center','right'].includes(extra.heroAlign)?` is-align-${extra.heroAlign}`:''}`}>
       <img src={item.image} alt="" loading="lazy" decoding="async"/>
       <div className="ficha-hero-shade"/>
       {slot('image')}
