@@ -908,6 +908,13 @@ html:has(.cms-preview-doc){overflow:hidden}
 .cms-cargos input[data-cargo]{font-weight:700}
 .cms-cargos input:focus{border-color:var(--forest);box-shadow:0 0 0 3px rgba(18,60,47,.12)}
 .cms-cargos .cms-icon-btn{width:30px;height:30px}
+/* Flechas para subir o bajar un cargo, apiladas a la izquierda */
+.cms-cargos.is-sortable li{grid-template-columns:18px minmax(0,1fr) minmax(0,1fr) 30px}
+.cms-move{display:flex;flex-direction:column;gap:2px}
+.cms-move button{display:grid;place-items:center;width:18px;height:15px;padding:0;border:0;border-radius:4px;background:transparent;color:var(--muted);cursor:pointer}
+.cms-move button:hover:not(:disabled){background:var(--line);color:var(--ink)}
+.cms-move button:disabled{opacity:.25;cursor:default}
+.cms-move svg{width:13px;height:13px}
 
 /* Vista previa de la película en el selector: el mismo reproductor del sitio */
 .cms-media-preview .media-embed{position:relative;width:100%;aspect-ratio:16/9;background:#050605}

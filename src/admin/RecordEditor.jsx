@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, Circle, Eye, EyeOff, FileText, ImagePlus, Images, MapPin, Plus, Star, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Circle, Eye, EyeOff, FileText, ImagePlus, Images, MapPin, Plus, Star, Trash2, X } from 'lucide-react';
 import { RecordCard, RecordRow } from '../components';
 import { collections, locations, records, site } from '../data';
 import { EditContext } from '../edit-context';
@@ -395,6 +395,7 @@ function RecordPanelBlocks({r,e,meta,setE,openPicker}){
   const credits=e.credits||[], places=e.locations||[];
   const related=(e.relations||[]).map(id=>records.find(x=>x.id===id)).filter(Boolean);
   const setCredit=(i,j,v)=>setE({credits:credits.map((c,k)=>k===i?(j===0?[v,c[1]]:[c[0],v]):c)});
+  const moveCredit=(i,d)=>{const c=[...credits];[c[i],c[i+d]]=[c[i+d],c[i]];setE({credits:c})};
   // Al agregar un cargo, el cursor queda en su primer campo
   const listRef=useRef(null), focusNew=useRef(false);
   const addCredit=()=>{focusNew.current=true;setE({credits:[...credits,['','']]})};
@@ -405,7 +406,11 @@ function RecordPanelBlocks({r,e,meta,setE,openPicker}){
   return <>
     <PanelBlock title="Contenido">
       <label className="cms-panel-label">Cargos · {credits.length}</label>
-      {credits.length>0&&<ul className="cms-cargos" ref={listRef}>{credits.map(([k,v],i)=><li key={i}>
+      {credits.length>0&&<ul className="cms-cargos is-sortable" ref={listRef}>{credits.map(([k,v],i)=><li key={i}>
+        <span className="cms-move">
+          <button type="button" disabled={i===0} onClick={()=>moveCredit(i,-1)} aria-label={`Subir ${k||`el cargo ${i+1}`}`} title="Subir"><ChevronUp/></button>
+          <button type="button" disabled={i===credits.length-1} onClick={()=>moveCredit(i,1)} aria-label={`Bajar ${k||`el cargo ${i+1}`}`} title="Bajar"><ChevronDown/></button>
+        </span>
         <input data-cargo value={k} onChange={ev=>setCredit(i,0,ev.target.value)} placeholder="Cargo" aria-label={`Cargo ${i+1}`}/>
         <input value={v} onChange={ev=>setCredit(i,1,ev.target.value)} placeholder="Nombre" aria-label={`Nombre para ${k||`el cargo ${i+1}`}`}
           onKeyDown={ev=>{if(ev.key==='Enter'){ev.preventDefault();addCredit()}}}/>
