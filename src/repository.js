@@ -17,11 +17,19 @@ export const placesOf=extra=>extra?.locations||[extra?.location||'Ovalle'];
 export function getLocations(id){
   return placesOf(recordExtras[id]);
 }
-// Persona entrevistada: la vinculada en la ficha o, en entrevistas antiguas, la que tiene ese nombre
-export function getInterviewee(record,extra=recordExtras[record.id],pool=getAllRecords()){
+// Personas entrevistadas: una lista de {id} (vinculadas a su ficha) o {name} (escritas a mano). Las
+// entrevistas antiguas tenían una sola: la vinculada (`interviewee`) o la que tiene ese nombre
+export function getInterviewees(record,extra=recordExtras[record.id],pool=getAllRecords()){
   const people=pool.filter(r=>r.type==='Persona');
-  return people.find(p=>p.id===extra?.interviewee)||people.find(p=>norm(p.title)===norm(record.subtitle))||null;
+  if(Array.isArray(extra?.interviewees))return extra.interviewees.map(x=>{
+    const person=x.id!=null?people.find(p=>p.id===x.id):null;
+    return person?{person,name:person.title}:{person:null,name:String(x.name||'').trim()};
+  }).filter(x=>x.name);
+  const person=people.find(p=>p.id===extra?.interviewee)||people.find(p=>norm(p.title)===norm(record.subtitle));
+  return person?[{person,name:person.title}]:record.subtitle?.trim()?[{person:null,name:record.subtitle.trim()}]:[];
 }
+// «Ana», «Ana y Luis», «Ana, Luis y Rosa»
+export const joinNames=names=>names.length<2?names[0]||'':`${names.slice(0,-1).join(', ')} y ${names[names.length-1]}`;
 export const INTERVIEW_FORMATS=[['text','Texto'],['audio','Audio'],['video','Video']];
 export const interviewFormat=extra=>(INTERVIEW_FORMATS.find(([v])=>v===extra?.mediaType)||[])[1]||'';
 // Filmografía: películas donde la persona aparece en dirección o créditos
@@ -55,6 +63,8 @@ export function getFilmPeople(film,extra=recordExtras[film.id]){
 export function getRecordPeople(record,extra=recordExtras[record.id]){
   if(record.type==='Película')return getFilmPeople(record,extra);
   const linked=extra?.relations||[];
+  // Entrevista: cada persona entrevistada con ficha
+  if(record.type==='Entrevista')return getInterviewees(record,extra).filter(x=>x.person).map(({person})=>({person,roles:['Entrevistado(a)']}));
   const names=[record.subtitle,...(extra?.credits||[]).map(c=>c[1])].map(norm).filter(Boolean);
   return getAllRecords().filter(r=>r.type==='Persona'&&r.id!==record.id).map(person=>{
     const pn=norm(person.title);

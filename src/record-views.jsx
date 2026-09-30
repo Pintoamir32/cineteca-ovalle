@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, CirclePlay, Download, FileText, Headphones, Maximize2, X } from 'lucide-react';
 import { sections } from './data';
-import { getInterviewee, interviewFormat, recordPath } from './repository';
+import { getInterviewees, interviewFormat, joinNames, recordPath } from './repository';
 import { useEdit } from './edit-context';
 import { tagStyle } from './color';
 import { videoSource } from './video-links';
@@ -73,12 +73,13 @@ function RelatedList({related,title='Ver también'}){
 
 // Qué muestra cada tipo dentro del diseño de documento
 function docConfig(item,extra){
-  // Entrevista: entrevistado(a) (con enlace a su ficha), fecha, formato y contenido o archivo adjunto
+  // Entrevista: entrevistados(as) (con enlace a su ficha), fecha, formato y contenido o archivo adjunto
   if(item.type==='Entrevista'){
-    const person=getInterviewee(item,extra), name=person?.title||item.subtitle, format=interviewFormat(extra);
+    const who=getInterviewees(item,extra), name=joinNames(who.map(x=>x.name)), format=interviewFormat(extra);
+    const links=who.map(({person,name:n},i)=><React.Fragment key={i}>{i>0&&(i===who.length-1?' y ':', ')}{person?<Link to={recordPath(person)}>{n}</Link>:n}</React.Fragment>);
     return {
-      interview:true,person,title:name?`Entrevista a ${name}`:item.title,image:item.image||person?.image,
-      facts:[['Entrevistado(a)',person?<Link to={recordPath(person)}>{name}</Link>:name,true],['Fecha',item.year,false,'year'],['Formato',format]],
+      interview:true,name,title:name?`Entrevista a ${name}`:item.title,image:item.image||who.find(x=>x.person?.image)?.person.image,
+      facts:[[who.length>1?'Entrevistados(as)':'Entrevistado(a)',who.length?links:'',true],['Fecha',item.year,false,'year'],['Formato',format]],
       factsLabel:'Ficha de la entrevista',textLabel:'CONTENIDO',player:extra.mediaType!=='text'
     };
   }
@@ -157,7 +158,7 @@ export function DocumentView({item,extra,related,people}){
     </section>
     {/* Entrevista: el contenido va en su propia sección, a lo ancho y con columna de lectura; si no hay texto, no aparece */}
     {cfg.interview&&(edit||item.description?.trim())&&<section className="interview-text" id="texto" data-reveal>
-      <div className="ficha-filmography-head"><div className="ficha-section-label"><span>01</span> CONTENIDO</div><span>ENTREVISTA{cfg.person||item.subtitle?` A ${(cfg.person?.title||item.subtitle).toUpperCase()}`:''}</span></div>
+      <div className="ficha-filmography-head"><div className="ficha-section-label"><span>01</span> CONTENIDO</div><span>ENTREVISTA{cfg.name?` A ${cfg.name.toUpperCase()}`:''}</span></div>
       <div className="interview-text-body">{f('description',item.description,{multiline:true})}</div>
     </section>}
     {cfg.article&&(edit||item.description?.trim())&&<section className="interview-text" id="texto" data-reveal>

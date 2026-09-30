@@ -5,7 +5,7 @@ import { RecordCard, RecordRow } from '../components';
 import { collections, locations, records, site } from '../data';
 import { EditContext } from '../edit-context';
 import { RecordDetail } from '../pages';
-import { getFilmography, getInterviewee, INTERVIEW_FORMATS, interviewFormat } from '../repository';
+import { getFilmography, getInterviewees, INTERVIEW_FORMATS, interviewFormat, joinNames } from '../repository';
 import { deleteRecord, nextId, saveError, saveRecord, setData, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
 import { aspectNear, Choice, ColorSwatches, Editable, EditableChoice, EditableImage, ImagePicker, MEDIA_TYPES, MediaPicker, RecordPicker, thumb, useUi, useAskRemove } from './fields';
@@ -48,12 +48,13 @@ function RecordEditorInner(){
 
   const wasPublished=!!existing&&!existing.draft;
   const save=async()=>{
-    // Entrevista: la persona se vincula a su ficha o se escribe a mano; de ella sale el título y, si no se
-    // sube una imagen, la fotografía (solo cuando está vinculada)
-    const person=isInterview?records.find(x=>x.id===e.interviewee&&x.type==='Persona'):null;
-    const name=person?.title||r.subtitle.trim();
-    if(isInterview&&!name)return toast('Elige o escribe a la persona entrevistada antes de guardar.','error');
-    const base=isInterview?{...r,subtitle:name,title:`Entrevista a ${name}`,image:r.image||person?.image||''}:r;
+    // Entrevista: cada persona se vincula a su ficha o se escribe a mano; de ellas sale el título y, si no se
+    // sube una imagen, la fotografía (la de la primera vinculada que tenga)
+    const who=isInterview?cleanInterviewees(e.interviewees):[];
+    const name=joinNames(who.map(intervieweeName));
+    if(isInterview&&!name)return toast('Elige o escribe al menos una persona entrevistada antes de guardar.','error');
+    const photo=who.map(x=>personOf(x)?.image).find(Boolean);
+    const base=isInterview?{...r,subtitle:name,title:`Entrevista a ${name}`,image:r.image||photo||''}:r;
     if(!base.title.trim())return toast('Escribe un título antes de guardar.','error');
     if(!base.image)return toast('Añade una imagen principal antes de guardar.','error');
     const {draft:isDraft,...rest}=base;
@@ -73,7 +74,7 @@ function RecordEditorInner(){
     // Entrevista: entrevistado(a), fecha, formato, texto (opcional), archivo adjunto (audio o video), imagen y galería
     if(isInterview){
       record={...record,format:interviewFormat(extra),collection:''};
-      extra={...extra,credits:[],locations:[],relations:[],media:extra.mediaType==='text'?'':extra.media,interviewee:person?.id||null};
+      extra={...extra,credits:[],locations:[],relations:[],media:extra.mediaType==='text'?'':extra.media,interviewees:who,interviewee:undefined};
     }
     // Artículo: título, autor(a), fecha, películas referenciadas, cuerpo y galería; lo demás no se guarda
     if(isArticle){
@@ -170,13 +171,19 @@ function RecordEditorInner(){
 
 const BLANK='data:image/gif;base64,R0lGODlhAQABAAAAACw=';
 
-// Entrevista: toma de la persona entrevistada el nombre, el título y la imagen (también en las antiguas,
-// que solo tenían el nombre escrito); el formato es texto, audio o video
+// Entrevista: una o varias personas entrevistadas, {id} (con ficha) o {name} (escrita a mano). De ellas
+// salen el nombre, el título y la imagen (también en las antiguas, que tenían una sola); el formato es texto, audio o video
+const personOf=x=>x.id!=null?records.find(p=>p.id===x.id&&p.type==='Persona'):null;
+const intervieweeName=x=>personOf(x)?.title||String(x.name||'').trim();
+const cleanInterviewees=list=>(list||[]).map(x=>personOf(x)?{id:x.id}:{name:String(x.name||'').trim()}).filter(x=>x.id!=null||x.name);
+const interviewTitle=list=>{const name=joinNames(list.map(intervieweeName).filter(Boolean));return {subtitle:name,title:name?`Entrevista a ${name}`:''}};
 function asInterview(d){
   if(d.record.type!=='Entrevista')return d;
-  const extra={...d.extra,mediaType:INTERVIEW_FORMATS.some(([v])=>v===d.extra.mediaType)?d.extra.mediaType:'video'};
-  const p=getInterviewee(d.record,extra,records);
-  return p?{record:{...d.record,subtitle:p.title,title:`Entrevista a ${p.title}`,image:d.record.image||p.image},extra:{...extra,interviewee:p.id}}:{...d,extra};
+  const who=getInterviewees(d.record,d.extra,records);
+  const {interviewee,...rest}=d.extra;// eslint-disable-line no-unused-vars
+  const extra={...rest,interviewees:who.map(x=>x.person?{id:x.person.id}:{name:x.name}),mediaType:INTERVIEW_FORMATS.some(([v])=>v===d.extra.mediaType)?d.extra.mediaType:'video'};
+  if(!who.length)return {...d,extra};
+  return {record:{...d.record,...interviewTitle(extra.interviewees),image:d.record.image||who.find(x=>x.person?.image)?.person.image||''},extra};
 }
 
 // «el título», «la dirección», «los roles», «las obras vinculadas»: según la primera palabra
@@ -239,8 +246,8 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     {picker==='image'&&<ImagePicker value={r.image} aspect={pickAspect} onPick={image=>setR({image})} onRemove={r.image?()=>setR({image:''}):undefined} onClose={()=>setPicker(null)} title="Imagen principal"/>}
     {picker==='media'&&<MediaPicker mediaType={e.mediaType} media={e.media} onChange={(mediaType,media)=>setE({mediaType,media})} onClose={()=>setPicker(null)}/>}
     {picker==='work'&&<RecordPicker title="Vincular una película" types={['Película']} exclude={e.relations||[]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
-    {picker==='interviewee'&&<RecordPicker title="Elegir persona entrevistada" types={['Persona']} action="Elegir" exclude={e.interviewee?[e.interviewee]:[]}
-      onPick={x=>{setE({interviewee:x.id});setR({subtitle:x.title,title:`Entrevista a ${x.title}`,...(!r.image&&{image:x.image})})}} onClose={()=>setPicker(null)}/>}
+    {picker==='interviewee'&&<RecordPicker title="Añadir persona entrevistada" types={['Persona']} action="Añadir" exclude={(e.interviewees||[]).map(x=>x.id).filter(id=>id!=null)}
+      onPick={x=>{const list=[...(e.interviewees||[]),{id:x.id}];setE({interviewees:list});setR({...interviewTitle(list),...(!r.image&&{image:x.image})})}} onClose={()=>setPicker(null)}/>}
     {picker==='film'&&<RecordPicker title="Vincular película referenciada" types={['Película']} exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
     {picker==='link'&&<RecordPicker title="Vincular película o persona" types={['Película','Persona']} exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
     {picker==='relation'&&<RecordPicker exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
@@ -305,26 +312,25 @@ function PressPanel({r,e,setR,setE,openPicker}){
   </>;
 }
 
-// Entrevista: la persona entrevistada (de las fichas de persona), el formato y el contenido o archivo
+// Entrevista: las personas entrevistadas (de las fichas de persona o escritas a mano), el formato y el contenido o archivo
 function InterviewPanel({r,e,setR,setE,openPicker}){
   const ask=useAskRemove();
-  const person=records.find(x=>x.id===e.interviewee&&x.type==='Persona');
+  const who=e.interviewees||[], linked=who.map(personOf), photo=linked.find(p=>p?.image);
   const isText=e.mediaType==='text';
+  const setWho=list=>{setE({interviewees:list});setR(interviewTitle(list))};
+  // Al escribir un nombre nuevo, el cursor queda en él
+  const listRef=useRef(null), focusNew=useRef(false);
+  useEffect(()=>{if(focusNew.current){focusNew.current=false;[...(listRef.current?.querySelectorAll('input')||[])].pop()?.focus()}},[who.length]);
   return <>
-    <PanelBlock title="Entrevistado(a)">
-      {person?<>
-        <ul className="cms-mini-list"><li>
-          <img src={thumb(person.image,120)} alt=""/><span>{person.title}<small>Con enlace a su ficha</small></span>
-          <button type="button" className="cms-icon-btn is-danger-text" onClick={ask(`a ${person.title} de la entrevista`,()=>{setE({interviewee:null});setR({subtitle:'',title:''})})} aria-label={`Quitar ${person.title}`} title="Quitar"><X/></button>
-        </li></ul>
-        <button type="button" className="cms-btn is-block" onClick={()=>openPicker('interviewee')}><Plus/> Cambiar persona</button>
-      </>:<>
-        <label className="cms-panel-label">Del archivo · con enlace a su ficha</label>
-        <button type="button" className="cms-btn is-block" onClick={()=>openPicker('interviewee')}><Plus/> Vincular persona del archivo</button>
-        <label className="cms-panel-label">O escrito a mano · sin enlace</label>
-        <label className="cms-field"><input value={r.subtitle||''} onChange={ev=>setR({subtitle:ev.target.value,title:ev.target.value.trim()?`Entrevista a ${ev.target.value.trim()}`:''})} placeholder="Nombre de la persona entrevistada" aria-label="Nombre de la persona entrevistada"/></label>
-        <p className="cms-help">Para quien no tiene ficha de persona. Sin fotografía de la persona, sube una imagen principal.</p>
-      </>}
+    <PanelBlock title={who.length>1?`Entrevistados(as) · ${who.length}`:'Entrevistado(a)'}>
+      {who.length>0?<ul className="cms-mini-list" ref={listRef}>{who.map((x,i)=>{const p=linked[i];return <li key={i}>
+        {p?<><img src={thumb(p.image,120)} alt=""/><span>{p.title}<small>Con enlace a su ficha</small></span></>
+          :<label className="cms-field"><input value={x.name||''} onChange={ev=>setWho(who.map((y,j)=>j===i?{name:ev.target.value}:y))} placeholder="Nombre de la persona entrevistada" aria-label={`Nombre de la persona entrevistada ${i+1}`}/></label>}
+        <button type="button" className="cms-icon-btn is-danger-text" onClick={ask(p?`a ${p.title} de la entrevista`:'a esta persona de la entrevista',()=>setWho(who.filter((_,j)=>j!==i)))} aria-label={`Quitar ${p?.title||'persona'}`} title="Quitar"><X/></button>
+      </li>})}</ul>:<p className="cms-help">Ninguna todavía.</p>}
+      <button type="button" className="cms-btn is-block" onClick={()=>openPicker('interviewee')}><Plus/> Añadir persona del archivo</button>
+      <button type="button" className="cms-btn is-block" onClick={()=>{focusNew.current=true;setWho([...who,{name:''}])}}><Plus/> Escribir nombre a mano</button>
+      <p className="cms-help">Puedes añadir varias personas. Las del archivo llevan enlace a su ficha; las escritas a mano (para quien no tiene ficha) se muestran sin enlace.</p>
     </PanelBlock>
     <PanelBlock title="Formato y contenido">
       <div className="cms-segment is-small cms-seg-block">{INTERVIEW_FORMATS.map(([v,l])=><button key={v} type="button" className={e.mediaType===v?'active':''} onClick={()=>setE({mediaType:v,...(v!==e.mediaType&&{media:''})})}>{l}</button>)}</div>
@@ -337,7 +343,7 @@ function InterviewPanel({r,e,setR,setE,openPicker}){
       <label className="cms-panel-label">Imagen principal</label>
       <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('image')}><ImagePlus/> {r.image?'Cambiar imagen':'Subir imagen'}</button>
         {r.image&&<button type="button" className="cms-icon-btn is-danger-text" onClick={ask('la imagen',()=>setR({image:''}))} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}</div>
-      {!r.image&&person&&<p className="cms-help">Sin imagen propia se usa la fotografía de {person.title}.</p>}
+      {!r.image&&photo&&<p className="cms-help">Sin imagen propia se usa la fotografía de {photo.title}.</p>}
       <GalleryEditor e={e} setE={setE} openPicker={openPicker}/>
     </PanelBlock>
   </>;

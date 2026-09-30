@@ -1,5 +1,5 @@
 import { recordExtras } from './data';
-import { getAllRecords, getFilmPeople, getFilmography, getLocations, getRecordPeople, interviewFormat } from './repository';
+import { getAllRecords, getFilmPeople, getFilmography, getInterviewees, getLocations, getRecordPeople, interviewFormat } from './repository';
 
 /* Filtros del catálogo: cada sección tiene los suyos, según los campos de sus fichas.
    Los usan las páginas de cada sección y el buscador avanzado del inicio.
@@ -54,7 +54,7 @@ export const FILTERS={
     PLACE
   ],
   Entrevista:[
-    {key:'entrevistado',label:'Entrevistado(a)',get:r=>r.subtitle},
+    {key:'entrevistado',label:'Entrevistado(a)',get:r=>getInterviewees(r).map(x=>x.name)},
     {key:'formato',label:'Formato',get:r=>interviewFormat(recordExtras[r.id])||formatParts(r)[0]},
     DECADE('Década'),
     {key:'pelicula',label:'Película',get:r=>relatedTitles(r,'Película')},
