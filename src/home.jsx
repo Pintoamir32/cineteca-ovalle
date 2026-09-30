@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowDownRight, ArrowRight, BookOpen, ChevronLeft, ChevronRight, CirclePlay, FileText, Film, Grid2X2, Layers, MapPin, Mic2, Search, Settings2, UserRound } from 'lucide-react';
+import { ArrowDownRight, ArrowRight, BookOpen, CirclePlay, FileText, Film, Grid2X2, Layers, MapPin, Mic2, Search, Settings2, UserRound } from 'lucide-react';
 import { tagStyle } from './color';
 import { Counter, SearchResults } from './components';
 import { collections, locations, sections, site } from './data';
@@ -54,8 +54,6 @@ export function Home(){
     const timer=setInterval(()=>setSlide(s=>(s+1)%slides.length),5000);
     return ()=>clearInterval(timer);
   },[paused,edit,slides.length]);
-  const prevSlide=()=>setSlide(s=>(s-1+slides.length)%slides.length);
-  const nextSlide=()=>setSlide(s=>(s+1)%slides.length);
   const index=useMemo(()=>buildSearchIndex(),[]);
   const results=useMemo(()=>matchIndex(term,index),[term,index]);
   const allRecords=useMemo(()=>getAllRecords(),[]);
@@ -79,11 +77,6 @@ export function Home(){
         <div className="eyebrow"><span>●</span> {t(s('eyebrow'))}</div>
         <h1>{t(s('title'))}{(edit||current.em)&&<><br/>{edit?t(s('em'),{as:'em'}):<em>{current.em}</em>}</>}</h1>
         <p>{t(s('desc'))}</p>
-      </div>
-      <div className="hero-index">
-        <button type="button" className="hero-index-btn" onClick={prevSlide} aria-label="Diapositiva anterior"><ChevronLeft/></button>
-        <b>{String(slide+1).padStart(2,'0')}</b><span/>{String(slides.length).padStart(2,'0')}
-        <button type="button" className="hero-index-btn" onClick={nextSlide} aria-label="Siguiente diapositiva"><ChevronRight/></button>
       </div>
       <div className="hero-bottom-right">
         <Link className="hero-cta" to={current.link}>{t('heroCta')} <ArrowRight/></Link>
