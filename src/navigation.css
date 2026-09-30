@@ -93,3 +93,5 @@
 .topbar .nav-search button{width:44px;height:44px;margin:-1px -1px -1px 0;border-radius:0}
 .topbar .nav-search button:hover{transform:none;filter:brightness(1.08)}
 .topbar .nav-search-wrap .nav-search-results{border-radius:0;top:calc(100% + 8px)}
+/* Con el botón «Inscribe tu obra» el menú necesita algo más de espacio antes de que se oculte el buscador */
+@media(min-width:1251px) and (max-width:1440px){.topbar{column-gap:20px}.topbar>nav{gap:16px!important}.top-actions .nav-search-wrap,.top-actions .nav-search{width:190px!important;min-width:0}}

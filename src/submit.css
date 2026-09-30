@@ -1,46 +1,108 @@
 /* ---------- Inscribe tu obra ---------- */
-.submit-hero{min-height:420px}
-.submit-body{padding:60px 6vw 110px;background:var(--paper)}
-.submit-form{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
-.submit-form fieldset{margin:0;border:1px solid var(--line);background:#fff;padding:26px 28px 28px;display:flex;flex-direction:column;gap:18px;min-width:0}
-.submit-form legend{display:flex;align-items:center;gap:10px;padding:0 10px;margin-left:-10px;font:700 20px/1.2 'Syne',sans-serif;color:var(--black)}
-.submit-form legend svg{width:20px;height:20px;color:var(--forest)}
-.submit-form legend small{font:500 13px 'Manrope',sans-serif;color:#6b716c}
-.submit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}
-.submit-field{display:flex;flex-direction:column;gap:7px;min-width:0}
-.submit-field>span{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#3f4540}
-.submit-field>span b{color:#b3261e}
-.submit-field>span small{font:500 11px 'Manrope',sans-serif;letter-spacing:0;text-transform:none;color:#7a807b}
-.submit-field input,.submit-field select,.submit-field textarea{width:100%;border:1px solid color-mix(in srgb,var(--black) 22%,transparent);background:#fbfaf6;border-radius:6px;padding:12px 14px;font:15px/1.5 'Manrope',sans-serif;color:var(--black);outline:none;transition:border-color .15s,box-shadow .15s}
-.submit-field textarea{resize:vertical;min-height:110px}
-.submit-field input:focus,.submit-field select:focus,.submit-field textarea:focus{border-color:var(--forest);box-shadow:0 0 0 3px color-mix(in srgb,var(--forest) 18%,transparent);background:#fff}
-.submit-field em{font-style:normal;font-size:12px;color:#7a807b}
-.submit-trap{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
-.submit-consent{display:flex;align-items:flex-start;gap:12px;font-size:14px;line-height:1.5;cursor:pointer}
-.submit-consent input{flex:none;width:20px;height:20px;margin:1px 0 0;accent-color:var(--forest)}
-.submit-error{margin:0;padding:12px 16px;border-left:3px solid #b3261e;background:#fdecea;color:#7a1c16;font-size:14px}
-.submit-send{align-self:flex-start;display:inline-flex;align-items:center;gap:10px;border:0;border-radius:999px;background:var(--forest);color:#fff;padding:16px 28px;font:700 15px 'Manrope',sans-serif;transition:background .2s,transform .2s}
-.submit-send:hover:not(:disabled){background:var(--black);transform:translateY(-2px)}
-.submit-send:disabled{opacity:.6;cursor:wait}
-.submit-send svg{width:18px;height:18px;color:var(--acid)}
-.submit-note{margin:-8px 0 0;font-size:12px;color:#6b716c}
+.submit-page{background:var(--paper)}
+.sb-kicker{font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.18em;color:var(--acid)}
 
-.submit-done{max-width:640px;margin:20px auto;text-align:center;background:#fff;border:1px solid var(--line);padding:50px 34px}
-.submit-done>svg{width:54px;height:54px;color:var(--forest)}
-.submit-done h2{font:700 30px/1.1 'Syne',sans-serif;margin:18px 0 10px}
-.submit-done p{font-size:15px;line-height:1.7;color:#3f4540}
-.submit-done>div{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:26px}
-.submit-done button,.submit-done a{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:13px 22px;font:700 14px 'Manrope',sans-serif}
-.submit-done button{border:1px solid var(--line);background:transparent}
-.submit-done a{background:var(--forest);color:#fff}
-.submit-done a svg{width:16px}
+/* Portada */
+.sb-hero{background:var(--black);color:#fff;padding:120px 6vw 70px;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);align-items:end;gap:20px 6vw}
+.sb-hero .sb-kicker{grid-column:1/-1}
+.sb-hero h1{margin:0;font:700 clamp(64px,9vw,140px)/.82 'Manrope',sans-serif;letter-spacing:-.07em}
+.sb-hero h1 em{font:400 italic 1em/1 'Newsreader',serif;letter-spacing:-.03em;color:var(--acid)}
+.sb-hero p{margin:0;max-width:440px;font-size:16px;line-height:1.75;color:#bdc5c0}
+
+/* Dos columnas: guía fija a la izquierda y formulario a la derecha */
+.sb-layout{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:0;max-width:1320px;margin:0 auto;padding:0 4vw 110px}
+.sb-aside{position:relative}
+.sb-aside-inner{position:sticky;top:110px;margin-top:-40px;background:var(--forest);color:#fff;padding:34px 30px 30px;display:flex;flex-direction:column;gap:26px}
+.sb-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:18px}
+.sb-steps li{display:grid;grid-template-columns:34px 1fr;gap:12px}
+.sb-steps b{display:grid;place-items:center;width:34px;height:34px;border:1px solid rgba(255,255,255,.35);border-radius:50%;font:600 10px 'IBM Plex Mono',monospace;color:var(--acid)}
+.sb-steps strong{display:block;font-size:15px;margin-top:6px}
+.sb-steps p{margin:4px 0 0;font-size:13px;line-height:1.55;color:rgba(255,255,255,.72)}
+.sb-progress{border-top:1px solid rgba(255,255,255,.18);padding-top:20px}
+.sb-progress-head{display:flex;justify-content:space-between;align-items:baseline;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.sb-progress-head b{font:700 20px 'Manrope',sans-serif;letter-spacing:0;color:#fff}
+.sb-progress-bar{height:4px;margin-top:10px;background:rgba(255,255,255,.15);overflow:hidden}
+.sb-progress-bar i{display:block;height:100%;background:var(--acid);transition:width .35s cubic-bezier(.16,.8,.3,1)}
+.sb-progress p{display:flex;align-items:center;gap:6px;margin:10px 0 0;font-size:13px;color:rgba(255,255,255,.75)}
+.sb-progress p svg{width:15px;height:15px;color:var(--acid)}
+.sb-contact{display:flex;align-items:center;gap:8px;font-size:13px;color:#fff;opacity:.85;word-break:break-all}
+.sb-contact:hover{opacity:1;text-decoration:underline}
+.sb-contact svg{flex:none;width:16px;height:16px;color:var(--acid)}
+
+/* Formulario */
+.sb-form{padding:40px 0 0 5vw;min-width:0}
+.sb-section{padding:44px 0 50px;border-bottom:1px solid var(--line)}
+.sb-section:first-child{padding-top:10px}
+.sb-section>header{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:30px}
+.sb-num{display:grid;place-items:center;width:40px;height:40px;border:1px solid currentColor;border-radius:50%;font:600 11px 'IBM Plex Mono',monospace}
+.sb-section h2{margin:0;font:700 clamp(28px,3vw,40px)/1 'Manrope',sans-serif;letter-spacing:-.04em}
+.sb-section>header small{flex-basis:100%;margin-left:54px;margin-top:-6px;font-size:13px;color:#6b716c}
+.sb-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:30px 34px}
+.sb-field{display:flex;flex-direction:column;gap:8px;min-width:0}
+.sb-field.is-wide{grid-column:1/-1}
+.sb-label{display:flex;align-items:baseline;gap:4px;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#4a504b}
+.sb-label b{color:var(--forest);font-size:13px}
+.sb-label small{margin-left:auto;font:500 11px 'Manrope',sans-serif;letter-spacing:0;text-transform:none;color:#8a908b}
+.sb-field input,.sb-field textarea{width:100%;border:0;border-bottom:1.5px solid color-mix(in srgb,var(--black) 28%,transparent);background:transparent;padding:8px 0 12px;font:500 19px/1.45 'Manrope',sans-serif;color:var(--black);outline:none;border-radius:0;transition:border-color .2s,background .2s}
+.sb-field textarea{resize:vertical;min-height:120px;font-size:17px;line-height:1.6;border:1.5px solid color-mix(in srgb,var(--black) 18%,transparent);padding:14px 16px;background:#fbfaf6}
+.sb-field input::placeholder,.sb-field textarea::placeholder{color:#a4a9a3;font-weight:400}
+.sb-field input:hover,.sb-field textarea:hover{border-color:color-mix(in srgb,var(--black) 55%,transparent)}
+.sb-field input:focus{border-bottom-color:var(--forest);box-shadow:0 2px 0 var(--acid)}
+.sb-field textarea:focus{border-color:var(--forest);background:#fff;box-shadow:0 0 0 3px color-mix(in srgb,var(--acid) 45%,transparent)}
+.sb-hint{font-style:normal;font-size:13px;color:#6b716c;line-height:1.5}
+.sb-chips{display:flex;flex-wrap:wrap;gap:8px;padding-top:4px}
+.sb-chips button{border:1.5px solid color-mix(in srgb,var(--black) 22%,transparent);background:transparent;border-radius:999px;padding:10px 18px;font:600 14px 'Manrope',sans-serif;color:var(--black);transition:background .15s,border-color .15s,color .15s}
+.sb-chips button:hover{border-color:var(--forest)}
+.sb-chips button.is-on{background:var(--forest);border-color:var(--forest);color:#fff}
+.sb-trap{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+/* Envío: franja oscura al final */
+.sb-send{margin-top:50px;background:var(--black);color:#fff;padding:34px 36px;display:flex;flex-direction:column;align-items:flex-start;gap:22px}
+.sb-consent{position:relative;display:flex;align-items:flex-start;gap:14px;font-size:15px;line-height:1.55;cursor:pointer;max-width:620px}
+.sb-consent input{position:absolute;opacity:0;width:24px;height:24px;margin:0;cursor:pointer}
+.sb-check{flex:none;display:grid;place-items:center;width:24px;height:24px;border:1.5px solid rgba(255,255,255,.6);transition:background .15s,border-color .15s}
+.sb-check svg{width:16px;height:16px;opacity:0;color:var(--black)}
+.sb-consent input:checked+.sb-check{background:var(--acid);border-color:var(--acid)}
+.sb-consent input:checked+.sb-check svg{opacity:1}
+.sb-consent input:focus-visible+.sb-check{outline:3px solid var(--acid);outline-offset:3px}
+.sb-error{margin:0;padding:12px 16px;border-left:3px solid #ff8a7a;background:rgba(255,138,122,.12);color:#ffd9d3;font-size:14px;align-self:stretch}
+.sb-send>button{display:inline-flex;align-items:center;gap:12px;border:0;border-radius:999px;background:var(--acid);color:var(--black);padding:18px 32px;font:800 16px 'Manrope',sans-serif;transition:transform .2s,background .2s}
+.sb-send>button:hover:not(:disabled){background:#fff;transform:translateY(-2px)}
+.sb-send>button:disabled{opacity:.6;cursor:wait}
+.sb-send>button svg{width:18px;height:18px}
+.sb-note{margin:-6px 0 0;font-size:12px;color:rgba(255,255,255,.55)}
+
+/* Confirmación */
+.sb-done{max-width:760px;margin:0 auto;padding:90px 6vw 120px;text-align:center}
+.sb-done>svg{width:58px;height:58px;color:var(--forest)}
+.sb-done .sb-kicker{display:block;margin-top:22px;color:var(--forest)}
+.sb-done h2{margin:14px 0 16px;font:700 clamp(34px,4.5vw,56px)/1.02 'Manrope',sans-serif;letter-spacing:-.05em}
+.sb-done h2 em{font:400 italic 1em 'Newsreader',serif;letter-spacing:-.02em}
+.sb-done p{font-size:16px;line-height:1.7;color:#3f4540}
+.sb-done>div{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:30px}
+.sb-done button,.sb-done a{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:14px 24px;font:700 14px 'Manrope',sans-serif}
+.sb-done button{border:1.5px solid color-mix(in srgb,var(--black) 25%,transparent);background:transparent}
+.sb-done a{background:var(--forest);color:#fff}
+.sb-done a svg{width:16px}
 
 /* Botón del menú superior: una píldora dentro del enlace (el menú fuerza colores y rellenos con !important) */
 .topbar nav a.nav-cta>span{display:inline-block;padding:8px 14px;border-radius:999px;background:var(--acid);color:var(--black)!important;font-weight:800;white-space:nowrap;transition:background .2s}
 .topbar nav a.nav-cta:hover>span,.topbar nav a.nav-cta.active>span{background:#fff}
 
-@media(max-width:700px){
-  .submit-body{padding:34px 16px 80px}
-  .submit-form fieldset{padding:20px 16px 22px}
-  .submit-send{align-self:stretch;justify-content:center}
+@media(max-width:980px){
+  .sb-hero{grid-template-columns:1fr;padding:110px 6vw 56px}
+  .sb-layout{grid-template-columns:1fr;padding:0 0 80px}
+  .sb-aside-inner{position:static;margin:0;padding:26px 6vw}
+  .sb-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .sb-form{padding:20px 6vw 0}
+}
+@media(max-width:640px){
+  .sb-hero{padding:100px 16px 44px}
+  .sb-aside-inner{padding:24px 16px}
+  .sb-steps{grid-template-columns:1fr}
+  .sb-form{padding:10px 16px 0}
+  .sb-grid{grid-template-columns:1fr;gap:26px}
+  .sb-section>header small{margin-left:0;margin-top:0}
+  .sb-send{padding:26px 18px;margin-left:-16px;margin-right:-16px}
+  .sb-send>button{align-self:stretch;justify-content:center}
 }
