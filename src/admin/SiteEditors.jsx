@@ -11,6 +11,7 @@ import { LocationPicker } from './LocationPicker';
 import { SiteFrame } from './SiteFrame';
 import { EditContext } from '../edit-context';
 import { TimelinePage } from '../pages';
+import { Paged } from '../components';
 
 const pad=n=>String(n).padStart(2,'0');
 const slugify=s=>s.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -126,10 +127,10 @@ export function CollectionList(){
     <PageHead eyebrow="ORGANIZAR EL ARCHIVO" title="Colecciones" desc="Recorridos temáticos. Cada ficha pertenece a una colección.">
       <button type="button" className="cms-btn is-primary" onClick={()=>go('/admin/colecciones/nuevo')}><Plus/> Nueva colección</button>
     </PageHead>
-    <div className="cms-collections">{collections.map((c,i)=><button type="button" key={c.slug||i} className="cms-collection" onClick={()=>go(`/admin/colecciones/${i}`)}>
+    <Paged items={collections.map((c,i)=>({c,i}))} perPage={24}>{page=><div className="cms-collections">{page.map(({c,i})=><button type="button" key={c.slug||i} className="cms-collection" onClick={()=>go(`/admin/colecciones/${i}`)}>
       <img src={c.image} alt=""/><div className="cms-collection-shade"/>
       <span>{pad(i+1)}</span><h3>{c.title}</h3><b style={tagStyle(c.color)}>{countByCollection(c.title)} fichas</b>
-    </button>)}</div>
+    </button>)}</div>}</Paged>
     {index!==undefined&&<CollectionModal key={index}/>}
   </div>;
 }
@@ -165,22 +166,21 @@ const decadeOf=e=>{const y=yearOf(e);return y?`${Math.floor(y/10)*10}s`:'Sin añ
 export function TimelineList(){
   useStoreVersion();
   const {go}=useAdminNav(), {index}=useParams(), [preview,setPreview]=useState(false);
-  // Agrupados por década; el índice real se conserva para abrir el editor
-  const groups=[];
-  timelineEvents.forEach((e,i)=>{const d=decadeOf(e), last=groups[groups.length-1];last&&last.decade===d?last.items.push({e,i}):groups.push({decade:d,items:[{e,i}]})});
+  // De a 20 por página, agrupados por década; el índice real se conserva para abrir el editor
+  const groupsOf=items=>{const groups=[];items.forEach(({e,i})=>{const d=decadeOf(e), last=groups[groups.length-1];last&&last.decade===d?last.items.push({e,i}):groups.push({decade:d,items:[{e,i}]})});return groups};
   const add=year=>go(`/admin/linea-de-tiempo/nuevo${year?`?anio=${year}`:''}`);
   return <div className="cms-page">
     <PageHead eyebrow="ORGANIZAR EL ARCHIVO" title="Línea de tiempo" desc={`${timelineEvents.length} hitos de la historia audiovisual. Se ordenan solos por año.`}>
       <button type="button" className="cms-btn" onClick={()=>setPreview(true)} disabled={!timelineEvents.length}><Eye/> Vista previa</button>
       <button type="button" className="cms-btn is-primary" onClick={()=>add()}><Plus/> Nuevo hito</button>
     </PageHead>
-    {timelineEvents.length?groups.map(g=><section key={g.decade} className="cms-timeline-group">
+    {timelineEvents.length?<Paged items={timelineEvents.map((e,i)=>({e,i}))} perPage={20}>{page=>groupsOf(page).map(g=><section key={g.decade} className="cms-timeline-group">
       <header><h2>{g.decade==='Sin año'?g.decade:`Década de ${g.decade.slice(0,-1)}`}</h2><small>{g.items.length} {g.items.length===1?'hito':'hitos'}</small>
         {g.decade!=='Sin año'&&<button type="button" className="cms-btn is-ghost is-small" onClick={()=>add(g.decade.slice(0,-1))}><Plus/> Agregar aquí</button>}</header>
       <ol className="cms-timeline">{g.items.map(({e,i})=><li key={`${e.year}-${i}`}><button type="button" onClick={()=>go(`/admin/linea-de-tiempo/${i}`)}>
         <b>{e.year}</b><i/>{e.image?<img src={e.image} alt=""/>:<span className="cms-timeline-noimg"><ImagePlus/></span>}<span><small>{e.type}</small><strong>{e.title||'Sin título'}</strong><em>{e.text||'Sin descripción'}</em></span><Pencil/>
       </button></li>)}</ol>
-    </section>):<p className="cms-empty">Todavía no hay hitos. <button type="button" className="cms-btn is-primary" onClick={()=>add()}><Plus/> Crear el primero</button></p>}
+    </section>)}</Paged>:<p className="cms-empty">Todavía no hay hitos. <button type="button" className="cms-btn is-primary" onClick={()=>add()}><Plus/> Crear el primero</button></p>}
     {index!==undefined&&<TimelineModal key={index}/>}
     {preview&&<TimelinePreview items={timelineEvents} onClose={()=>setPreview(false)}/>}
   </div>;

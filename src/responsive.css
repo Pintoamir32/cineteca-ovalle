@@ -518,3 +518,9 @@ footer .footer-line b{color:#c9cfcb;font-weight:700}
 .legal-body a{color:var(--forest);text-decoration:underline;text-underline-offset:3px}
 .legal-back{margin-top:44px!important}
 @media(max-width:760px){.legal-hero{padding:110px 20px 44px}.legal-body{padding:44px 20px 64px}}
+
+/* Paginación dentro de una sección (línea de tiempo, filmografía) y bajo las colecciones */
+.pagination.is-compact{margin-top:28px;padding-top:20px}
+.pagination.is-compact>button{padding:10px 14px}
+.pagination.is-compact .pagination-pages button,.pagination.is-compact .pagination-pages span{width:34px;height:34px}
+.page-pager{padding:0 6vw 70px}

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpDown, CalendarDays, CirclePlay, Clapperboard, Clock, Film, Grid2X2, List, MapPin, Search, Settings2, Table2, X } from 'lucide-react';
-import { Counter, RecordCard, RecordRow } from './components';
+import { Counter, Paged, Pager, RecordCard, RecordRow, usePaged } from './components';
 import { collections, locations, recordExtras, sections, timelineEvents } from './data';
 import { countByCollection, countByLocation, countByType, getAllRecords, getFilmPeople, getFilmography, getLocations, getRecordPeople, placesOf, findRecordByParam, recordPath, recordSlug } from './repository';
 import { useEdit } from './edit-context';
@@ -12,15 +12,7 @@ import { tagStyle } from './color';
 import { filmPeopleNames, filtersFor, matches, optionsOf, valueLabel } from './filters';
 
 
-const PAGE_SIZE=8;
-function pageNumbers(current,total){
-  const out=[];
-  for(let i=1;i<=total;i++){
-    if(i===1||i===total||(i>=current-1&&i<=current+1))out.push(i);
-    else if(out[out.length-1]!=='…')out.push('…');
-  }
-  return out;
-}
+const PAGE_SIZE=8, COLLECTIONS_PER_PAGE=8, TIMELINE_PER_PAGE=10, FILMOGRAPHY_PER_PAGE=10;
 
 const pageInfo={
   archivo:{title:'Archivo abierto',eyebrow:'TODOS LOS REGISTROS',desc:'Busca de forma transversal en películas, personas, prensa, entrevistas y artículos.',image:'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1600&q=88'},
@@ -111,7 +103,7 @@ export function ArchivePage({kind='archivo'}){
         </tr>)}</tbody>
       </table></div>}
     {!list.length&&<div className="no-results"><Search/><h3>No encontramos coincidencias.</h3><p>Prueba con otro término de búsqueda.</p><button onClick={()=>setParams({})}>Limpiar búsqueda</button></div>}
-    {totalPages>1&&<nav className="pagination"><button disabled={page===1} onClick={()=>goToPage(page-1)}><ArrowLeft/> Anterior</button><div className="pagination-pages">{pageNumbers(page,totalPages).map((n,i)=>n==='…'?<span key={`e${i}`}>…</span>:<button key={n} className={n===page?'active':''} onClick={()=>goToPage(n)}>{n}</button>)}</div><button disabled={page===totalPages} onClick={()=>goToPage(page+1)}>Siguiente <ArrowRight/></button></nav>}</section>
+    <Pager page={page} total={totalPages} onChange={goToPage}/></section>
   </main>
 }
 
@@ -180,7 +172,7 @@ export function RecordDetail({item,extra}){
         <p className="ficha-person-bio">{f('description',item.description,{multiline:true})}</p>
         <div className="ficha-media ficha-filmography" id="filmografia">
           <div className="ficha-filmography-head"><div className="ficha-section-label"><span>02</span> FILMOGRAFÍA</div><span>{String(works.length).padStart(2,'0')} {works.length===1?'PELÍCULA':'PELÍCULAS'}</span></div>
-          {works.length?<ol className="ficha-filmography-list">{works.map(w=>w.film?(()=>{const film=w.film,[fGenre,fDuration]=(film.format||'').split(' · ');return <li key={`f${film.id}`}>
+          {works.length?<Paged items={works} perPage={FILMOGRAPHY_PER_PAGE}>{page=><ol className="ficha-filmography-list">{page.map(w=>w.film?(()=>{const film=w.film,[fGenre,fDuration]=(film.format||'').split(' · ');return <li key={`f${film.id}`}>
             <img src={film.image} alt="" loading="lazy" decoding="async"/>
             <div className="ficha-filmography-info">
               <small>{film.year}{fGenre&&` · ${fGenre}`}{fDuration&&` · ${fDuration}`}</small>
@@ -192,7 +184,7 @@ export function RecordDetail({item,extra}){
             :<li key={`w${w.i}`} className="is-written">
             <span className="ficha-filmography-noimg" aria-hidden="true"><Film/></span>
             <div className="ficha-filmography-info">{w.year&&<small>{w.year}</small>}<h3>{w.title}</h3></div>
-          </li>)}</ol>:<p className="ficha-filmography-empty">Aún no hay películas en la filmografía de esta persona.</p>}
+          </li>)}</ol>}</Paged>:<p className="ficha-filmography-empty">Aún no hay películas en la filmografía de esta persona.</p>}
           {slot('works')}
         </div>
       </article>
@@ -256,7 +248,9 @@ export function CollectionsPage(){
   const {edit,f,slot}=useEdit(), {t}=useSiteText();
   const list=edit?.items||collections, on=i=>edit?.index===i;
   const v=(i,key,value,opts)=>on(i)?f(key,value,opts):value;
-  return <main className="discovery-page"><section className="discovery-hero"><img src="https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>{t('collectionsKicker')}</span><h1>{t('collectionsTitle')}</h1><p>{t('collectionsIntro')}</p></section><section className="collections-grid" data-reveal>{list.map((c,i)=><Link to={`/archivo?collection=${encodeURIComponent(c.title)}`} className={`collection-card stagger-item${on(i)?' is-editing':''}`} style={{transitionDelay:`${i*80}ms`}} key={c.slug||i} onClick={edit&&!on(i)?ev=>{ev.preventDefault();edit.pick?.(i)}:undefined}><img src={c.image} alt="" loading="lazy" decoding="async"/><div className="collection-shade"/>{on(i)&&slot('image')}<span>{String(i+1).padStart(2,'0')}</span><h2>{v(i,'title',c.title)}</h2><p>{v(i,'description',c.description,{multiline:true})}</p><b style={tagStyle(c.color)}>{on(i)&&edit.count!=null?edit.count:countByCollection(c.title)} registros <ArrowRight/></b></Link>)}</section></main>;
+  // En el sitio, de a 8; en la vista previa del gestor se ven todas (se eligen desde su lista)
+  const gridRef=useRef(null), paged=usePaged(list,edit?Math.max(list.length,1):COLLECTIONS_PER_PAGE), offset=(paged.page-1)*COLLECTIONS_PER_PAGE;
+  return <main className="discovery-page"><section className="discovery-hero"><img src="https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>{t('collectionsKicker')}</span><h1>{t('collectionsTitle')}</h1><p>{t('collectionsIntro')}</p></section><section className="collections-grid" data-reveal ref={gridRef}>{paged.items.map((c,k)=>{const i=edit?k:offset+k;return <Link to={`/archivo?collection=${encodeURIComponent(c.title)}`} className={`collection-card stagger-item${on(i)?' is-editing':''}`} style={{transitionDelay:`${k*80}ms`}} key={c.slug||i} onClick={edit&&!on(i)?ev=>{ev.preventDefault();edit.pick?.(i)}:undefined}><img src={c.image} alt="" loading="lazy" decoding="async"/><div className="collection-shade"/>{on(i)&&slot('image')}<span>{String(i+1).padStart(2,'0')}</span><h2>{v(i,'title',c.title)}</h2><p>{v(i,'description',c.description,{multiline:true})}</p><b style={tagStyle(c.color)}>{on(i)&&edit.count!=null?edit.count:countByCollection(c.title)} registros <ArrowRight/></b></Link>})}</section>{paged.total>1&&<div className="page-pager"><Pager page={paged.page} total={paged.total} onChange={paged.setPage} scrollRef={gridRef}/></div>}</main>;
 }
 
 export function TimelinePage(){
@@ -268,15 +262,19 @@ export function TimelinePage(){
   const detailRef=useRef(null);
   const pick=i=>{setPicked(i);requestAnimationFrame(()=>{const el=detailRef.current, r=el?.getBoundingClientRect();if(r&&(r.top<90||r.top>window.innerHeight*.6))el.scrollIntoView({behavior:'smooth',block:'start'})})};
   const current=edit?edit.index:Math.min(picked,list.length-1), active=list[current]||{}, isActive=(e,i)=>i===current;
+  // En el sitio, de a 10 hitos; al cambiar de página se muestra el primero de esa página
+  const spineRef=useRef(null), paged=usePaged(list,edit?Math.max(list.length,1):TIMELINE_PER_PAGE), offset=edit?0:(paged.page-1)*TIMELINE_PER_PAGE;
+  const changePage=n=>{paged.setPage(n);setPicked((n-1)*TIMELINE_PER_PAGE)};
   return <main className="timeline-page">
     <section className="discovery-hero"><img src="https://images.unsplash.com/photo-1586899028174-e7098604235b?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>{t('timelineKicker')}</span><h1>{t('timelineTitle')}</h1><p>{t('timelineIntro')}</p></section>
     <section className="timeline-layout" data-reveal>
-      <div className="timeline-spine">
-        {list.map((e,i)=><button key={`${e.year}-${i}`} className={`timeline-entry${isActive(e,i)?' active':''} stagger-item`} style={{transitionDelay:`${(i%8)*50}ms`}} onClick={()=>edit?(i!==edit.index&&edit.pick?.(i)):pick(i)}>
+      <div className="timeline-spine" ref={spineRef}>
+        {paged.items.map((e,k)=>{const i=offset+k;return <button key={`${e.year}-${i}`} className={`timeline-entry${isActive(e,i)?' active':''} stagger-item`} style={{transitionDelay:`${(k%8)*50}ms`}} onClick={()=>edit?(i!==edit.index&&edit.pick?.(i)):pick(i)}>
           <span className="timeline-entry-year">{e.year}</span>
           <span className="timeline-entry-line"><span className="timeline-entry-dot"/></span>
           <span className="timeline-entry-body"><small>{e.type}</small><strong>{e.title}</strong></span>
-        </button>)}
+        </button>})}
+        <Pager page={paged.page} total={paged.total} onChange={changePage} scrollRef={spineRef} className="is-compact"/>
       </div>
       <aside className="timeline-detail" ref={detailRef}>
         {active.image?<img key={active.image} src={active.image} alt={active.title||""} decoding="async"/>:<div className="timeline-detail-noimg"/>}

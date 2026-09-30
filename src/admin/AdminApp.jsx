@@ -11,6 +11,7 @@ import { LoginScreen, PasswordField } from './Login';
 import { TYPE_META, TYPES, code, extraOf, missingFields, typeBySlug, typeColor } from './meta';
 import { RecordEditor } from './RecordEditor';
 import { LogoMark } from '../Logo';
+import { Pager } from '../components';
 import { CollectionList, LocationEditor, LocationList, TimelineList } from './SiteEditors';
 import { AboutEditor, HomeEditor } from './HomeEditor';
 import { TOURS, Tour, takeLegacySeen, tourViewOf } from './Tour';
@@ -368,9 +369,14 @@ function NewRecordMenu({type}){
 
 /* ---------- Listado de registros ---------- */
 
+const RECORDS_PER_PAGE=24;
+
 function RecordList(){
   const {slug}=useParams(), type=typeBySlug(slug), {go}=useAdminNav();
   const [q,setQ]=useState(''), [sort,setSort]=useState('recent'), [filter,setFilter]=useState(null), {toast,confirm}=useUi();
+  const [page,setPage]=useState(1), topRef=useRef(null);
+  // Al buscar, filtrar, ordenar o cambiar de sección se vuelve a la primera página
+  useEffect(()=>{setPage(1)},[slug,q,sort,filter]);
   if(!type)return <Dashboard/>;
   const meta=TYPE_META[type];
   const fold=s=>String(s).normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
@@ -385,7 +391,9 @@ function RecordList(){
     toast(r.draft?`“${r.title}” ya se ve en el sitio.`:`“${r.title}” quedó como borrador.`);
   };
   list=[...list].sort(sort==='title'?(a,b)=>a.title.localeCompare(b.title,'es'):sort==='year'?(a,b)=>String(a.year).localeCompare(String(b.year)):(a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||'')||b.id-a.id);
-  return <div className="cms-page">
+  const totalPages=Math.max(1,Math.ceil(list.length/RECORDS_PER_PAGE)), current=Math.min(page,totalPages);
+  const shown=list.slice((current-1)*RECORDS_PER_PAGE,current*RECORDS_PER_PAGE);
+  return <div className="cms-page" ref={topRef}>
     <PageHead eyebrow="ARCHIVO" title={meta.label} desc={`${records.filter(r=>r.type===type).length} fichas. Haz clic en una para editarla.`}><NewRecordMenu type={type}/></PageHead>
     <div className="cms-toolbar">
       <label className="cms-search"><Search/><input value={q} onChange={e=>setQ(e.target.value)} placeholder={`Buscar en ${meta.label.toLowerCase()}…`}/>{q&&<button type="button" onClick={()=>setQ('')} aria-label="Limpiar"><X/></button>}</label>
@@ -394,13 +402,14 @@ function RecordList(){
       <button type="button" className={`cms-chip ${filter==='drafts'?'active':''}`} onClick={()=>setFilter(filter==='drafts'?null:'drafts')}><EyeOff/> Borradores{drafts>0&&` · ${drafts}`}</button>
     </div>
     <div className="cms-grid">
-      {list.map(r=>{const miss=missingFields(r,extraOf(r.id));return <div key={r.id} className={`cms-tile-wrap${r.draft?' is-draft':''}`}><button type="button" className="cms-tile" onClick={()=>go(`/admin/registros/${slug}/${r.id}`)}>
+      {shown.map(r=>{const miss=missingFields(r,extraOf(r.id));return <div key={r.id} className={`cms-tile-wrap${r.draft?' is-draft':''}`}><button type="button" className="cms-tile" onClick={()=>go(`/admin/registros/${slug}/${r.id}`)}>
         <div className="cms-tile-img">{r.image?<img src={thumb(r.image,480)} alt="" loading="lazy"/>:<span className="cms-thumb-empty"/>}<span className="cms-tag" style={tagStyle(r.color)}>{r.type}</span>{miss.length>0&&<span className="cms-tile-warn" title={`Falta: ${miss.join(', ')}`}><AlertCircle/> {miss.length} {miss.length===1?'pendiente':'pendientes'}</span>}{r.draft&&<span className="cms-tile-draft"><EyeOff/> Borrador</span>}</div>
         <div className="cms-tile-body"><small>{code(r.id)} · {r.year}</small><strong>{r.title||'Sin título'}</strong><span>{r.subtitle}</span></div>
       </button>
       <button type="button" className="cms-tile-pub" onClick={()=>togglePublished(r)} title={r.draft?'Publicar: que se vea en el sitio':'Despublicar: ocultarla del sitio'}>{r.draft?<><Eye/> Publicar</>:<><EyeOff/> Despublicar</>}</button>
       </div>})}
     </div>
+    <Pager page={current} total={totalPages} onChange={setPage} scrollRef={topRef} className="is-compact"/>
     {!list.length&&<p className="cms-empty">{filter==='drafts'?'No hay fichas en borrador.':'No hay fichas que coincidan.'}</p>}
   </div>;
 }

@@ -1,6 +1,6 @@
 import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowDownRight, ArrowRight, Menu, Search, X } from 'lucide-react';
+import { ArrowDownRight, ArrowLeft, ArrowRight, Menu, Search, X } from 'lucide-react';
 import { buildSearchIndex, matchIndex } from './search-index';
 import { useRevealScan } from './reveal';
 import { useSiteText } from './site-text';
@@ -27,6 +27,41 @@ export function ScrollProgress(){
     return ()=>{window.removeEventListener('scroll',onScroll);window.removeEventListener('resize',onScroll)};
   },[]);
   return <div className="scroll-progress"><div ref={barRef}/></div>;
+}
+
+/* ---------- Paginación: la misma en el sitio y en el gestor ---------- */
+// 1 … 4 5 6 … 12: siempre la primera, la última y las vecinas de la actual
+export function pageNumbers(current,total){
+  const out=[];
+  for(let i=1;i<=total;i++){
+    if(i===1||i===total||(i>=current-1&&i<=current+1))out.push(i);
+    else if(out[out.length-1]!=='…')out.push('…');
+  }
+  return out;
+}
+// Página actual de una lista: vuelve a la 1 cuando cambia `resetKey` (búsqueda, filtros, orden…)
+export function usePaged(list,perPage,resetKey=''){
+  const [page,setPage]=useState(1);
+  useEffect(()=>{setPage(1)},[resetKey]);
+  const total=Math.max(1,Math.ceil(list.length/perPage)), current=Math.min(page,total);
+  return {page:current,total,items:list.slice((current-1)*perPage,current*perPage),setPage};
+}
+// Botones de página. `scrollRef`: al cambiar de página se vuelve al inicio de la lista
+export function Pager({page,total,onChange,scrollRef,className=''}){
+  if(total<=1)return null;
+  const go=n=>{onChange(n);const el=scrollRef?.current;if(el&&el.getBoundingClientRect().top<0)el.scrollIntoView({block:'start'})};
+  return <nav className={`pagination ${className}`} aria-label="Páginas">
+    <button type="button" disabled={page===1} onClick={()=>go(page-1)}><ArrowLeft/> Anterior</button>
+    <div className="pagination-pages">{pageNumbers(page,total).map((n,i)=>n==='…'?<span key={`e${i}`}>…</span>
+      :<button type="button" key={n} className={n===page?'active':''} aria-current={n===page?'page':undefined} onClick={()=>go(n)}>{n}</button>)}</div>
+    <button type="button" disabled={page===total} onClick={()=>go(page+1)}>Siguiente <ArrowRight/></button>
+  </nav>;
+}
+
+// Lista paginada dentro de una página: children recibe los elementos de la página actual
+export function Paged({items,perPage,children,className='is-compact'}){
+  const ref=useRef(null), p=usePaged(items,perPage,items.length);
+  return <div ref={ref}>{children(p.items)}<Pager page={p.page} total={p.total} onChange={p.setPage} scrollRef={ref} className={className}/></div>;
 }
 
 export function Counter({value,duration=1200,pad=0}){
