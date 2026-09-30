@@ -51,7 +51,7 @@ export function Home(){
   const current=slides[Math.min(slide,slides.length-1)]||slides[0];
   useEffect(()=>{
     if(edit||paused||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-    const timer=setInterval(()=>setSlide(s=>(s+1)%slides.length),5000);
+    const timer=setInterval(()=>setSlide(s=>(s+1)%slides.length),4000);
     return ()=>clearInterval(timer);
   },[paused,edit,slides.length]);
   const index=useMemo(()=>buildSearchIndex(),[]);
