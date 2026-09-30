@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, ArrowUpRight, BookOpen, CalendarRange, Check, CircleCheck, CircleHelp, Database, LogOut, UserPlus, Download, ExternalLink, Eye, EyeOff, FileText, Film, Home, Layers, LayoutDashboard, MapPin, Menu, Mic2, Palette, Plus, RotateCcw, Save, Search, Trash2, Upload, UserRound, Users, X } from 'lucide-react';
+import { AlertCircle, Info, ArrowLeft, ArrowUpRight, BookOpen, CalendarRange, Check, CircleCheck, CircleHelp, Database, LogOut, UserPlus, Download, ExternalLink, Eye, EyeOff, FileText, Film, Home, Layers, LayoutDashboard, MapPin, Menu, Mic2, Palette, Plus, RotateCcw, Save, Search, Trash2, Upload, UserRound, Users, X } from 'lucide-react';
 import { collections, heroSlides, locations, recordExtras, records, timelineEvents } from '../data';
 import { emptyArchive, exportData, getLastSaved, hydrate, importData, resetData, saveError, setRecordPublished, useStoreVersion } from '../store';
 import { tagStyle } from '../color';
@@ -12,7 +12,7 @@ import { TYPE_META, TYPES, code, extraOf, missingFields, typeBySlug, typeColor }
 import { RecordEditor } from './RecordEditor';
 import { LogoMark } from '../Logo';
 import { CollectionList, LocationEditor, LocationList, TimelineList } from './SiteEditors';
-import { HomeEditor } from './HomeEditor';
+import { AboutEditor, HomeEditor } from './HomeEditor';
 import { TOURS, Tour, takeLegacySeen, tourViewOf } from './Tour';
 import { ThemeEditor } from './ThemeEditor';
 import './admin.css';
@@ -128,6 +128,7 @@ function AdminShell({session,onLogout}){
           </>)}
           {group('Sitio',<>
             {item('inicio',Home,'Inicio y carrusel',heroSlides.length)}
+            {item('sobre',Info,'Sobre la Cineteca')}
             {item('colores',Palette,'Colores del sitio')}
           </>)}
           {group('Sistema',<>
@@ -157,6 +158,7 @@ function AdminShell({session,onLogout}){
           <Route path="registros/:slug" element={<RecordList/>}/>
           <Route path="registros/:slug/:id" element={<RecordEditor/>}/>
           <Route path="inicio" element={<HomeEditor/>}/>
+          <Route path="sobre" element={<AboutEditor/>}/>
           <Route path="colores" element={<ThemeEditor/>}/>
           {/* Las diapositivas se editan dentro del Inicio */}
           <Route path="portada/*" element={<Navigate to="/admin/inicio" replace/>}/>

@@ -9,6 +9,7 @@ import { aspectNear, Choice, Editable, ImagePicker, RecordPicker, thumb, useUi, 
 import { SiteFrame } from './SiteFrame';
 import { slideFromRecord, slideLinkOptions } from './meta';
 import { newestRecords } from '../repository';
+import { ABOUT_SECTIONS, AboutPage } from '../about';
 
 // Copia el objeto solo a lo largo de la ruta modificada
 function setPath(obj,path,value){
@@ -59,7 +60,7 @@ export function HomeEditor(){
     setDirty(false);setNavDirty(false);toast('Inicio actualizado y publicado.');
   };
   const discard=async()=>{if(await confirm({title:'¿Descartar los cambios?',text:'El inicio volverá a su última versión guardada.',ok:'Descartar'})){setDraft(load());setDirty(false)}};
-  const restore=async()=>{if(await confirm({title:'¿Volver a los textos originales?',text:'Se reemplazan los textos, secciones y fichas elegidas del inicio y del pie de página por los originales. Las diapositivas no cambian. Podrás revisarlo antes de guardar.',ok:'Restablecer textos'})){setDraft(d=>({...originalHome(),slides:d.slides,featuredId:d.featuredId}));setDirty(true)}};
+  const restore=async()=>{if(await confirm({title:'¿Volver a los textos originales?',text:'Se reemplazan los textos, secciones y fichas elegidas del inicio y del pie de página por los originales. Las diapositivas no cambian. Podrás revisarlo antes de guardar.',ok:'Restablecer textos'})){setDraft(d=>({...originalHome(),slides:d.slides,featuredId:d.featuredId,about:d.about}));setDirty(true)}};
 
   // Lleva la vista previa hasta una sección
   const reveal=selector=>frameApi.current?.reveal(selector);
@@ -187,5 +188,83 @@ export function HomeEditor(){
     {picker==='newSlide'&&<RecordPicker title="Añadir una ficha al carrusel" action="Añadir" exclude={draft.slides.map(x=>x.recordId).filter(Boolean)} onPick={r=>addSlide(slideFromRecord(r))} onClose={()=>setPicker(null)}/>}
     {picker==='slide'&&<RecordPicker title={`Mostrar una ficha en la diapositiva ${current+1}`} action="Usar" exclude={draft.slides.map(x=>x.recordId).filter(Boolean)} onPick={r=>set(`slides.${current}`,slideFromRecord(r))} onClose={()=>setPicker(null)}/>}
     {picker==='latest'&&<RecordPicker title="Añadir a «Recién catalogado»" action="Añadir" exclude={latestIds} onPick={r=>set('latestIds',[...latestIds,r.id])} onClose={()=>setPicker(null)}/>}
+  </EditorShell>;
+}
+
+/* ---------- Sobre la Cineteca: la misma página del sitio, con cada texto e imagen editable ---------- */
+const ABOUT_SELECTORS={intro:'.about2-intro',pillars:'.about2-pillars',numbers:'.about2-numbers',history:'.about2-history',collections:'.about2-collections',help:'.about2-help',contact:'.about2-contact',cta:'.about2-cta'};
+
+export function AboutEditor(){
+  useStoreVersion();
+  const {go,setDirty:setNavDirty}=useAdminNav(), {toast,confirm}=useUi();
+  // Todo el contenido de textos (también el pie, que se edita igual que en el inicio)
+  const load=()=>({...structuredClone(homeContent),about:{...ORIGINAL.about,...structuredClone(homeContent.about||{})}});
+  const [draft,setDraft]=useState(load), [dirty,setDirty]=useState(false), [real,setReal]=useState(false);
+  const frameApi=useRef(null);
+  const set=(path,value)=>{setDraft(d=>setPath(d,path,value));setDirty(true)};
+  const a=draft.about;
+
+  const edit={
+    content:draft,
+    text:(path,{as='span',vars,em}={})=>{
+      const value=getPath(draft,path);
+      return <Editable key={path} as={as} value={value} onChange={v=>set(path,v)} multiline={isMultiline(path,value)}
+        render={v=>rich(v,{vars,em})} placeholder="Escribe aquí…" label="Texto"/>;
+    },
+    image:(path,{label,className,fallback,aspect})=><HomeImageButton key={path} label={label} className={className} value={getPath(draft,path)} fallback={fallback} aspect={aspect} onChange={v=>set(path,v)}/>
+  };
+
+  const save=async()=>{
+    if(!a.heroImage)return toast('Elige una foto de portada antes de guardar.','error');
+    try{await setData({homeContent:draft})}catch(err){return toast(saveError(err),'error')}
+    setDirty(false);setNavDirty(false);toast('«Sobre la Cineteca» actualizada y publicada.');
+  };
+  const discard=async()=>{if(await confirm({title:'¿Descartar los cambios?',text:'La página volverá a su última versión guardada.',ok:'Descartar'})){setDraft(load());setDirty(false)}};
+  const restore=async()=>{if(await confirm({title:'¿Volver a los textos originales?',text:'Se reemplazan los textos, la foto y las secciones ocultas de «Sobre la Cineteca» por los originales. Podrás revisarlo antes de guardar.',ok:'Restablecer textos'})){set('about',structuredClone(ORIGINAL.about))}};
+
+  const reveal=selector=>frameApi.current?.reveal(selector);
+  const hidden=a.hidden||[];
+  const toggle=id=>set('about.hidden',hidden.includes(id)?hidden.filter(x=>x!==id):[...hidden,id]);
+
+  const panel=<>
+    <PanelBlock title="Cómo editar">
+      <ul className="cms-tips">
+        <li>Clic en un texto de la vista previa para cambiarlo</li>
+        <li>Botón negro sobre la portada → cambiar la foto</li>
+        <li>Entre asteriscos → <em>cursiva destacada</em>: <code>*palabra*</code></li>
+      </ul>
+    </PanelBlock>
+    <PanelBlock title="Secciones">
+      <p className="cms-help">Clic en el nombre para ir a la sección; el ojo la muestra u oculta en el sitio.</p>
+      <div className="cms-hsecs">
+        <section className="cms-hsec"><div className="cms-hsec-head"><button type="button" className="cms-hsec-toggle" onClick={()=>reveal('.about2-hero')}><span>Portada</span></button></div></section>
+        {ABOUT_SECTIONS.map(([id,label])=>{const off=hidden.includes(id);return <section key={id} className={`cms-hsec${off?' is-off':''}`}>
+          <div className="cms-hsec-head">
+            <button type="button" className="cms-hsec-toggle" onClick={()=>reveal(ABOUT_SELECTORS[id])}><span>{label}</span>{off&&<small>Oculta</small>}</button>
+            <button type="button" className="cms-toggle-eye" onClick={()=>toggle(id)} aria-pressed={!off} title={off?'Mostrar en el sitio':'Ocultar en el sitio'}>{off?<EyeOff/>:<Eye/>}</button>
+          </div>
+        </section>})}
+      </div>
+    </PanelBlock>
+    <PanelBlock title="Datos que vienen de otras secciones">
+      <p className="cms-help">Las cifras se calculan solas. Los hitos salen de «Línea de tiempo» y las colecciones, de «Colecciones». El correo e Instagram de contacto se cambian en «Inicio y carrusel» → Pie de página.</p>
+    </PanelBlock>
+    <PanelBlock title="Textos originales">
+      <button type="button" className="cms-btn is-ghost is-block" onClick={restore}><RotateCcw/> Volver a los textos originales</button>
+      <p className="cms-help">Se puede revisar y descartar antes de guardar.</p>
+    </PanelBlock>
+  </>;
+
+  return <EditorShell crumb="Sitio" title="Sobre la Cineteca" dirty={dirty} onBack={()=>go('/admin')} onSave={save} onDiscard={discard} viewHref="/nosotros" panel={panel}
+    hint="Es la página real: clic en cualquier texto para reescribirlo, o en el botón negro de la portada para cambiar la foto.">
+    <div className="cms-frame-tools">
+      <div className="cms-segment is-small">
+        <button type="button" className={!real?'active':''} onClick={()=>setReal(false)}><Minimize2/> Ajustar al ancho</button>
+        <button type="button" className={real?'active':''} onClick={()=>setReal(true)}><Maximize2/> Tamaño real</button>
+      </div>
+    </div>
+    <HomeEditContext.Provider value={edit}>
+      <SiteFrame className="is-home is-about" apiRef={frameApi} real={real} path="/nosotros"><AboutPage/></SiteFrame>
+    </HomeEditContext.Provider>
   </EditorShell>;
 }

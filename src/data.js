@@ -183,7 +183,36 @@ export const homeContent = {
   fichaLeadTitle:'Una pieza, múltiples lecturas.',
   collectionsKicker:'RECORRIDOS CURATORIALES', collectionsTitle:'Colecciones', collectionsIntro:'Entradas temáticas para descubrir conexiones inesperadas dentro del archivo.',
   timelineKicker:'HISTORIA AUDIOVISUAL', timelineTitle:'Línea de tiempo', timelineIntro:'Ochenta años de imágenes, encuentros y memoria en movimiento.',
-  hidden:[]
+  hidden:[],
+  // Página «Sobre la Cineteca»: se edita desde el gestor (Sitio → Sobre la Cineteca)
+  about:{
+    heroImage:'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1800&q=85',
+    heroKicker:'SOBRE LA CINETECA · DESDE 1968', heroTitle:'Una memoria\nen *movimiento.*',
+    heroText:'La Cineteca de Ovalle preserva, investiga y comparte el patrimonio audiovisual de la Provincia del Limarí.',
+    introLabel:'LA CINETECA', introTitle:'Las imágenes también construyen *territorio.*',
+    introText1:'Desde las primeras funciones comunitarias hasta los procesos actuales de digitalización, este archivo reúne las huellas de una cultura cinematográfica profundamente vinculada con su gente.',
+    introText2:'Nuestra misión es conservar esas imágenes y devolverlas a la comunidad como una memoria abierta, accesible y viva: un lugar donde cualquier persona pueda buscar, mirar y reconocerse.',
+    quote:'“Preservar es también volver a mirar juntos.”',
+    pillarsLabel:'QUÉ HACEMOS',
+    pillars:[
+      {title:'Preservar',text:'Rescatamos, limpiamos y digitalizamos películas, fotografías y documentos para que no se pierdan con el tiempo.'},
+      {title:'Investigar',text:'Catalogamos cada pieza con su contexto: quién la hizo, dónde, cuándo y qué nos cuenta del territorio.'},
+      {title:'Compartir',text:'Abrimos el archivo a la comunidad en línea, con fichas, colecciones, un mapa y una línea de tiempo.'},
+      {title:'Formar',text:'Impulsamos funciones, encuentros y actividades que acercan el cine y la memoria a nuevas generaciones.'}
+    ],
+    numbersLabel:'EL ARCHIVO HOY', numbersTitle:'registros abiertos a todo público', numbersText:'Cada número es una puerta: entra y recorre el archivo por lo que te interese.',
+    historyLabel:'NUESTRA HISTORIA', historyTitle:'Hitos que nos trajeron hasta aquí', historyLink:'Ver la línea de tiempo completa', historyEmpty:'Pronto sumaremos los hitos de nuestra historia.',
+    collectionsLabel:'COLECCIONES', collectionsTitle:'Recorridos para empezar', collectionsLink:'Todas las colecciones',
+    helpLabel:'COLABORA CON EL ARCHIVO', helpTitle:'La memoria se construye *entre todos.*',
+    help:[
+      {title:'Aporta materiales',text:'¿Tienes películas, fotos, afiches o recortes guardados? Escríbenos: podemos digitalizarlos y sumarlos al archivo.',cta:'Escribir'},
+      {title:'Completa una ficha',text:'Si reconoces a alguien, un lugar o una fecha, o encuentras un error, cuéntanos y actualizamos la ficha.',cta:'Enviar un dato'},
+      {title:'Investiga con nosotros',text:'Estudiantes, docentes e investigadores pueden solicitar acceso a materiales y apoyo para sus proyectos.',cta:'Consultar'}
+    ],
+    contactLabel:'CONTACTO', contactTitle:'Conversemos.', contactText:'Para consultas, visitas, aportes o proyectos en conjunto, escríbenos o síguenos en redes.',
+    ctaTitle:'Ven a conocer\n*el archivo.*', ctaExplore:'Explorar el archivo', ctaMap:'Ver el mapa territorial',
+    hidden:[]
+  }
 };
 
 // Colores de toda la app. `palette` son los colores de etiquetas de fichas y colecciones.

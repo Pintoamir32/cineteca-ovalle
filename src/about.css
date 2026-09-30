@@ -3,7 +3,7 @@
 .about2 h2{font:700 clamp(32px,3.6vw,54px)/1.05 'Manrope',sans-serif;letter-spacing:-.055em;margin:0}
 .about2 h2 em{font:400 italic 1em 'Newsreader',serif;color:var(--forest);letter-spacing:-.02em}
 .about2-label{display:flex;align-items:center;gap:12px;font:600 10px 'IBM Plex Mono';letter-spacing:.17em;color:var(--forest);margin-bottom:26px}
-.about2-label span{display:grid;place-items:center;width:30px;height:30px;border:1px solid currentColor;border-radius:50%;font-size:9px;letter-spacing:0}
+.about2-label>span:first-child{display:grid;place-items:center;flex:none;width:30px;height:30px;border:1px solid currentColor;border-radius:50%;font-size:9px;letter-spacing:0}
 .about2-label.is-light{color:var(--acid)}
 .about2-link{display:flex;align-items:center;gap:12px;width:max-content;border-bottom:1px solid var(--black);padding-bottom:8px;font:700 12px 'Manrope'}
 .about2-link svg{width:16px;transition:transform .28s cubic-bezier(.16,.8,.3,1)}

@@ -64,6 +64,8 @@ async function handle(res){
 const PLACEHOLDERS={footerInstagram:[''],footerEmail:['archivo@cinetecadeovalle.cl']};
 function withoutPlaceholders(home){
   for(const [k,old] of Object.entries(PLACEHOLDERS))if(old.includes(home[k]??''))home[k]=ORIGINAL.homeContent[k];
+  // «Sobre la Cineteca»: los textos que aún no se han guardado toman su valor original
+  home.about={...ORIGINAL.homeContent.about,...home.about};
   return home;
 }
 

@@ -536,6 +536,7 @@ span.cms-editable.is-editing{display:inline-block;min-width:8ch;width:100%}
 .home-edit-img svg{width:20px;height:20px}
 .home-edit-hero-img{top:28px;right:4vw}
 .home-edit-spot-img{top:20px;right:20px}
+.about2-edit-img{top:110px;right:28px}
 
 .cms-pick-card{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:center;margin-bottom:10px}
 .cms-pick-card img{width:52px;height:52px;object-fit:cover;border-radius:var(--r-sm)}
