@@ -36,8 +36,23 @@ export const getLastSaved=()=>lastSaved;
 
 // Avisos para la interfaz: sesión vencida u otra persona guardó antes
 const signal=(type,detail)=>window.dispatchEvent(new CustomEvent(type,{detail}));
+// Mientras se publica una versión nueva del sitio el servidor se reinicia y por unos segundos no
+// responde (o responde 502/503/504): en ese caso se reintenta durante un par de minutos antes de fallar.
+const TRANSIENT=new Set([502,503,504]), RETRY_FOR=150e3;
 async function request(url,options){
-  const res=await fetch(url,{credentials:'same-origin',...options});
+  const start=Date.now();
+  for(let wait=2000;;wait=Math.min(wait*1.5,15000)){
+    let res=null;
+    try{res=await fetch(url,{credentials:'same-origin',...options})}catch{/* sin conexión: se reintenta */}
+    if(res&&!TRANSIENT.has(res.status))return handle(res);
+    if(Date.now()-start>RETRY_FOR){
+      if(res)return handle(res);
+      throw new Error('No se pudo conectar con el servidor.');
+    }
+    await new Promise(r=>setTimeout(r,wait));
+  }
+}
+async function handle(res){
   const body=await res.json().catch(()=>({}));
   if(res.status===401)signal('cms-unauthorized');
   if(res.status===409)signal('cms-conflict');
