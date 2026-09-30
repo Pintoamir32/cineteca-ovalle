@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight, Check, FlipHorizontal2, RotateCcw, RotateCw, Und
 import { Modal } from './fields';
 
 const MAX=1800;
-export const ASPECTS=[['Libre',null],['Original','orig'],['1:1',1],['4:3',4/3],['16:9',16/9],['3:4',3/4],['2:3',2/3]];
+export const ASPECTS=[['Libre',null],['Original','orig'],['1:1',1],['4:3',4/3],['16:9',16/9],['3:4',3/4],['7:10',7/10],['2:3',2/3]];
 const ADJUST=[['b','Brillo',0,200],['c','Contraste',0,200],['s','Saturación',0,200],['g','Blanco y negro',0,100]];
 const fresh=aspect=>({rot:0,flip:false,crop:{x:0,y:0,w:1,h:1},aspect,b:100,c:100,s:100,g:0,pending:aspect!=null});
 const untouched=st=>!st.rot&&!st.flip&&st.crop.x===0&&st.crop.y===0&&st.crop.w===1&&st.crop.h===1&&st.b===100&&st.c===100&&st.s===100&&st.g===0;

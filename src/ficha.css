@@ -100,7 +100,7 @@
 .ficha-film-specs a:hover{border-color:var(--forest);background:var(--acid)}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .ficha-film .ficha-aside{padding:28px 28px 36px;position:static}
-.ficha-poster{position:relative;margin:0;aspect-ratio:2/3;overflow:hidden;background:var(--black);box-shadow:0 24px 50px -24px color-mix(in srgb,var(--black) 45%,transparent)}
+.ficha-poster{position:relative;margin:0;aspect-ratio:7/10;overflow:hidden;background:var(--black);box-shadow:0 24px 50px -24px color-mix(in srgb,var(--black) 45%,transparent)}
 .ficha-poster img{width:100%;height:100%;object-fit:cover;filter:grayscale(.15)}
 .ficha-poster figcaption{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;gap:12px;padding:40px 16px 14px;background:linear-gradient(0deg,rgba(6,9,7,.85),transparent);font:700 8px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:#fff}
 .ficha-poster figcaption span:last-child{color:var(--acid)}
@@ -156,7 +156,7 @@
 .ficha-filmography-head>span{font:700 8px 'IBM Plex Mono';letter-spacing:.12em;color:#8a908a}
 .ficha-filmography-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
 .ficha-filmography-list li{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:22px;padding:18px 0;border-bottom:1px solid var(--line)}
-.ficha-filmography-list img{width:64px;aspect-ratio:2/3;object-fit:cover;filter:grayscale(.35);transition:filter .25s}
+.ficha-filmography-list img{width:64px;aspect-ratio:7/10;object-fit:cover;filter:grayscale(.35);transition:filter .25s}
 .ficha-filmography-list li:hover img{filter:none}
 .ficha-filmography-info{min-width:0}
 .ficha-filmography-info small{display:block;font:700 8px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:#8a908a;margin-bottom:8px}
@@ -207,7 +207,7 @@ a.back-link.back-link:hover .back-link-icon{background:var(--acid);color:var(--b
 @media(max-width:760px){.ficha-person-body{margin-bottom:14px}}
 
 /* Película escrita a mano en la filmografía: sin imagen ni enlace */
-.ficha-filmography-noimg{display:grid;place-items:center;width:64px;aspect-ratio:2/3;background:#ebe9e1;color:#8b8f89}
+.ficha-filmography-noimg{display:grid;place-items:center;width:64px;aspect-ratio:7/10;background:#ebe9e1;color:#8b8f89}
 @media(max-width:600px){.ficha-filmography-noimg{width:52px}}
 .ficha-filmography-noimg svg{width:22px;height:22px}
 /* Textos largos de las fichas (películas, personas, prensa, entrevistas y artículos): justificados */
