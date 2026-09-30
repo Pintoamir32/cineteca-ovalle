@@ -173,7 +173,7 @@ export const homeContent = {
     {kicker:'GEOGRAFÍA DEL ARCHIVO',title:'Mapa territorial',text:'Descubre registros conectados con cada localidad.'},
     {kicker:'MEMORIA INSTITUCIONAL',title:'La Cineteca',text:'Conoce nuestra historia, misión y trabajo patrimonial.'}
   ],
-  spotlightLabel:'PIEZA DESTACADA', spotlightTag:'Digitalización 4K', spotlightCta:'Abrir ficha', spotlightImage:'',
+  spotlightLabel:'PIEZA DESTACADA', spotlightCta:'Abrir ficha', spotlightImage:'',
   latestLabel:'HALLAZGOS RECIENTES', latestTitle:'Recién catalogado', latestLink:'Ver todo el archivo', latestIds:[],
   manifestoText:'Preservar una imagen es devolverle\nal territorio una parte de su *memoria.*', manifestoSign:'CINETECA DE OVALLE', manifestoSub:'DESDE 1968 · REGIÓN DE COQUIMBO',
   footerTitle:'El archivo\nsigue *creciendo.*', footerExplore:'EXPLORAR', footerConnect:'CONECTAR',
