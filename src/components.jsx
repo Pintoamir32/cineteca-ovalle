@@ -8,6 +8,7 @@ import { tagStyle } from './color';
 import { recordPath } from './repository';
 import { LogoMark } from './Logo';
 import { ImageZoom } from './ImageZoom';
+import { AccessibilityWidget } from './accessibility';
 
 export function Brand(){return <Link className="brand" to="/" aria-label="Cineteca de Ovalle — inicio"><LogoMark/></Link>}
 
@@ -66,7 +67,7 @@ export function Layout(){
   const location=useLocation();
   useEffect(()=>{window.scrollTo({top:0,left:0,behavior:'instant'})},[location.pathname]);
   useRevealScan(location.pathname);
-  return <div className="site"><ScrollProgress/><Topbar/><div className="route-view" key={location.pathname}><Outlet/></div><Footer/><ImageZoom/></div>
+  return <><div className="site"><ScrollProgress/><Topbar/><div className="route-view" key={location.pathname}><Outlet/></div><Footer/><ImageZoom/></div><AccessibilityWidget/></>
 }
 
 const NAV=[['/','Inicio'],['/archivo','Archivo'],['/peliculas','Películas'],['/personas','Personas'],['/prensa','Prensa'],['/entrevistas','Entrevistas'],['/articulos','Artículos']];

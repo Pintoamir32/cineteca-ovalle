@@ -1,0 +1,69 @@
+/* ---------- Botón y panel de accesibilidad ---------- */
+.a11y-widget{--a11y-bg:#fff;--a11y-ink:var(--black);--a11y-soft:#f2f0e9;--a11y-line:color-mix(in srgb,var(--black) 14%,transparent);--a11y-muted:#5b615b;font-family:'Manrope',sans-serif;letter-spacing:normal;word-spacing:normal}
+.a11y-fab{position:fixed;right:20px;bottom:20px;z-index:2147483647;width:52px;height:52px;border-radius:50%;border:2px solid var(--acid);background:var(--forest);color:var(--acid);display:grid;place-items:center;box-shadow:0 10px 28px rgba(0,0,0,.28);transition:transform .2s ease}
+.a11y-fab:hover{transform:scale(1.06)}
+.a11y-fab:focus-visible{outline:3px solid var(--acid);outline-offset:3px}
+.a11y-fab svg{width:26px;height:26px}
+.a11y-fab.is-active::after{content:'';position:absolute;top:1px;right:1px;width:12px;height:12px;border-radius:50%;background:var(--acid);border:2px solid var(--forest)}
+
+.a11y-panel{position:fixed;right:20px;bottom:84px;z-index:2147483647;width:340px;max-height:calc(100vh - 110px);overflow:auto;overscroll-behavior:contain;background:var(--a11y-bg);color:var(--a11y-ink);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.3);padding:18px}
+.a11y-panel header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.a11y-panel h2{margin:0;font:700 20px/1.1 'Syne',sans-serif}
+.a11y-close{width:34px;height:34px;border:0;border-radius:50%;background:var(--a11y-soft);display:grid;place-items:center}
+.a11y-close svg{width:18px;height:18px}
+.a11y-label{margin:16px 0 8px;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--a11y-muted)}
+.a11y-panel button:focus-visible{outline:3px solid var(--forest);outline-offset:2px}
+
+.a11y-size{display:grid;grid-template-columns:56px 1fr 56px;align-items:center;gap:8px;background:var(--a11y-soft);border-radius:10px;padding:6px}
+.a11y-size button{height:42px;border:0;border-radius:8px;background:#fff;font-weight:800;font-size:16px}
+.a11y-size button:disabled{opacity:.35;cursor:default}
+.a11y-size output{text-align:center;font-weight:800;font-size:16px}
+
+.a11y-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.a11y-grid.is-single{grid-template-columns:1fr;margin-top:8px}
+.a11y-tile{display:flex;align-items:flex-start;gap:9px;text-align:left;border:1.5px solid var(--a11y-line);border-radius:10px;background:#fff;padding:11px 10px;font-size:13px;font-weight:700;line-height:1.2}
+.a11y-tile svg{flex:none;width:18px;height:18px;margin-top:1px;color:var(--forest)}
+.a11y-tile small{display:block;margin-top:3px;font-size:11px;font-weight:500;color:var(--a11y-muted)}
+.a11y-tile:hover{border-color:var(--forest)}
+.a11y-tile.is-on{background:var(--forest);border-color:var(--forest);color:#fff}
+.a11y-tile.is-on svg{color:var(--acid)}
+.a11y-tile.is-on small{color:rgba(255,255,255,.8)}
+
+.a11y-reader{display:flex;gap:8px}
+.a11y-play{flex:1;height:44px;border:0;border-radius:10px;background:var(--acid);color:var(--black);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px}
+.a11y-stop{width:44px;height:44px;border:0;border-radius:10px;background:var(--black);color:#fff;display:grid;place-items:center}
+.a11y-play svg,.a11y-stop svg{width:18px;height:18px}
+.a11y-help{margin:6px 0 0;font-size:12px;color:var(--a11y-muted)}
+.a11y-rate{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px;background:var(--a11y-soft);border-radius:10px;padding:4px}
+.a11y-rate button{height:32px;border:0;border-radius:7px;background:transparent;font-size:12px;font-weight:700}
+.a11y-rate button.is-on{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+
+.a11y-reset{width:100%;margin-top:18px;height:42px;border:1.5px solid var(--a11y-line);border-radius:10px;background:transparent;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px}
+.a11y-reset svg{width:16px;height:16px}
+.a11y-reset:disabled{opacity:.4;cursor:default}
+
+@media(max-width:520px){
+  .a11y-fab{right:16px;bottom:16px}
+  .a11y-panel{right:16px;left:16px;bottom:80px;width:auto;max-height:calc(100vh - 100px)}
+}
+
+/* ---------- Ajustes aplicados al sitio ---------- */
+/* Tamaño: se agranda todo el contenido (el menú de arriba queda igual para que no se desarme) */
+html.a11y-zoom .site>.route-view,html.a11y-zoom .site>footer{zoom:var(--a11y-zoom)}
+
+html.a11y-font .site,html.a11y-font .site *:not(svg):not(svg *){font-family:'Atkinson Hyperlegible',Verdana,Arial,sans-serif!important}
+
+html.a11y-spacing .site *{letter-spacing:.05em!important;word-spacing:.14em!important}
+html.a11y-spacing .site p,html.a11y-spacing .site li,html.a11y-spacing .site dd{line-height:1.85!important}
+
+html.a11y-links .site a{text-decoration:underline!important;text-decoration-thickness:2px!important;text-underline-offset:3px}
+
+html.a11y-motion,html.a11y-motion *,html.a11y-motion *::before,html.a11y-motion *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+html.a11y-motion [data-reveal],html.a11y-motion .stagger-item{opacity:1!important;transform:none!important}
+
+/* Contraste y grises: una capa encima de toda la página, por debajo del botón */
+html.a11y-contrast body::after,html.a11y-gray body::after{content:'';position:fixed;inset:0;z-index:2147483646;pointer-events:none}
+html.a11y-contrast body::after{backdrop-filter:contrast(1.45) saturate(1.15)}
+html.a11y-gray body::after{backdrop-filter:grayscale(1)}
+
+html.a11y-readclick .site :is(h1,h2,h3,h4,p,li,dt,dd,figcaption,blockquote,a,button,label,td,th):hover{outline:2px dashed var(--forest);outline-offset:3px;cursor:help}
