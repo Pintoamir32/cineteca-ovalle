@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AlignCenter, AlignLeft, AlignRight, ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Circle, Eye, EyeOff, FileText, ImagePlus, Images, MapPin, Plus, Star, Trash2, X } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Circle, Eye, EyeOff, FileText, ImagePlus, Images, MapPin, Plus, Star, Trash2, Type, X } from 'lucide-react';
 import { RecordCard, RecordRow } from '../components';
 import { collections, locations, records, site } from '../data';
 import { EditContext } from '../edit-context';
 import { RecordDetail } from '../pages';
-import { BODY_IMAGE_ALIGNS, bodyParagraphs } from '../record-views';
+import { BODY_IMAGE_ALIGNS, bodyBlocks, bodyPlainText } from '../record-views';
 import { getFilmography, getInterviewees, INTERVIEW_FORMATS, interviewFormat, joinNames } from '../repository';
 import { deleteRecord, nextId, saveError, saveRecord, setData, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
@@ -84,11 +84,13 @@ function RecordEditorInner(){
     if(isInterview){
       record={...record,format:interviewFormat(extra),collection:''};
       extra={...extra,credits:[],locations:[],relations:[],media:extra.mediaType==='text'?'':extra.media,interviewees:who,interviewee:undefined};
+      ({record,extra}=withBody(record,extra));
     }
     // Artículo: título, autor(a), fecha, películas referenciadas y cuerpo; lo demás no se guarda
     if(isArticle){
       record={...record,format:'',collection:''};
       extra={...extra,credits:[],locations:[],media:'',mediaType:'text',relations:(extra.relations||[]).filter(id=>records.some(x=>x.id===id&&x.type==='Película'))};
+      ({record,extra}=withBody(record,extra));
     }
     try{
       await saveRecord(record,extra);
@@ -186,6 +188,12 @@ const personOf=x=>x.id!=null?records.find(p=>p.id===x.id&&p.type==='Persona'):nu
 const intervieweeName=x=>personOf(x)?.title||String(x.name||'').trim();
 const cleanInterviewees=list=>(list||[]).map(x=>personOf(x)?{id:x.id}:{name:String(x.name||'').trim()}).filter(x=>x.id!=null||x.name);
 const interviewTitle=list=>{const name=joinNames(list.map(intervieweeName).filter(Boolean));return {subtitle:name,title:name?`Entrevista a ${name}`:''}};
+// Entrevista y artículo: se guardan los bloques del cuerpo sin los vacíos, y el texto completo como descripción
+function withBody(record,extra){
+  const body=bodyBlocks(record.description,extra).filter(b=>b.type==='image'?b.src:b.text?.trim());
+  return {record:{...record,description:bodyPlainText(body)},extra:{...extra,body,bodyImages:undefined}};
+}
+
 function asInterview(d){
   if(d.record.type!=='Entrevista')return d;
   const who=getInterviewees(d.record,d.extra,records);
@@ -208,6 +216,9 @@ function withArticle(label){
 function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
   const [picker,setPicker]=useState(null), [pickAspect,setPickAspect]=useState(null);
   const credits=e.credits||[], gallery=e.gallery||[], places=e.locations||[];
+  const blocks=bodyBlocks(r.description,e);
+  // Cada cambio del cuerpo actualiza también el texto completo (listados y buscador)
+  const setBlocks=list=>{setE({body:list,bodyImages:undefined});setR({description:bodyPlainText(list)})};
   const setCredit=(i,j,v)=>setE({credits:credits.map((c,k)=>k===i?(j===0?[v,c[1]]:[c[0],v]):c)});
   // Clave del campo en la página pública → valor, cómo cambiarlo, cómo se llama y un ejemplo
   const field=key=>{
@@ -226,8 +237,8 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     // El recorte parte con la forma del lugar donde está la imagen (póster, portada…)
     image:()=>slotBtn('image',ev=>{setPickAspect(aspectNear(ev.currentTarget));setPicker('image')},ImagePlus,r.image?'Cambiar imagen principal':'Añadir imagen principal'),
     // Galería: añadir varias imágenes a la vez, también desde la vista previa
-    // Imágenes dentro del texto (entrevistas y artículos): se agregan aquí o desde el panel
-    bodyImages:()=>slotBtn('bodyImages',()=>setPicker({bodyImage:-1}),ImagePlus,'Añadir imagen al texto'),
+    // Cuerpo de entrevistas y artículos: texto e imágenes intercalados, escritos ahí mismo
+    body:()=><BodyEditor blocks={blocks} setBlocks={setBlocks} pick={setPicker} label={field('description')[2]}/>,
     gallery:()=>slotBtn('gallery',()=>setPicker({gallery:-1}),Images,'Añadir imágenes a la galería'),
     media:()=>needsFile&&slotBtn('media',()=>setPicker('media'),MediaIcon,`${cfg.label} · ${e.mediaType==='video'?(r.type==='Entrevista'?(e.media?'cambiar video':'agregar video'):e.media?'cambiar película':'agregar enlace de la película'):needsFile?(e.media?'cambiar archivo':'subir archivo'):'cambiar tipo'}`)
   };
@@ -262,8 +273,8 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     {picker==='film'&&<RecordPicker title="Vincular película referenciada" types={['Película']} exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
     {picker==='link'&&<RecordPicker title="Vincular película o persona" types={['Película','Persona']} exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
     {picker==='relation'&&<RecordPicker exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
-    {picker?.bodyImage!==undefined&&<ImagePicker title={picker.bodyImage<0?'Añadir imagen al texto':'Imagen del texto'} value={(e.bodyImages||[])[picker.bodyImage]?.src}
-      onPick={src=>{const list=e.bodyImages||[];setE({bodyImages:picker.bodyImage<0?[...list,{src,after:Math.min(1,bodyParagraphs(r.description).length),align:'right',caption:''}]:list.map((x,i)=>i===picker.bodyImage?{...x,src}:x)})}}
+    {picker?.bodyImage!==undefined&&<ImagePicker title={picker.insert?'Añadir imagen al texto':'Imagen del texto'} value={picker.insert?undefined:blocks[picker.bodyImage]?.src}
+      onPick={src=>setBlocks(picker.insert?[...blocks.slice(0,picker.bodyImage),{id:blockId(),type:'image',src,align:'right',caption:''},...blocks.slice(picker.bodyImage)]:blocks.map((b,i)=>i===picker.bodyImage?{...b,src}:b))}
       onClose={()=>setPicker(null)}/>}
     {picker?.gallery!==undefined&&<ImagePicker title={picker.gallery<0?'Añadir a la galería':'Imagen de la galería'} value={gallery[picker.gallery]} multiple={picker.gallery<0}
       onPickMany={srcs=>setE({gallery:[...gallery,...srcs]})}
@@ -370,7 +381,6 @@ function InterviewPanel({r,e,setR,setE,openPicker}){
         {r.image&&<button type="button" className="cms-icon-btn is-danger-text" onClick={ask('la imagen',()=>setR({image:''}))} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}</div>
       {!r.image&&photo&&<p className="cms-help">Sin imagen propia se usa la fotografía de {photo.title}.</p>}
     </PanelBlock>
-    <BodyImagesEditor r={r} e={e} setE={setE} openPicker={openPicker}/>
   </>;
 }
 
@@ -391,33 +401,43 @@ function ArticlePanel({r,e,setR,setE,openPicker}){
       <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('image')}><ImagePlus/> {r.image?'Cambiar imagen':'Subir imagen'}</button>
         {r.image&&<button type="button" className="cms-icon-btn is-danger-text" onClick={ask('la imagen',()=>setR({image:''}))} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}</div>
     </PanelBlock>
-    <BodyImagesEditor r={r} e={e} setE={setE} openPicker={openPicker}/>
   </>;
 }
 
-// Imágenes dentro del texto: después de qué párrafo van, a qué lado (el texto las rodea) y un pie opcional
-function BodyImagesEditor({r,e,setE,openPicker}){
+// Cuerpo en la vista previa: bloques de texto e imagen en orden. Entre bloques se agrega texto o una imagen;
+// cada imagen elige su lado (a la izquierda o derecha, el texto que sigue la rodea), se mueve, cambia o quita.
+const blockId=()=>Math.random().toString(36).slice(2,9);
+function BodyEditor({blocks,setBlocks,pick,label}){
   const ask=useAskRemove();
-  const list=e.bodyImages||[], paras=bodyParagraphs(r.description);
-  const set=(i,patch)=>setE({bodyImages:list.map((x,j)=>j===i?{...x,...patch}:x)});
-  const cut=t=>t.length>42?`${t.slice(0,42).trim()}…`:t;
-  return <PanelBlock title={`Imágenes en el texto · ${list.length}`}>
-    {list.length>0&&<ul className="cms-body-images">{list.map((img,i)=><li key={i}>
-      <div className="cms-body-image-top">
-        <button type="button" className="cms-gallery-thumb" onClick={()=>openPicker({bodyImage:i})} title="Cambiar imagen"><img src={thumb(img.src,160)} alt={`Imagen ${i+1}`}/></button>
-        <label className="cms-field"><span>Ubicación</span>
-          <select value={Math.min(Number(img.after)||0,paras.length)} onChange={ev=>set(i,{after:Number(ev.target.value)})}>
-            <option value={0}>Al inicio del texto</option>
-            {paras.map((t,n)=><option key={n} value={n+1}>{n+1===paras.length?'Al final del texto':`Después del párrafo ${n+1}: «${cut(t)}»`}</option>)}
-          </select></label>
-        <button type="button" className="cms-icon-btn is-danger-text" onClick={ask('esta imagen del texto',()=>setE({bodyImages:list.filter((_,j)=>j!==i)}))} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>
+  const list=blocks.length?blocks:[{id:'first',type:'text',text:''}];
+  const put=(i,patch)=>setBlocks(list.map((b,j)=>j===i?{...b,...patch}:b));
+  const insert=(i,block)=>setBlocks([...list.slice(0,i),block,...list.slice(i)]);
+  const remove=i=>setBlocks(list.filter((_,j)=>j!==i));
+  const move=(i,d)=>{const next=[...list];[next[i],next[i+d]]=[next[i+d],next[i]];setBlocks(next)};
+  const stop=fn=>ev=>{ev.preventDefault();ev.stopPropagation();fn()};
+  const adder=i=><div className="cms-body-add">
+    <button type="button" onClick={stop(()=>insert(i,{id:blockId(),type:'text',text:''}))}><Type/> Texto</button>
+    <button type="button" onClick={stop(()=>pick({bodyImage:i,insert:true}))}><ImagePlus/> Imagen</button>
+  </div>;
+  return <div className="cms-body-editor">{list.map((b,i)=><React.Fragment key={b.id||i}>
+    {b.type==='image'?<figure className={`body-img is-${b.align||'right'} cms-body-figure`}>
+      <img src={thumb(b.src,1200)} alt=""/>
+      <div className="cms-body-tools">
+        {BODY_IMAGE_ALIGNS.map(([v,l])=><button key={v} type="button" className={(b.align||'right')===v?'active':''} onClick={stop(()=>put(i,{align:v}))}>{l}</button>)}
+        <span/>
+        <button type="button" onClick={stop(()=>pick({bodyImage:i}))} title="Cambiar imagen"><ImagePlus/></button>
+        <button type="button" disabled={i===0} onClick={stop(()=>move(i,-1))} title="Subir" aria-label="Subir"><ChevronUp/></button>
+        <button type="button" disabled={i===list.length-1} onClick={stop(()=>move(i,1))} title="Bajar" aria-label="Bajar"><ChevronDown/></button>
+        <button type="button" onClick={ask('esta imagen',()=>remove(i))} title="Quitar imagen" aria-label="Quitar imagen"><Trash2/></button>
       </div>
-      <div className="cms-segment is-small cms-seg-block">{BODY_IMAGE_ALIGNS.map(([v,l])=><button key={v} type="button" className={(img.align||'right')===v?'active':''} onClick={()=>set(i,{align:v})}>{l}</button>)}</div>
-      <label className="cms-field"><input value={img.caption||''} onChange={ev=>set(i,{caption:ev.target.value})} placeholder="Pie de foto (opcional)" aria-label={`Pie de foto de la imagen ${i+1}`}/></label>
-    </li>)}</ul>}
-    <button type="button" className="cms-btn is-block" onClick={()=>openPicker({bodyImage:-1})}><ImagePlus/> Añadir imagen al texto</button>
-    <p className="cms-help">Elige después de qué párrafo va cada imagen. A la izquierda o a la derecha, el texto la rodea; al centro o a todo el ancho, corta el texto. Cada salto de línea del texto cuenta como un párrafo.</p>
-  </PanelBlock>;
+      <figcaption><Editable value={b.caption||''} onChange={v=>put(i,{caption:v})} placeholder="Pie de foto (opcional)" label="Pie de foto"/></figcaption>
+    </figure>
+    :<div className="cms-body-text">
+      <Editable as="div" multiline value={b.text||''} onChange={v=>put(i,{text:v})} placeholder={i===0?`Escribe ${withArticle(label||'texto')}…`:'Escribe aquí…'} label={label}/>
+      {list.length>1&&<button type="button" className="cms-body-remove" onClick={b.text?.trim()?ask('este bloque de texto',()=>remove(i)):stop(()=>remove(i))} title="Quitar este texto" aria-label="Quitar este texto"><Trash2/></button>}
+    </div>}
+    {adder(i+1)}
+  </React.Fragment>)}</div>;
 }
 
 // Galería de la ficha: miniaturas para editar, reordenar o quitar, y botón para añadir

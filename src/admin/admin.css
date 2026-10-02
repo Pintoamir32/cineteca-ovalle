@@ -654,8 +654,8 @@ html:has(.cms-preview-doc){overflow:hidden}
 .ficha-poster,.press-clipping,.ficha-media,.press-player{position:relative}
 .ficha-hero>.cms-slot-btn.is-image{top:110px;right:4vw}
 .ficha-media>.cms-slot-btn.is-media,.press-player>.cms-slot-btn.is-media{position:absolute;z-index:6;top:58px;right:18px}
-.cms-slot-btn.is-credits,.cms-slot-btn.is-gallery,.cms-slot-btn.is-relations,.cms-slot-btn.is-places,.cms-slot-btn.is-bodyImages{background:transparent;color:var(--forest);box-shadow:none;border:1.5px dashed currentColor;padding:10px 16px;margin-top:12px;backdrop-filter:none}
-.cms-slot-btn.is-credits:hover,.cms-slot-btn.is-gallery:hover,.cms-slot-btn.is-relations:hover,.cms-slot-btn.is-places:hover,.cms-slot-btn.is-bodyImages:hover{background:color-mix(in srgb,var(--acid) 30%,transparent)}
+.cms-slot-btn.is-credits,.cms-slot-btn.is-gallery,.cms-slot-btn.is-relations,.cms-slot-btn.is-places{background:transparent;color:var(--forest);box-shadow:none;border:1.5px dashed currentColor;padding:10px 16px;margin-top:12px;backdrop-filter:none}
+.cms-slot-btn.is-credits:hover,.cms-slot-btn.is-gallery:hover,.cms-slot-btn.is-relations:hover,.cms-slot-btn.is-places:hover{background:color-mix(in srgb,var(--acid) 30%,transparent)}
 .ficha-credits>.cms-slot-btn{align-self:center;justify-self:start;margin:0}
 .cms-preview-doc .ficha-film-facts .cms-editable,.cms-preview-doc .ficha-film-specs .cms-editable{min-width:3ch}
 .cms-preview-doc .ficha-film-specs .cms-editable.is-empty,.cms-preview-doc .ficha-credits .cms-editable.is-empty{opacity:.55}
@@ -994,12 +994,24 @@ html:has(.cms-preview-doc){overflow:hidden}
 .cms-sub-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
 @media(max-width:700px){.cms-sub-body{padding-left:18px}}
 
-/* Imágenes dentro del texto (entrevistas y artículos) */
-.cms-body-images{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:12px}
-.cms-body-images>li{display:grid;gap:8px;padding:10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface)}
-.cms-body-image-top{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;align-items:end}
-.cms-body-image-top .cms-gallery-thumb{width:56px;height:56px}
-.cms-body-images select{width:100%;border:1px solid var(--line-strong);background:var(--surface);border-radius:var(--r-sm);padding:9px 10px;font-size:13px;color:var(--ink)}
-.cms-body-images .cms-segment{display:flex}
-.cms-body-images .cms-segment button{flex:1;justify-content:center;padding:6px 8px}
-.interview-text>.cms-slot-btn.is-bodyImages{margin:0 auto 24px;display:flex;width:max-content}
+/* Cuerpo de entrevistas y artículos en la vista previa: texto e imágenes intercalados */
+.interview-text-body:has(.cms-body-editor)::first-letter{float:none;font:inherit;margin:0;color:inherit}
+.cms-body-text{position:relative}
+.cms-body-text>.cms-editable{display:block;min-height:1.8em}
+.cms-body-remove{position:absolute;top:0;right:-40px;width:30px;height:30px;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;color:#a33;opacity:0;cursor:pointer;transition:opacity .15s}
+.cms-body-remove svg{width:15px}
+.cms-body-text:hover>.cms-body-remove,.cms-body-remove:focus-visible{opacity:1}
+.cms-body-add{display:flex;gap:8px;margin:10px 0 18px;opacity:.45;transition:opacity .15s;font:700 12px 'Manrope',sans-serif}
+.cms-body-add:hover,.cms-body-add:focus-within,.cms-body-editor>.cms-body-add:last-child{opacity:1}
+.cms-body-add button{display:inline-flex;align-items:center;gap:6px;border:1.5px dashed var(--forest);background:transparent;color:var(--forest);border-radius:999px;padding:6px 12px;font:inherit;cursor:pointer}
+.cms-body-add button:hover{background:color-mix(in srgb,var(--acid) 30%,transparent)}
+.cms-body-add svg{width:14px;height:14px}
+.cms-body-figure{position:relative}
+.cms-body-tools{position:absolute;top:8px;left:8px;right:8px;display:flex;flex-wrap:wrap;gap:3px;padding:4px;border-radius:10px;background:rgba(16,18,16,.82);backdrop-filter:blur(6px);font:700 11px 'Manrope',sans-serif}
+.cms-body-tools span{flex:1}
+.cms-body-tools button{display:inline-grid;place-items:center;border:0;background:transparent;color:#fff;border-radius:7px;padding:5px 8px;font:inherit;cursor:pointer;min-height:26px}
+.cms-body-tools button svg{width:14px;height:14px}
+.cms-body-tools button:hover:not(:disabled){background:rgba(255,255,255,.16)}
+.cms-body-tools button.active{background:var(--acid);color:var(--black)}
+.cms-body-tools button:disabled{opacity:.35;cursor:default}
+.cms-body-figure figcaption .cms-editable{display:block}
