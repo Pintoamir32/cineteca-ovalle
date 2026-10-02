@@ -1007,10 +1007,10 @@ html:has(.cms-preview-doc){overflow:hidden}
 .cms-body-add button:hover{background:color-mix(in srgb,var(--acid) 30%,transparent)}
 .cms-body-add svg{width:14px;height:14px}
 .cms-body-figure{position:relative;z-index:2}
-.cms-body-tools{position:absolute;top:8px;left:8px;right:8px;display:flex;flex-wrap:wrap;gap:3px;padding:4px;border-radius:10px;background:rgba(16,18,16,.82);backdrop-filter:blur(6px);font:700 11px 'Manrope',sans-serif}
+.cms-body-tools{position:absolute;top:10px;left:10px;right:10px;display:flex;flex-wrap:wrap;gap:5px;padding:6px;border-radius:12px;background:rgba(16,18,16,.82);backdrop-filter:blur(6px);font:700 15px 'Manrope',sans-serif}
 .cms-body-tools span{flex:1}
-.cms-body-tools button{display:inline-grid;place-items:center;border:0;background:transparent;color:#fff;border-radius:7px;padding:5px 8px;font:inherit;cursor:pointer;min-height:26px}
-.cms-body-tools button svg{width:14px;height:14px}
+.cms-body-tools button{display:inline-grid;place-items:center;border:0;background:transparent;color:#fff;border-radius:9px;padding:8px 13px;font:inherit;cursor:pointer;min-height:36px}
+.cms-body-tools button svg{width:19px;height:19px}
 .cms-body-tools button:hover:not(:disabled){background:rgba(255,255,255,.16)}
 .cms-body-tools button.active{background:var(--acid);color:var(--black)}
 .cms-body-tools button:disabled{opacity:.35;cursor:default}
