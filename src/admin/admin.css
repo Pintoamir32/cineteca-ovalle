@@ -1015,3 +1015,5 @@ html:has(.cms-preview-doc){overflow:hidden}
 .cms-body-tools button.active{background:var(--acid);color:var(--black)}
 .cms-body-tools button:disabled{opacity:.35;cursor:default}
 .cms-body-figure figcaption .cms-editable{display:block}
+.cms-body-tools .cms-body-size{flex:0 0 auto;display:inline-flex;align-items:center;gap:1px;padding:0 2px;border-radius:7px;background:rgba(255,255,255,.1)}
+.cms-body-size b{min-width:34px;text-align:center;color:#fff;font:700 11px 'IBM Plex Mono',monospace}

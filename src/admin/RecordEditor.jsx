@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AlignCenter, AlignLeft, AlignRight, ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Circle, Eye, EyeOff, FileText, ImagePlus, Images, MapPin, Plus, Star, Trash2, Type, X } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Circle, Eye, EyeOff, FileText, ImagePlus, Images, MapPin, Minus, Plus, Star, Trash2, Type, X } from 'lucide-react';
 import { RecordCard, RecordRow } from '../components';
 import { collections, locations, records, site } from '../data';
 import { EditContext } from '../edit-context';
 import { RecordDetail } from '../pages';
-import { BODY_IMAGE_ALIGNS, bodyBlocks, bodyPlainText } from '../record-views';
+import { BODY_IMAGE_ALIGNS, BODY_IMAGE_SIZE, bodyBlocks, bodyImageStyle, bodyPlainText } from '../record-views';
 import { getFilmography, getInterviewees, INTERVIEW_FORMATS, interviewFormat, joinNames } from '../repository';
 import { deleteRecord, nextId, saveError, saveRecord, setData, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
@@ -415,16 +415,23 @@ function BodyEditor({blocks,setBlocks,pick,label}){
   const remove=i=>setBlocks(list.filter((_,j)=>j!==i));
   const move=(i,d)=>{const next=[...list];[next[i],next[i+d]]=[next[i+d],next[i]];setBlocks(next)};
   const stop=fn=>ev=>{ev.preventDefault();ev.stopPropagation();fn()};
+  // Achicar o agrandar de a 5 %, dentro del rango de su lado
+  const resize=(i,d)=>{const b=list[i], [def,min,max]=BODY_IMAGE_SIZE[b.align||'right'];put(i,{size:Math.min(max,Math.max(min,Math.round((b.size||def)/5)*5+d))})};
   const adder=i=><div className="cms-body-add">
     <button type="button" onClick={stop(()=>insert(i,{id:blockId(),type:'text',text:''}))}><Type/> Texto</button>
     <button type="button" onClick={stop(()=>pick({bodyImage:i,insert:true}))}><ImagePlus/> Imagen</button>
   </div>;
   return <div className="cms-body-editor">{list.map((b,i)=><React.Fragment key={b.id||i}>
-    {b.type==='image'?<figure className={`body-img is-${b.align||'right'} cms-body-figure`}>
+    {b.type==='image'?<figure className={`body-img is-${b.align||'right'} cms-body-figure`} style={bodyImageStyle(b)}>
       <img src={thumb(b.src,1200)} alt=""/>
       <div className="cms-body-tools">
         {BODY_IMAGE_ALIGNS.map(([v,l])=><button key={v} type="button" className={(b.align||'right')===v?'active':''} onClick={stop(()=>put(i,{align:v}))}>{l}</button>)}
         <span/>
+        {b.align!=='full'&&(()=>{const [def,min,max]=BODY_IMAGE_SIZE[b.align||'right'], size=Math.min(max,Math.max(min,b.size||def));return <span className="cms-body-size">
+          <button type="button" disabled={size<=min} onClick={stop(()=>resize(i,-5))} title="Achicar" aria-label="Achicar imagen"><Minus/></button>
+          <b>{size}%</b>
+          <button type="button" disabled={size>=max} onClick={stop(()=>resize(i,5))} title="Agrandar" aria-label="Agrandar imagen"><Plus/></button>
+        </span>})()}
         <button type="button" onClick={stop(()=>pick({bodyImage:i}))} title="Cambiar imagen"><ImagePlus/></button>
         <button type="button" disabled={i===0} onClick={stop(()=>move(i,-1))} title="Subir" aria-label="Subir"><ChevronUp/></button>
         <button type="button" disabled={i===list.length-1} onClick={stop(()=>move(i,1))} title="Bajar" aria-label="Bajar"><ChevronDown/></button>

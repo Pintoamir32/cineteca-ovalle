@@ -73,8 +73,12 @@ export function bodyBlocks(text,extra={}){
 }
 // El texto completo (sin imágenes), para listados, buscador y descripciones
 export const bodyPlainText=blocks=>blocks.filter(b=>b.type==='text'&&b.text?.trim()).map(b=>b.text.trim()).join('\n');
+// Tamaño de la imagen (% del ancho del texto); a lo ancho no se ajusta. Sin valor, el tamaño por defecto de cada lado.
+export const BODY_IMAGE_SIZE={left:[44,20,70],right:[44,20,70],center:[70,30,100]};// [por defecto, mínimo, máximo]
+// Al cambiar de lado, el tamaño se ajusta al rango del nuevo lado
+export const bodyImageStyle=b=>{const r=BODY_IMAGE_SIZE[b.align||'right'];return b.size&&r?{'--w':`${Math.min(r[2],Math.max(r[1],b.size))}%`}:undefined};
 export function BodyImage({block}){
-  return <figure className={`body-img is-${block.align||'right'}`}>
+  return <figure className={`body-img is-${block.align||'right'}`} style={bodyImageStyle(block)}>
     <img src={block.src} alt={block.caption||''} loading="lazy" decoding="async"/>
     {block.caption&&<figcaption>{block.caption}</figcaption>}
   </figure>;
