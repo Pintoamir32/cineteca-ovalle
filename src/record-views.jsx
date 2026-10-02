@@ -83,7 +83,7 @@ function docConfig(item,extra){
       factsLabel:'Ficha de la entrevista',textLabel:'CONTENIDO',player:extra.mediaType!=='text'
     };
   }
-  // Artículo: título, autor(a), fecha de publicación, películas referenciadas, cuerpo del artículo, imagen principal y galería
+  // Artículo: título, autor(a), fecha de publicación, películas referenciadas, cuerpo del artículo e imagen principal
   if(item.type==='Artículo')return {
     article:true,
     facts:[['Autor(a)',item.subtitle,true,'subtitle'],['Fecha de publicación',item.year,true,'year']],
@@ -99,10 +99,9 @@ function docConfig(item,extra){
 export function DocumentView({item,extra,related,people}){
   const {f,slot,edit}=useEdit();
   const cfg=docConfig(item,extra);
-  // Galería: imagen principal, material propio del registro e imágenes de sus relacionados
+  // Imágenes que se pueden ampliar: la principal (prensa, entrevistas y artículos no llevan galería)
   const gallery=useMemo(()=>[
     {src:cfg.image||item.image,caption:'',alt:item.title,kind:'Imagen principal'},
-    ...(extra.gallery||[]).map((src,i)=>({src,caption:'',alt:`${item.title} · imagen ${i+1}`})),
     ...(cfg.press||cfg.interview||cfg.article?[]:related).map(r=>({src:r.image,caption:r.title,kind:`Ver también · ${r.type}`,to:recordPath(r)}))
   ],[item,extra,related,cfg.image,cfg.press,cfg.interview,cfg.article]);
   const [zoom,setZoom]=useState(null);
@@ -116,8 +115,6 @@ export function DocumentView({item,extra,related,people}){
   },[open,gallery.length]);
   const hasPdf=cfg.press&&!!extra.media;
   const [CtaIcon,ctaText,ctaHref]=cfg.cta||[];
-  // Prensa y entrevistas: la galería muestra solo las imágenes subidas, no la principal (que sigue arriba y se amplía igual)
-  const skipMain=cfg.press||cfg.interview||cfg.article?1:0, shownGallery=gallery.slice(skipMain);
   // Entrevista: el reproductor va junto a la ficha (columna derecha), no bajo la foto
   const player=cfg.player&&<div className="press-player" id="media"><MediaViewer item={{...item,image:cfg.image||item.image}} extra={extra}/>{slot('media')}</div>;
   // Panel derecho, como el de las películas: la imagen principal y los campos propios de cada tipo (y en prensa, sus películas vinculadas)
@@ -173,14 +170,6 @@ export function DocumentView({item,extra,related,people}){
     {cfg.article&&(edit||related.some(r=>r.type==='Película'))&&<section className="doc-footer is-single" data-reveal>
       <div className="doc-footer-main"><RelatedList related={related.filter(r=>r.type==='Película')} title="Películas referenciadas"/>
         {!related.some(r=>r.type==='Película')&&edit&&<p className="ficha-filmography-empty">Vincula las películas desde el panel de la derecha.</p>}</div>
-    </section>}
-    {(!(cfg.press||cfg.interview||cfg.article)||edit||extra.gallery?.length>0)&&<section className="doc-gallery" data-reveal>
-      <div className="ficha-filmography-head"><div className="ficha-section-label"><span>{cfg.press||((cfg.interview||cfg.article)&&!(edit||item.description?.trim()))?'01':'02'}</span> GALERÍA</div><span>{String(shownGallery.length).padStart(2,'0')} {shownGallery.length===1?'IMAGEN':'IMÁGENES'}</span></div>
-      {slot('gallery')}
-      <div className="doc-gallery-grid">{shownGallery.map((g,i)=><figure key={g.src+i} className={i===0?'is-main':undefined}>
-        <button type="button" onClick={()=>setZoom(i+skipMain)} aria-label={`Ampliar: ${g.caption||g.alt}`}><img src={g.src} alt={g.caption||g.alt} loading="lazy" decoding="async"/><span className="press-zoom"><Maximize2/> Ampliar</span></button>
-        {g.caption&&<figcaption><small>{String(i+1).padStart(2,'0')}{skipMain?'':` · ${g.kind}`}</small>{g.to?<Link to={g.to}>{g.caption}</Link>:<span>{g.caption}</span>}</figcaption>}
-      </figure>)}</div>
     </section>}
     </div>{aside}</div>
     {open&&<div className="press-lightbox" role="dialog" aria-modal="true" aria-label={shown.caption||shown.alt} onClick={()=>setZoom(null)}>

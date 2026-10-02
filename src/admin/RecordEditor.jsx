@@ -74,17 +74,17 @@ function RecordEditorInner(){
       extra={...extra,credits:[],gallery:[],locations:[],media:'',mediaType:'image',relations:(extra.relations||[]).filter(id=>records.some(x=>x.id===id&&x.type==='Película')),
         works:(extra.works||[]).map(w=>({title:String(w.title||'').trim(),year:String(w.year||'').trim()})).filter(w=>w.title)};
     }
-    // Prensa: título/fuente, fecha, medio, documento digitalizado (imagen y PDF opcional), galería y vínculos a películas y personas
+    // Prensa: título/fuente, fecha, medio, documento digitalizado (imagen y PDF opcional) y vínculos a películas y personas
     if(isPress){
       record={...record,format:'',collection:'',description:''};
       extra={...extra,credits:[],locations:[],mediaType:'document',relations:(extra.relations||[]).filter(id=>records.some(x=>x.id===id&&['Película','Persona'].includes(x.type)))};
     }
-    // Entrevista: entrevistado(a), fecha, formato, texto (opcional), archivo adjunto (audio o video), imagen y galería
+    // Entrevista: entrevistado(a), fecha, formato, texto (opcional), archivo adjunto (audio o video) e imagen
     if(isInterview){
       record={...record,format:interviewFormat(extra),collection:''};
       extra={...extra,credits:[],locations:[],relations:[],media:extra.mediaType==='text'?'':extra.media,interviewees:who,interviewee:undefined};
     }
-    // Artículo: título, autor(a), fecha, películas referenciadas, cuerpo y galería; lo demás no se guarda
+    // Artículo: título, autor(a), fecha, películas referenciadas y cuerpo; lo demás no se guarda
     if(isArticle){
       record={...record,format:'',collection:''};
       extra={...extra,credits:[],locations:[],media:'',mediaType:'text',relations:(extra.relations||[]).filter(id=>records.some(x=>x.id===id&&x.type==='Película'))};
@@ -320,7 +320,6 @@ function PressPanel({r,e,setR,setE,openPicker}){
       <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('media')}><FileText/> {e.media?'Cambiar PDF':'Subir PDF'}</button>
         {e.media&&<button type="button" className="cms-icon-btn is-danger-text" onClick={ask('el PDF',()=>setE({media:''}))} aria-label="Quitar PDF" title="Quitar PDF"><Trash2/></button>}</div>
       <p className="cms-help">La imagen se muestra en el sitio y en los listados; el PDF, si lo hay, se puede abrir y descargar.</p>
-      <GalleryEditor e={e} setE={setE} openPicker={openPicker}/>
     </PanelBlock>
     <PanelBlock title={`Películas y personas · ${linked.length}`}>
       {linked.length>0?<ul className="cms-mini-list">{linked.map(x=><li key={x.id}>
@@ -359,17 +358,16 @@ function InterviewPanel({r,e,setR,setE,openPicker}){
           {e.media&&<button type="button" className="cms-icon-btn is-danger-text" onClick={ask('el archivo',()=>setE({media:''}))} aria-label="Quitar archivo" title="Quitar archivo"><Trash2/></button>}</div></>}
       <p className="cms-help">{isText?'Escribe la entrevista en la ficha, en «Contenido».':'El texto es opcional: escríbelo en la ficha, en «Contenido». Si queda vacío, no aparece en el sitio.'}</p>
     </PanelBlock>
-    <PanelBlock title="Imagen y galería">
+    <PanelBlock title="Imagen">
       <label className="cms-panel-label">Imagen principal</label>
       <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('image')}><ImagePlus/> {r.image?'Cambiar imagen':'Subir imagen'}</button>
         {r.image&&<button type="button" className="cms-icon-btn is-danger-text" onClick={ask('la imagen',()=>setR({image:''}))} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}</div>
       {!r.image&&photo&&<p className="cms-help">Sin imagen propia se usa la fotografía de {photo.title}.</p>}
-      <GalleryEditor e={e} setE={setE} openPicker={openPicker}/>
     </PanelBlock>
   </>;
 }
 
-// Artículo: películas referenciadas (con enlace a sus fichas), imagen principal y galería
+// Artículo: películas referenciadas (con enlace a sus fichas) e imagen principal
 function ArticlePanel({r,e,setR,setE,openPicker}){
   const ask=useAskRemove();
   const films=(e.relations||[]).map(id=>records.find(x=>x.id===id&&x.type==='Película')).filter(Boolean);
@@ -381,11 +379,10 @@ function ArticlePanel({r,e,setR,setE,openPicker}){
       </li>)}</ul>:<p className="cms-help">Ninguna todavía.</p>}
       <button type="button" className="cms-btn is-block" onClick={()=>openPicker('film')}><Plus/> Vincular película</button>
     </PanelBlock>
-    <PanelBlock title="Imagen y galería">
+    <PanelBlock title="Imagen">
       <label className="cms-panel-label">Imagen principal</label>
       <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('image')}><ImagePlus/> {r.image?'Cambiar imagen':'Subir imagen'}</button>
         {r.image&&<button type="button" className="cms-icon-btn is-danger-text" onClick={ask('la imagen',()=>setR({image:''}))} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}</div>
-      <GalleryEditor e={e} setE={setE} openPicker={openPicker}/>
     </PanelBlock>
   </>;
 }
