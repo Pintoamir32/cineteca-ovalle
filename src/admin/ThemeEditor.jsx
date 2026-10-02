@@ -5,6 +5,7 @@ import { originalTheme, saveError, saveTheme, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
 import { SiteFrame } from './SiteFrame';
 import { useUi } from './fields';
+import { useLocalDraft } from './autosave';
 import { TYPE_META, TYPES } from './meta';
 
 const MAIN=[
@@ -51,11 +52,12 @@ export function ThemeEditor(){
   const [draft,setDraft]=useState(()=>structuredClone(theme));
   const dirty=!same(draft,theme);
   const set=patch=>setDraft(d=>({...d,...patch}));
+  const clearLocal=useLocalDraft('colores',draft,dirty,setDraft);
   const setPal=(i,v)=>set({palette:draft.palette.map((c,j)=>j===i?v:c)});
 
   const save=async()=>{
     try{await saveTheme(draft)}catch(err){return toast(saveError(err),'error')}
-    setNavDirty(false);toast('Colores aplicados en todo el sitio.');
+    clearLocal();setNavDirty(false);toast('Colores aplicados en todo el sitio.');
   };
   const discard=async()=>{if(await confirm({title:'¿Descartar los colores nuevos?',ok:'Descartar'}))setDraft(structuredClone(theme))};
 

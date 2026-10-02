@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Eye, ImagePlus, MapPin, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { collections, locations, records, timelineEvents } from '../data';
 import { countByCollection, countByLocation } from '../repository';
@@ -12,6 +12,7 @@ import { SiteFrame } from './SiteFrame';
 import { EditContext } from '../edit-context';
 import { TimelinePage } from '../pages';
 import { Paged } from '../components';
+import { useLocalDraft } from './autosave';
 
 const pad=n=>String(n).padStart(2,'0');
 const slugify=s=>s.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -23,7 +24,9 @@ function useItemDraft(list,blank,startDirty=false){
   const [draft,setDraft]=useState(()=>existing?{...existing}:blank());
   const [dirty,setDirty]=useState(isNew&&startDirty);
   const set=patch=>{setDraft(d=>({...d,...patch}));setDirty(true)};
-  return {isNew,i,existing,draft,set,dirty,setDirty,reset:()=>{setDraft({...existing});setDirty(false)}};
+  // Copia en el navegador de lo no guardado (ver autosave.js)
+  const clearDraft=useLocalDraft(useLocation().pathname,draft,dirty,d=>{setDraft(d);setDirty(true)});
+  return {isNew,i,existing,draft,set,dirty,setDirty,clearDraft,reset:()=>{setDraft({...existing});setDirty(false)}};
 }
 
 // Guardar / eliminar / descartar comunes a los editores de página completa (comunas)
@@ -37,7 +40,7 @@ function useItemActions({base,item,label,save,remove,removeText,stayAfterSave=tr
       if(err)return toast(err,'error');
       let result;
       try{result=await save.run()}catch(err){return toast(saveError(err),'error')}
-      item.setDirty(false);setDirty(false);
+      item.clearDraft();item.setDirty(false);setDirty(false);
       toast(item.isNew?`${label} cread${o} y publicad${o}.`:'Cambios guardados y publicados.');
       if(save.next)navigate(save.next(result),{replace:true});
       else if(item.isNew||!stayAfterSave)navigate(base);
@@ -45,7 +48,7 @@ function useItemActions({base,item,label,save,remove,removeText,stayAfterSave=tr
     onDelete:async()=>{
       if(!await confirm({title:`¿Eliminar ${label.toLowerCase()}?`,text:removeText,ok:'Eliminar',danger:true}))return;
       try{await remove()}catch(err){return toast(saveError(err),'error')}
-      setDirty(false);toast(`${label} eliminad${o}.`);navigate(base);
+      item.clearDraft();setDirty(false);toast(`${label} eliminad${o}.`);navigate(base);
     },
     onDiscard:async()=>{if(await confirm({title:'¿Descartar los cambios?',ok:'Descartar'}))item.reset()},
     deleteLabel:`Eliminar ${label.toLowerCase()}`
@@ -78,12 +81,12 @@ function ItemModal({item,title,base,label,male=false,validate,save,remove,remove
     if(err)return toast(err,'error');
     setSaving(true);
     try{await save()}catch(err){setSaving(false);return toast(saveError(err),'error')}
-    setDirty(false);toast(item.isNew?`${label} cread${o} y publicad${o}.`:'Cambios guardados y publicados.');navigate(base);
+    item.clearDraft();setDirty(false);toast(item.isNew?`${label} cread${o} y publicad${o}.`:'Cambios guardados y publicados.');navigate(base);
   };
   const onDelete=async()=>{
     if(!await ask({title:`¿Eliminar ${label.toLowerCase()}?`,text:removeText,ok:'Eliminar',danger:true}))return;
     try{await remove()}catch(err){return toast(saveError(err),'error')}
-    setDirty(false);toast(`${label} eliminad${o}.`);navigate(base);
+    item.clearDraft();setDirty(false);toast(`${label} eliminad${o}.`);navigate(base);
   };
   return <Modal onClose={close} title={title} className="cms-item-modal">
     <form onSubmit={onSave} className="cms-item-form">

@@ -7,6 +7,7 @@ import { originalHome, saveError, setData, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
 import { aspectNear, Choice, Editable, ImagePicker, RecordPicker, thumb, useUi, useAskRemove } from './fields';
 import { SiteFrame } from './SiteFrame';
+import { useLocalDraft } from './autosave';
 import { slideFromRecord, slideLinkOptions } from './meta';
 import { newestRecords } from '../repository';
 import { ABOUT_SECTIONS, AboutPage } from '../about';
@@ -39,6 +40,7 @@ export function HomeEditor(){
   const load=()=>({...structuredClone(homeContent),slides:structuredClone(heroSlides),featuredId:site.featuredId});
   const [draft,setDraft]=useState(load), [dirty,setDirty]=useState(false), [picker,setPicker]=useState(null);
   const [slide,setSlide]=useState(0), [real,setReal]=useState(false), [openSec,setOpenSec]=useState('hero');
+  const clearLocal=useLocalDraft('inicio',draft,dirty,d=>{setDraft(d);setDirty(true)});
   const frameApi=useRef(null);
   const set=(path,value)=>{setDraft(d=>setPath(d,path,value));setDirty(true)};
 
@@ -57,7 +59,7 @@ export function HomeEditor(){
     const bad=slides.findIndex(x=>!x.image||!String(x.title||'').trim());
     if(bad>=0){setSlide(bad);reveal('.hero-new');return toast(`La diapositiva ${bad+1} necesita ${slides[bad].image?'un título':'una foto'} antes de guardar.`,'error')}
     try{await setData({homeContent:content,heroSlides:slides,site:{...site,featuredId}})}catch(err){return toast(saveError(err),'error')}
-    setDirty(false);setNavDirty(false);toast('Inicio actualizado y publicado.');
+    clearLocal();setDirty(false);setNavDirty(false);toast('Inicio actualizado y publicado.');
   };
   const discard=async()=>{if(await confirm({title:'¿Descartar los cambios?',text:'El inicio volverá a su última versión guardada.',ok:'Descartar'})){setDraft(load());setDirty(false)}};
   const restore=async()=>{if(await confirm({title:'¿Volver a los textos originales?',text:'Se reemplazan los textos, secciones y fichas elegidas del inicio y del pie de página por los originales. Las diapositivas no cambian. Podrás revisarlo antes de guardar.',ok:'Restablecer textos'})){setDraft(d=>({...originalHome(),slides:d.slides,featuredId:d.featuredId,about:d.about}));setDirty(true)}};
@@ -200,6 +202,7 @@ export function AboutEditor(){
   // Todo el contenido de textos (también el pie, que se edita igual que en el inicio)
   const load=()=>({...structuredClone(homeContent),about:{...ORIGINAL.about,...structuredClone(homeContent.about||{})}});
   const [draft,setDraft]=useState(load), [dirty,setDirty]=useState(false), [real,setReal]=useState(false);
+  const clearLocal=useLocalDraft('sobre-la-cineteca',draft,dirty,d=>{setDraft(d);setDirty(true)});
   const frameApi=useRef(null);
   const set=(path,value)=>{setDraft(d=>setPath(d,path,value));setDirty(true)};
   const a=draft.about;
@@ -217,7 +220,7 @@ export function AboutEditor(){
   const save=async()=>{
     if(!a.heroImage)return toast('Elige una foto de portada antes de guardar.','error');
     try{await setData({homeContent:draft})}catch(err){return toast(saveError(err),'error')}
-    setDirty(false);setNavDirty(false);toast('«Sobre la Cineteca» actualizada y publicada.');
+    clearLocal();setDirty(false);setNavDirty(false);toast('«Sobre la Cineteca» actualizada y publicada.');
   };
   const discard=async()=>{if(await confirm({title:'¿Descartar los cambios?',text:'La página volverá a su última versión guardada.',ok:'Descartar'})){setDraft(load());setDirty(false)}};
   const restore=async()=>{if(await confirm({title:'¿Volver a los textos originales?',text:'Se reemplazan los textos, la foto y las secciones ocultas de «Sobre la Cineteca» por los originales. Podrás revisarlo antes de guardar.',ok:'Restablecer textos'})){set('about',structuredClone(ORIGINAL.about))}};

@@ -14,6 +14,7 @@ import { HomeEditContext } from '../site-text';
 import { useSharedTexts } from './shared-text';
 import { TYPE_META, code, extraOf, missingFields, typeBySlug, typeColor } from './meta';
 import { PREFILL_KEY } from './Submissions';
+import { useLocalDraft } from './autosave';
 
 
 function blankDraft(type){
@@ -44,6 +45,8 @@ function RecordEditorInner(){
   // Destacar en el inicio también espera a «Guardar», como todo lo demás
   const isFeatured=()=>!isNew&&site.featuredId===Number(id);
   const [featured,setFeatured]=useState(isFeatured);
+  // Copia en el navegador de lo no guardado; una ficha nueva recuperada toma un número libre
+  const clearLocal=useLocalDraft(`ficha:${slug}/${id}`,draft,dirty,d=>{setDraft(isNew?{...d,record:{...d.record,id:nextId()}}:d);setDirty(true)});
 
   const {record:r,extra:e}=draft, meta=TYPE_META[r.type], isPerson=r.type==='Persona', isPress=r.type==='Prensa', isInterview=r.type==='Entrevista', isArticle=r.type==='Artículo';
   const setR=patch=>{setDraft(d=>({...d,record:{...d.record,...patch}}));setDirty(true)};
@@ -91,7 +94,7 @@ function RecordEditorInner(){
       await shared.save();
       if(featured&&site.featuredId!==record.id)await setData({site:{...site,featuredId:record.id}});
     }catch(err){return toast(saveError(err),'error')}
-    setDirty(false);setNavDirty(false);
+    clearLocal();setDirty(false);setNavDirty(false);
     toast(record.draft?(isNew?'Borrador guardado. No se verá en el sitio hasta que lo publiques.':wasPublished?'Guardada como borrador: ya no se ve en el sitio.':'Cambios guardados. La ficha sigue como borrador.')
       :isNew?`“${record.title}” ya está publicada en el sitio.`:!wasPublished?'Ficha publicada: ya se ve en el sitio.':'Cambios guardados y publicados.');
     if(isNew||record.slug!==slug)navigate(`/admin/registros/${record.slug}/${record.id}`,{replace:true});
@@ -99,7 +102,7 @@ function RecordEditorInner(){
   };
   const remove=async()=>{
     if(!await confirm({title:`¿Eliminar “${r.title}”?`,text:'La ficha dejará de aparecer en el sitio y se quitará de los relacionados de otras fichas. Esta acción no se puede deshacer.',ok:'Eliminar ficha',danger:true}))return;
-    await deleteRecord(r.id);setNavDirty(false);toast('Ficha eliminada.');navigate(`/admin/registros/${slug}`);
+    await deleteRecord(r.id);clearLocal();setNavDirty(false);toast('Ficha eliminada.');navigate(`/admin/registros/${slug}`);
   };
   const discard=async()=>{
     if(await confirm({title:'¿Descartar los cambios?',text:'La ficha volverá a su última versión guardada.',ok:'Descartar'})){setDraft(load());setFeatured(isFeatured());shared.reset();setDirty(false)}
