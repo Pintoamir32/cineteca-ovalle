@@ -1006,7 +1006,7 @@ html:has(.cms-preview-doc){overflow:hidden}
 .cms-body-add button{display:inline-flex;align-items:center;gap:6px;border:1.5px dashed var(--forest);background:transparent;color:var(--forest);border-radius:999px;padding:6px 12px;font:inherit;cursor:pointer}
 .cms-body-add button:hover{background:color-mix(in srgb,var(--acid) 30%,transparent)}
 .cms-body-add svg{width:14px;height:14px}
-.cms-body-figure{position:relative}
+.cms-body-figure{position:relative;z-index:2}
 .cms-body-tools{position:absolute;top:8px;left:8px;right:8px;display:flex;flex-wrap:wrap;gap:3px;padding:4px;border-radius:10px;background:rgba(16,18,16,.82);backdrop-filter:blur(6px);font:700 11px 'Manrope',sans-serif}
 .cms-body-tools span{flex:1}
 .cms-body-tools button{display:inline-grid;place-items:center;border:0;background:transparent;color:#fff;border-radius:7px;padding:5px 8px;font:inherit;cursor:pointer;min-height:26px}
@@ -1015,5 +1015,27 @@ html:has(.cms-preview-doc){overflow:hidden}
 .cms-body-tools button.active{background:var(--acid);color:var(--black)}
 .cms-body-tools button:disabled{opacity:.35;cursor:default}
 .cms-body-figure figcaption .cms-editable{display:block}
-.cms-body-tools .cms-body-size{flex:0 0 auto;display:inline-flex;align-items:center;gap:1px;padding:0 2px;border-radius:7px;background:rgba(255,255,255,.1)}
-.cms-body-size b{min-width:34px;text-align:center;color:#fff;font:700 11px 'IBM Plex Mono',monospace}
+/* Mover (arrastrando la imagen) y cambiar el tamaño (arrastrando sus esquinas) */
+.cms-body-editor{position:relative}
+.cms-body-tools{opacity:0;transition:opacity .15s}
+.cms-body-figure:hover .cms-body-tools,.cms-body-tools:focus-within{opacity:1}
+.cms-body-editor.is-dragging .cms-body-tools{opacity:0}
+.cms-body-imgbox{position:relative;cursor:grab;touch-action:none;user-select:none}
+.cms-body-imgbox img{pointer-events:none}
+.cms-body-figure:hover .cms-body-imgbox{outline:2px solid var(--acid);outline-offset:2px}
+.cms-body-figure.is-moving{opacity:.35}
+.cms-body-editor.is-dragging,.cms-body-editor.is-dragging *{cursor:grabbing!important}
+.cms-body-handle{position:absolute;z-index:3;width:20px;height:20px;background:#fff;border:2px solid var(--forest);border-radius:3px;opacity:0;transition:opacity .15s;touch-action:none}
+.cms-body-figure:hover .cms-body-handle{opacity:1}
+.cms-body-handle.is-top-left{top:-10px;left:-10px;cursor:nwse-resize}
+.cms-body-handle.is-top-right{top:-10px;right:-10px;cursor:nesw-resize}
+.cms-body-handle.is-bottom-left{bottom:-10px;left:-10px;cursor:nesw-resize}
+.cms-body-handle.is-bottom-right{bottom:-10px;right:-10px;cursor:nwse-resize}
+.cms-body-size-badge{position:absolute;right:8px;bottom:8px;padding:3px 8px;border-radius:999px;background:rgba(16,18,16,.85);color:#fff;font:700 11px 'IBM Plex Mono',monospace}
+.cms-body-drop{position:absolute;left:0;right:0;z-index:5;height:0;pointer-events:none}
+.cms-body-drop span{position:absolute;top:-3px;height:6px;border-radius:3px;background:var(--forest);box-shadow:0 0 0 3px color-mix(in srgb,var(--acid) 60%,transparent)}
+.cms-body-drop.is-left span{left:0;width:40%}
+.cms-body-drop.is-right span{right:0;width:40%}
+.cms-body-drop.is-center span{left:20%;width:60%}
+.cms-body-drop.is-full span{left:0;width:100%}
+.cms-body-ghost{position:fixed;z-index:50;width:120px;height:auto;transform:translate(-50%,-50%) rotate(-2deg);border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.3);opacity:.9;pointer-events:none}

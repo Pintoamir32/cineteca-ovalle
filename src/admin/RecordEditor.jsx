@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AlignCenter, AlignLeft, AlignRight, ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Circle, Eye, EyeOff, FileText, ImagePlus, Images, MapPin, Minus, Plus, Star, Trash2, Type, X } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Circle, Eye, EyeOff, FileText, ImagePlus, Images, MapPin, Plus, Star, Trash2, Type, X } from 'lucide-react';
 import { RecordCard, RecordRow } from '../components';
 import { collections, locations, records, site } from '../data';
 import { EditContext } from '../edit-context';
@@ -404,47 +404,113 @@ function ArticlePanel({r,e,setR,setE,openPicker}){
   </>;
 }
 
-// Cuerpo en la vista previa: bloques de texto e imagen en orden. Entre bloques se agrega texto o una imagen;
-// cada imagen elige su lado (a la izquierda o derecha, el texto que sigue la rodea), se mueve, cambia o quita.
+// Cuerpo en la vista previa: bloques de texto e imagen en orden. Entre bloques se agrega texto o una imagen.
+// Cada imagen se arrastra y se suelta donde se quiera: entre bloques o entre párrafos de un texto (que se divide
+// ahí); según dónde se suelte a lo ancho, queda a la izquierda, al centro o a la derecha. El tamaño se cambia
+// arrastrando sus esquinas.
 const blockId=()=>Math.random().toString(36).slice(2,9);
+// Dos textos seguidos (al mover o quitar una imagen) vuelven a ser uno
+const mergeTexts=list=>list.reduce((out,b)=>{const prev=out[out.length-1];if(prev?.type==='text'&&b.type==='text'){out[out.length-1]={...prev,text:[prev.text,b.text].filter(t=>t?.trim()).join('\n')};return out}return [...out,b]},[]);
+// Cada párrafo en su propio elemento, para saber dónde se puede soltar una imagen
+const textLines=v=>{const lines=String(v).split('\n');return lines.map((l,i)=><span key={i} data-line={i}>{l}{i<lines.length-1&&<br/>}</span>)};
+const sideAt=(x,rect)=>{const f=(x-rect.left)/rect.width;return f<1/3?'left':f>2/3?'right':'center'};
+
 function BodyEditor({blocks,setBlocks,pick,label}){
   const ask=useAskRemove();
+  const rootRef=useRef(null);
+  const [drag,setDrag]=useState(null), [sizing,setSizing]=useState(null);
   const list=blocks.length?blocks:[{id:'first',type:'text',text:''}];
   const put=(i,patch)=>setBlocks(list.map((b,j)=>j===i?{...b,...patch}:b));
   const insert=(i,block)=>setBlocks([...list.slice(0,i),block,...list.slice(i)]);
-  const remove=i=>setBlocks(list.filter((_,j)=>j!==i));
-  const move=(i,d)=>{const next=[...list];[next[i],next[i+d]]=[next[i+d],next[i]];setBlocks(next)};
+  const remove=i=>setBlocks(mergeTexts(list.filter((_,j)=>j!==i)));
   const stop=fn=>ev=>{ev.preventDefault();ev.stopPropagation();fn()};
-  // Achicar o agrandar de a 5 %, dentro del rango de su lado
-  const resize=(i,d)=>{const b=list[i], [def,min,max]=BODY_IMAGE_SIZE[b.align||'right'];put(i,{size:Math.min(max,Math.max(min,Math.round((b.size||def)/5)*5+d))})};
+
+  // Arrastrar para mover: al soltar, la imagen pasa al punto más cercano y toma el lado según la posición horizontal
+  const startMove=(i,ev)=>{
+    if(ev.button!==0)return;
+    ev.preventDefault();
+    const root=rootRef.current, doc=root.ownerDocument, x0=ev.clientX, y0=ev.clientY;
+    let spots=null, target=null;
+    const measure=()=>{
+      const out=[{y:root.getBoundingClientRect().top,at:{block:0}}];
+      root.querySelectorAll(':scope>[data-block]').forEach(el=>{
+        const b=Number(el.dataset.block);
+        if(el.dataset.kind==='text')[...el.querySelectorAll('[data-line]')].filter(s=>s.textContent.trim()).slice(0,-1).forEach(s=>{
+          const rs=s.getClientRects(), r=rs[rs.length-1];
+          if(r)out.push({y:r.bottom+4,at:{block:b,line:Number(s.dataset.line)}});
+        });
+        out.push({y:el.getBoundingClientRect().bottom,at:{block:b+1}});
+      });
+      return out;
+    };
+    const onMove=e=>{
+      if(!spots){if(Math.hypot(e.clientX-x0,e.clientY-y0)<6)return;spots=measure()}
+      const rect=root.getBoundingClientRect();
+      const best=spots.reduce((a,s)=>Math.abs(s.y-e.clientY)<Math.abs(a.y-e.clientY)?s:a);
+      target={at:best.at,align:sideAt(e.clientX,rect)};
+      setDrag({i,top:best.y-rect.top,align:target.align,x:e.clientX,y:e.clientY});
+    };
+    const onUp=()=>{
+      doc.removeEventListener('pointermove',onMove);doc.removeEventListener('pointerup',onUp);
+      setDrag(null);
+      if(target)drop(i,target);
+    };
+    doc.addEventListener('pointermove',onMove);doc.addEventListener('pointerup',onUp);
+  };
+  const drop=(i,{at,align})=>{
+    const was=list[i], img={...was,align:align==='center'&&was.align==='full'?'full':align};
+    let rest=list.filter((_,j)=>j!==i);
+    const idx=at.block>i?at.block-1:at.block;
+    if(at.line!=null&&rest[idx]?.type==='text'){
+      const t=rest[idx], lines=t.text.split('\n');
+      const before=lines.slice(0,at.line+1).join('\n').replace(/\n+$/,''), after=lines.slice(at.line+1).join('\n').replace(/^\n+/,'');
+      rest=[...rest.slice(0,idx),{...t,text:before},img,{id:blockId(),type:'text',text:after},...rest.slice(idx+1)];
+    }else rest=[...rest.slice(0,idx),img,...rest.slice(idx)];
+    setBlocks(mergeTexts(rest));
+  };
+
+  // Arrastrar una esquina para cambiar el tamaño (en % del ancho del texto, dentro del rango de su lado)
+  const startResize=(i,side,ev)=>{
+    if(ev.button!==0)return;
+    ev.preventDefault();ev.stopPropagation();
+    const root=rootRef.current, doc=root.ownerDocument, fig=ev.currentTarget.closest('figure');
+    const W=root.getBoundingClientRect().width, w0=fig.getBoundingClientRect().width, x0=ev.clientX;
+    const align=list[i].align==='full'?'center':(list[i].align||'right'), [,min,max]=BODY_IMAGE_SIZE[align];
+    const k=(side==='right'?1:-1)*(align==='center'?2:1);
+    const onMove=e=>{const size=Math.round(Math.min(max,Math.max(min,(w0+k*(e.clientX-x0))/W*100)));setSizing({i,size});put(i,{align,size})};
+    const onUp=()=>{doc.removeEventListener('pointermove',onMove);doc.removeEventListener('pointerup',onUp);setSizing(null)};
+    doc.addEventListener('pointermove',onMove);doc.addEventListener('pointerup',onUp);
+  };
+
   const adder=i=><div className="cms-body-add">
     <button type="button" onClick={stop(()=>insert(i,{id:blockId(),type:'text',text:''}))}><Type/> Texto</button>
     <button type="button" onClick={stop(()=>pick({bodyImage:i,insert:true}))}><ImagePlus/> Imagen</button>
   </div>;
-  return <div className="cms-body-editor">{list.map((b,i)=><React.Fragment key={b.id||i}>
-    {b.type==='image'?<figure className={`body-img is-${b.align||'right'} cms-body-figure`} style={bodyImageStyle(b)}>
-      <img src={thumb(b.src,1200)} alt=""/>
+  const dragged=drag&&list[drag.i];
+  return <div className={`cms-body-editor${drag?' is-dragging':''}`} ref={rootRef}>{list.map((b,i)=><React.Fragment key={b.id||i}>
+    {b.type==='image'?<figure data-block={i} data-kind="image" className={`body-img is-${b.align||'right'} cms-body-figure${drag?.i===i?' is-moving':''}`} style={bodyImageStyle(b)}>
+      <div className="cms-body-imgbox" onPointerDown={ev=>startMove(i,ev)} title="Arrastra para mover la imagen">
+        <img src={thumb(b.src,1200)} alt="" draggable={false}/>
+        {['top-left','top-right','bottom-left','bottom-right'].map(c=><span key={c} className={`cms-body-handle is-${c}`} onPointerDown={ev=>startResize(i,c.split('-')[1],ev)} title="Arrastra para cambiar el tamaño"/>)}
+        {sizing?.i===i&&<span className="cms-body-size-badge">{sizing.size}%</span>}
+      </div>
       <div className="cms-body-tools">
         {BODY_IMAGE_ALIGNS.map(([v,l])=><button key={v} type="button" className={(b.align||'right')===v?'active':''} onClick={stop(()=>put(i,{align:v}))}>{l}</button>)}
         <span/>
-        {b.align!=='full'&&(()=>{const [def,min,max]=BODY_IMAGE_SIZE[b.align||'right'], size=Math.min(max,Math.max(min,b.size||def));return <span className="cms-body-size">
-          <button type="button" disabled={size<=min} onClick={stop(()=>resize(i,-5))} title="Achicar" aria-label="Achicar imagen"><Minus/></button>
-          <b>{size}%</b>
-          <button type="button" disabled={size>=max} onClick={stop(()=>resize(i,5))} title="Agrandar" aria-label="Agrandar imagen"><Plus/></button>
-        </span>})()}
-        <button type="button" onClick={stop(()=>pick({bodyImage:i}))} title="Cambiar imagen"><ImagePlus/></button>
-        <button type="button" disabled={i===0} onClick={stop(()=>move(i,-1))} title="Subir" aria-label="Subir"><ChevronUp/></button>
-        <button type="button" disabled={i===list.length-1} onClick={stop(()=>move(i,1))} title="Bajar" aria-label="Bajar"><ChevronDown/></button>
+        <button type="button" onClick={stop(()=>pick({bodyImage:i}))} title="Cambiar imagen" aria-label="Cambiar imagen"><ImagePlus/></button>
         <button type="button" onClick={ask('esta imagen',()=>remove(i))} title="Quitar imagen" aria-label="Quitar imagen"><Trash2/></button>
       </div>
       <figcaption><Editable value={b.caption||''} onChange={v=>put(i,{caption:v})} placeholder="Pie de foto (opcional)" label="Pie de foto"/></figcaption>
     </figure>
-    :<div className="cms-body-text">
-      <Editable as="div" multiline value={b.text||''} onChange={v=>put(i,{text:v})} placeholder={i===0?`Escribe ${withArticle(label||'texto')}…`:'Escribe aquí…'} label={label}/>
+    :<div className="cms-body-text" data-block={i} data-kind="text">
+      <Editable as="div" multiline value={b.text||''} onChange={v=>put(i,{text:v})} render={textLines} placeholder={i===0?`Escribe ${withArticle(label||'texto')}…`:'Escribe aquí…'} label={label}/>
       {list.length>1&&<button type="button" className="cms-body-remove" onClick={b.text?.trim()?ask('este bloque de texto',()=>remove(i)):stop(()=>remove(i))} title="Quitar este texto" aria-label="Quitar este texto"><Trash2/></button>}
     </div>}
     {adder(i+1)}
-  </React.Fragment>)}</div>;
+  </React.Fragment>)}
+    {drag&&<div className={`cms-body-drop is-${dragged.align==='full'&&drag.align==='center'?'full':drag.align}`} style={{top:drag.top}}><span/></div>}
+    {drag&&<img className="cms-body-ghost" src={thumb(dragged.src,300)} alt="" style={{left:drag.x,top:drag.y}}/>}
+  </div>;
 }
 
 // Galería de la ficha: miniaturas para editar, reordenar o quitar, y botón para añadir
