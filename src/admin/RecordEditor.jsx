@@ -5,6 +5,7 @@ import { RecordCard, RecordRow } from '../components';
 import { collections, locations, records, site } from '../data';
 import { EditContext } from '../edit-context';
 import { RecordDetail } from '../pages';
+import { BODY_IMAGE_ALIGNS, bodyParagraphs } from '../record-views';
 import { getFilmography, getInterviewees, INTERVIEW_FORMATS, interviewFormat, joinNames } from '../repository';
 import { deleteRecord, nextId, saveError, saveRecord, setData, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
@@ -225,6 +226,8 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     // El recorte parte con la forma del lugar donde está la imagen (póster, portada…)
     image:()=>slotBtn('image',ev=>{setPickAspect(aspectNear(ev.currentTarget));setPicker('image')},ImagePlus,r.image?'Cambiar imagen principal':'Añadir imagen principal'),
     // Galería: añadir varias imágenes a la vez, también desde la vista previa
+    // Imágenes dentro del texto (entrevistas y artículos): se agregan aquí o desde el panel
+    bodyImages:()=>slotBtn('bodyImages',()=>setPicker({bodyImage:-1}),ImagePlus,'Añadir imagen al texto'),
     gallery:()=>slotBtn('gallery',()=>setPicker({gallery:-1}),Images,'Añadir imágenes a la galería'),
     media:()=>needsFile&&slotBtn('media',()=>setPicker('media'),MediaIcon,`${cfg.label} · ${e.mediaType==='video'?(r.type==='Entrevista'?(e.media?'cambiar video':'agregar video'):e.media?'cambiar película':'agregar enlace de la película'):needsFile?(e.media?'cambiar archivo':'subir archivo'):'cambiar tipo'}`)
   };
@@ -241,12 +244,12 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     return null;
   };
   const context={
-    text:(key,{multiline=false}={})=>{
+    text:(key,{multiline=false,as,render}={})=>{
       // La indicación siempre dice qué escribir (la página solo aporta la clave del campo)
       const [value,onChange,label,example,hint]=field(key), options=choices(key);
       if(hint)return <Editable key={key} value={value} onChange={onChange} placeholder={hint} label={label}/>;
       if(options)return <EditableChoice key={key} value={value} onChange={onChange} options={options} label={label} placeholder={`Elige ${withArticle(label)}${example?` (ej. ${example})`:''}`}/>;
-      return <Editable key={key} value={value} onChange={onChange} multiline={multiline} wrap={key==='title'} placeholder={`Escribe ${withArticle(label)}${example?` (ej. ${example})`:''}`} label={label}/>;
+      return <Editable key={key} as={as} render={render} value={value} onChange={onChange} multiline={multiline} wrap={key==='title'} placeholder={`Escribe ${withArticle(label)}${example?` (ej. ${example})`:''}`} label={label}/>;
     },
     slot:name=>slots[name]?.()
   };
@@ -259,6 +262,9 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     {picker==='film'&&<RecordPicker title="Vincular película referenciada" types={['Película']} exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
     {picker==='link'&&<RecordPicker title="Vincular película o persona" types={['Película','Persona']} exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
     {picker==='relation'&&<RecordPicker exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
+    {picker?.bodyImage!==undefined&&<ImagePicker title={picker.bodyImage<0?'Añadir imagen al texto':'Imagen del texto'} value={(e.bodyImages||[])[picker.bodyImage]?.src}
+      onPick={src=>{const list=e.bodyImages||[];setE({bodyImages:picker.bodyImage<0?[...list,{src,after:Math.min(1,bodyParagraphs(r.description).length),align:'right',caption:''}]:list.map((x,i)=>i===picker.bodyImage?{...x,src}:x)})}}
+      onClose={()=>setPicker(null)}/>}
     {picker?.gallery!==undefined&&<ImagePicker title={picker.gallery<0?'Añadir a la galería':'Imagen de la galería'} value={gallery[picker.gallery]} multiple={picker.gallery<0}
       onPickMany={srcs=>setE({gallery:[...gallery,...srcs]})}
       onPick={src=>setE({gallery:gallery.map((g,i)=>i===picker.gallery?src:g)})}
@@ -364,6 +370,7 @@ function InterviewPanel({r,e,setR,setE,openPicker}){
         {r.image&&<button type="button" className="cms-icon-btn is-danger-text" onClick={ask('la imagen',()=>setR({image:''}))} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}</div>
       {!r.image&&photo&&<p className="cms-help">Sin imagen propia se usa la fotografía de {photo.title}.</p>}
     </PanelBlock>
+    <BodyImagesEditor r={r} e={e} setE={setE} openPicker={openPicker}/>
   </>;
 }
 
@@ -384,7 +391,33 @@ function ArticlePanel({r,e,setR,setE,openPicker}){
       <div className="cms-file-row"><button type="button" className="cms-btn is-block" onClick={()=>openPicker('image')}><ImagePlus/> {r.image?'Cambiar imagen':'Subir imagen'}</button>
         {r.image&&<button type="button" className="cms-icon-btn is-danger-text" onClick={ask('la imagen',()=>setR({image:''}))} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}</div>
     </PanelBlock>
+    <BodyImagesEditor r={r} e={e} setE={setE} openPicker={openPicker}/>
   </>;
+}
+
+// Imágenes dentro del texto: después de qué párrafo van, a qué lado (el texto las rodea) y un pie opcional
+function BodyImagesEditor({r,e,setE,openPicker}){
+  const ask=useAskRemove();
+  const list=e.bodyImages||[], paras=bodyParagraphs(r.description);
+  const set=(i,patch)=>setE({bodyImages:list.map((x,j)=>j===i?{...x,...patch}:x)});
+  const cut=t=>t.length>42?`${t.slice(0,42).trim()}…`:t;
+  return <PanelBlock title={`Imágenes en el texto · ${list.length}`}>
+    {list.length>0&&<ul className="cms-body-images">{list.map((img,i)=><li key={i}>
+      <div className="cms-body-image-top">
+        <button type="button" className="cms-gallery-thumb" onClick={()=>openPicker({bodyImage:i})} title="Cambiar imagen"><img src={thumb(img.src,160)} alt={`Imagen ${i+1}`}/></button>
+        <label className="cms-field"><span>Ubicación</span>
+          <select value={Math.min(Number(img.after)||0,paras.length)} onChange={ev=>set(i,{after:Number(ev.target.value)})}>
+            <option value={0}>Al inicio del texto</option>
+            {paras.map((t,n)=><option key={n} value={n+1}>{n+1===paras.length?'Al final del texto':`Después del párrafo ${n+1}: «${cut(t)}»`}</option>)}
+          </select></label>
+        <button type="button" className="cms-icon-btn is-danger-text" onClick={ask('esta imagen del texto',()=>setE({bodyImages:list.filter((_,j)=>j!==i)}))} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>
+      </div>
+      <div className="cms-segment is-small cms-seg-block">{BODY_IMAGE_ALIGNS.map(([v,l])=><button key={v} type="button" className={(img.align||'right')===v?'active':''} onClick={()=>set(i,{align:v})}>{l}</button>)}</div>
+      <label className="cms-field"><input value={img.caption||''} onChange={ev=>set(i,{caption:ev.target.value})} placeholder="Pie de foto (opcional)" aria-label={`Pie de foto de la imagen ${i+1}`}/></label>
+    </li>)}</ul>}
+    <button type="button" className="cms-btn is-block" onClick={()=>openPicker({bodyImage:-1})}><ImagePlus/> Añadir imagen al texto</button>
+    <p className="cms-help">Elige después de qué párrafo va cada imagen. A la izquierda o a la derecha, el texto la rodea; al centro o a todo el ancho, corta el texto. Cada salto de línea del texto cuenta como un párrafo.</p>
+  </PanelBlock>;
 }
 
 // Galería de la ficha: miniaturas para editar, reordenar o quitar, y botón para añadir

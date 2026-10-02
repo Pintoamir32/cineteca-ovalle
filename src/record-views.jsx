@@ -48,6 +48,32 @@ export function PdfViewer({url,title}){
 
 /* ---------- Piezas compartidas ---------- */
 
+// Imágenes dentro del texto (entrevistas y artículos). Cada una va después de un párrafo (after: cuántos
+// párrafos la preceden; 0 = al inicio) y se alinea a la izquierda o derecha (el texto la rodea), al centro o a lo ancho.
+export const BODY_IMAGE_ALIGNS=[['left','Izquierda'],['right','Derecha'],['center','Centro'],['full','Ancho completo']];
+export const bodyParagraphs=text=>String(text||'').split('\n').filter(l=>l.trim());
+export function BodyText({text,images=[]}){
+  const lines=String(text||'').split('\n'), total=bodyParagraphs(text).length;
+  const at=n=>images.map((img,i)=>[img,i]).filter(([img])=>img?.src&&Math.min(Math.max(Number(img.after)||0,0),total)===n);
+  const figure=([img,i])=><figure key={`img${i}`} className={`body-img is-${img.align||'right'}`}>
+    <img src={img.src} alt={img.caption||''} loading="lazy" decoding="async"/>
+    {img.caption&&<figcaption>{img.caption}</figcaption>}
+  </figure>;
+  const out=[...at(0).map(figure)];
+  let chunk=[], count=0;
+  const flush=()=>{const t=chunk.join('\n').replace(/^\n+|\n+$/g,'');if(t)out.push(<div key={`t${out.length}`} className="body-chunk">{t}</div>);chunk=[]};
+  for(const line of lines){
+    chunk.push(line);
+    if(!line.trim())continue;
+    count++;
+    const here=at(count);
+    if(here.length&&count<total){flush();out.push(...here.map(figure))}
+  }
+  flush();
+  if(total>0)out.push(...at(total).map(figure));
+  return <>{out}<span className="body-clear"/></>;
+}
+
 // [etiqueta, valor, ancho, campo editable]: en el gestor los campos editables se muestran aunque estén vacíos
 function Facts({rows}){
   const {edit,f}=useEdit();
@@ -115,6 +141,9 @@ export function DocumentView({item,extra,related,people}){
   },[open,gallery.length]);
   const hasPdf=cfg.press&&!!extra.media;
   const [CtaIcon,ctaText,ctaHref]=cfg.cta||[];
+  // Entrevista y artículo: el texto con sus imágenes; en el gestor, el texto se edita con un clic y las imágenes desde el panel
+  const bodyImages=extra.bodyImages||[];
+  const body=edit?f('description',null,{multiline:true,as:'div',render:v=><BodyText text={v} images={bodyImages}/>}):<BodyText text={item.description} images={bodyImages}/>;
   // Entrevista: el reproductor va junto a la ficha (columna derecha), no bajo la foto
   const player=cfg.player&&<div className="press-player" id="media"><MediaViewer item={{...item,image:cfg.image||item.image}} extra={extra}/>{slot('media')}</div>;
   // Panel derecho, como el de las películas: la imagen principal y los campos propios de cada tipo (y en prensa, sus películas vinculadas)
@@ -156,11 +185,11 @@ export function DocumentView({item,extra,related,people}){
     {/* Entrevista: el contenido va en su propia sección, a lo ancho y con columna de lectura; si no hay texto, no aparece */}
     {cfg.interview&&(edit||item.description?.trim())&&<section className="interview-text" id="texto" data-reveal>
       <div className="ficha-filmography-head"><div className="ficha-section-label"><span>01</span> CONTENIDO</div><span>ENTREVISTA{cfg.name?` A ${cfg.name.toUpperCase()}`:''}</span></div>
-      <div className="interview-text-body">{f('description',item.description,{multiline:true})}</div>
+      {slot('bodyImages')}<div className="interview-text-body">{body}</div>
     </section>}
     {cfg.article&&(edit||item.description?.trim())&&<section className="interview-text" id="texto" data-reveal>
       <div className="ficha-filmography-head"><div className="ficha-section-label"><span>01</span> CUERPO DEL ARTÍCULO</div>{item.subtitle&&<span>POR {item.subtitle.toUpperCase()}</span>}</div>
-      <div className="interview-text-body">{f('description',item.description,{multiline:true})}</div>
+      {slot('bodyImages')}<div className="interview-text-body">{body}</div>
     </section>}
     {hasPdf&&<section className="press-pdf" id="documento" data-reveal>
       <div className="ficha-filmography-head"><div className="ficha-section-label">DOCUMENTO DIGITALIZADO</div><div className="press-pdf-links"><a href={extra.media} download={`${item.title}.pdf`} target="_blank" rel="noreferrer"><Download/> Descargar PDF</a><a href={extra.media} target="_blank" rel="noreferrer">Abrir en otra pestaña <ArrowRight/></a></div></div>

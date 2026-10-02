@@ -219,3 +219,18 @@
 .doc-articulos .doc-aside-image img{aspect-ratio:4/3}
 @media(max-width:1000px){.doc-aside-image{max-width:420px;margin:0 auto 34px}}
 .doc-aside .ficha-filmography-empty{padding:16px;margin:0 0 20px}
+
+/* Imágenes dentro del texto de entrevistas y artículos: a la izquierda o derecha el texto las rodea */
+/* Junto a una imagen la columna se angosta: justificado dejaría huecos grandes entre palabras */
+.interview-text-body:has(.body-img.is-left,.body-img.is-right){text-align:left}
+.interview-text-body::after,.body-clear{content:'';display:block;clear:both}
+.body-chunk+.body-chunk{margin-top:.9em}
+.body-img{margin:.35em 0 1em;font:inherit}
+.body-img img{display:block;width:100%;height:auto;background:#ebe9e1}
+.body-img figcaption{margin-top:8px;font:500 11px/1.5 'IBM Plex Mono',monospace;letter-spacing:.04em;color:#7a807a;text-align:left}
+.body-img.is-left{float:left;width:44%;margin-right:28px}
+.body-img.is-right{float:right;width:44%;margin-left:28px}
+.body-img.is-center{clear:both;width:70%;margin:1.4em auto}
+.body-img.is-full{clear:both;width:100%;margin:1.4em 0}
+@media (min-width:1100px){.body-img.is-full{width:calc(100% + 160px);margin-left:-80px}}
+@media (max-width:760px){.body-img.is-left,.body-img.is-right,.body-img.is-center{float:none;width:100%;margin:1.2em 0}.body-img.is-full{width:100%;margin-left:0}}
