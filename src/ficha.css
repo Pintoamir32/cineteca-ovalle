@@ -201,7 +201,8 @@ a.back-link.back-link:hover .back-link-icon{background:var(--acid);color:var(--b
 
 /* Ficha de persona: nombre, rol(es) y foto arriba; biografía y obras en una sola columna */
 .ficha-person-body{grid-template-columns:1fr;margin-bottom:24px}
-.ficha-person-body .ficha-main{max-width:980px}
+.ficha-person-body .ficha-main{border-right:0}
+.ficha-person-body .ficha-person-bio{max-width:none}
 .ficha-person-roles{font-weight:600;letter-spacing:.01em}
 .ficha-person-bio{white-space:pre-line}
 @media(max-width:760px){.ficha-person-body{margin-bottom:14px}}
