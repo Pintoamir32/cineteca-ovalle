@@ -1007,7 +1007,7 @@ html:has(.cms-preview-doc){overflow:hidden}
 .cms-body-add button:hover{background:color-mix(in srgb,var(--acid) 30%,transparent)}
 .cms-body-add svg{width:14px;height:14px}
 .cms-body-figure{position:relative;z-index:2}
-.cms-body-tools{position:absolute;top:10px;left:10px;right:10px;display:flex;flex-wrap:wrap;gap:5px;padding:6px;border-radius:12px;background:rgba(16,18,16,.82);backdrop-filter:blur(6px);font:700 15px 'Manrope',sans-serif}
+.cms-body-tools{position:relative;margin-top:8px;display:flex;flex-wrap:wrap;gap:5px;padding:6px;border-radius:12px;background:rgba(16,18,16,.82);font:700 15px 'Manrope',sans-serif}
 .cms-body-tools span{flex:1}
 .cms-body-tools button{display:inline-grid;place-items:center;border:0;background:transparent;color:#fff;border-radius:9px;padding:8px 13px;font:inherit;cursor:pointer;min-height:36px}
 .cms-body-tools button svg{width:19px;height:19px}
@@ -1017,9 +1017,8 @@ html:has(.cms-preview-doc){overflow:hidden}
 .cms-body-figure figcaption .cms-editable{display:block}
 /* Mover (arrastrando la imagen) y cambiar el tamaño (arrastrando sus esquinas) */
 .cms-body-editor{position:relative}
-.cms-body-tools{opacity:0;transition:opacity .15s}
-.cms-body-figure:hover .cms-body-tools,.cms-body-tools:focus-within{opacity:1}
-.cms-body-editor.is-dragging .cms-body-tools{opacity:0}
+/* La barra va debajo de la imagen, sin taparla; siempre visible en el gestor */
+.cms-body-editor.is-dragging .cms-body-tools{visibility:hidden}
 .cms-body-imgbox{position:relative;cursor:grab;touch-action:none;user-select:none}
 .cms-body-imgbox img{pointer-events:none}
 .cms-body-figure:hover .cms-body-imgbox{outline:2px solid var(--acid);outline-offset:2px}
