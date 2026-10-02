@@ -274,7 +274,7 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     {picker==='link'&&<RecordPicker title="Vincular película o persona" types={['Película','Persona']} exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
     {picker==='relation'&&<RecordPicker exclude={[r.id,...(e.relations||[])]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
     {picker?.bodyImage!==undefined&&<ImagePicker title={picker.insert?'Añadir imagen al texto':'Imagen del texto'} value={picker.insert?undefined:blocks[picker.bodyImage]?.src}
-      onPick={src=>setBlocks(picker.insert?[...blocks.slice(0,picker.bodyImage),{id:blockId(),type:'image',src,align:'right',caption:''},...blocks.slice(picker.bodyImage)]:blocks.map((b,i)=>i===picker.bodyImage?{...b,src}:b))}
+      onPick={src=>{const id=blockId();setBlocks(picker.insert?besideText([...blocks.slice(0,picker.bodyImage),{id,type:'image',src,align:'right',caption:''},...blocks.slice(picker.bodyImage)],id):blocks.map((b,i)=>i===picker.bodyImage?{...b,src}:b))}}
       onClose={()=>setPicker(null)}/>}
     {picker?.gallery!==undefined&&<ImagePicker title={picker.gallery<0?'Añadir a la galería':'Imagen de la galería'} value={gallery[picker.gallery]} multiple={picker.gallery<0}
       onPickMany={srcs=>setE({gallery:[...gallery,...srcs]})}
@@ -413,6 +413,16 @@ const blockId=()=>Math.random().toString(36).slice(2,9);
 const mergeTexts=list=>list.reduce((out,b)=>{const prev=out[out.length-1];if(prev?.type==='text'&&b.type==='text'){out[out.length-1]={...prev,text:[prev.text,b.text].filter(t=>t?.trim()).join('\n')};return out}return [...out,b]},[]);
 // Cada párrafo en su propio elemento, para saber dónde se puede soltar una imagen
 const textLines=v=>{const lines=String(v).split('\n');return lines.map((l,i)=><span key={i} data-line={i}>{l}{i<lines.length-1&&<br/>}</span>)};
+// Una imagen al costado acompaña al párrafo escrito justo antes de ella: si después no sigue texto que la rodee,
+// pasa a quedar al lado del último párrafo del texto anterior (que se divide ahí)
+const besideText=(list,id)=>{
+  const i=list.findIndex(b=>b.id===id), img=list[i], prev=list[i-1];
+  if(!img||!['left','right'].includes(img.align||'right')||prev?.type!=='text'||list[i+1]?.type==='text')return list;
+  const lines=prev.text.split('\n'), last=lines.findLastIndex(l=>l.trim());
+  if(last<0)return list;
+  const before=lines.slice(0,last).join('\n').replace(/\n+$/,''), lastPara=lines.slice(last).join('\n');
+  return [...list.slice(0,i-1),...(before.trim()?[{...prev,text:before}]:[]),img,{id:blockId(),type:'text',text:lastPara},...list.slice(i+1)];
+};
 const sideAt=(x,rect)=>{const f=(x-rect.left)/rect.width;return f<1/3?'left':f>2/3?'right':'center'};
 
 function BodyEditor({blocks,setBlocks,pick,label}){
@@ -432,15 +442,16 @@ function BodyEditor({blocks,setBlocks,pick,label}){
     const root=rootRef.current, doc=root.ownerDocument, x0=ev.clientX, y0=ev.clientY;
     let spots=null, target=null;
     const measure=()=>{
-      const out=[{y:root.getBoundingClientRect().top,at:{block:0}}];
-      root.querySelectorAll(':scope>[data-block]').forEach(el=>{
+      // Se mide el borde de arriba de cada párrafo y de cada bloque: la línea marca dónde empezará la imagen
+      const out=[], els=[...root.querySelectorAll(':scope>[data-block]')];
+      els.forEach(el=>{
         const b=Number(el.dataset.block);
-        if(el.dataset.kind==='text')[...el.querySelectorAll('[data-line]')].filter(s=>s.textContent.trim()).slice(0,-1).forEach(s=>{
-          const rs=s.getClientRects(), r=rs[rs.length-1];
-          if(r)out.push({y:r.bottom+4,at:{block:b,line:Number(s.dataset.line)}});
-        });
-        out.push({y:el.getBoundingClientRect().bottom,at:{block:b+1}});
+        const paras=el.dataset.kind==='text'?[...el.querySelectorAll('[data-line]')].filter(s=>s.textContent.trim()):[];
+        out.push({y:(paras[0]?.getClientRects()[0]||el.getBoundingClientRect()).top-4,at:{block:b}});
+        paras.slice(1).forEach(s=>{const r=s.getClientRects()[0];if(r)out.push({y:r.top-4,at:{block:b,line:Number(s.dataset.line)-1}})});
       });
+      const last=els[els.length-1];
+      if(last)out.push({y:last.getBoundingClientRect().bottom,at:{block:Number(last.dataset.block)+1}});
       return out;
     };
     const onMove=e=>{
@@ -458,7 +469,7 @@ function BodyEditor({blocks,setBlocks,pick,label}){
     doc.addEventListener('pointermove',onMove);doc.addEventListener('pointerup',onUp);
   };
   const drop=(i,{at,align})=>{
-    const was=list[i], img={...was,align:align==='center'&&was.align==='full'?'full':align};
+    const was=list[i], img={...was,id:was.id||blockId(),align:align==='center'&&was.align==='full'?'full':align};
     let rest=list.filter((_,j)=>j!==i);
     const idx=at.block>i?at.block-1:at.block;
     if(at.line!=null&&rest[idx]?.type==='text'){
@@ -466,7 +477,7 @@ function BodyEditor({blocks,setBlocks,pick,label}){
       const before=lines.slice(0,at.line+1).join('\n').replace(/\n+$/,''), after=lines.slice(at.line+1).join('\n').replace(/^\n+/,'');
       rest=[...rest.slice(0,idx),{...t,text:before},img,{id:blockId(),type:'text',text:after},...rest.slice(idx+1)];
     }else rest=[...rest.slice(0,idx),img,...rest.slice(idx)];
-    setBlocks(mergeTexts(rest));
+    setBlocks(besideText(mergeTexts(rest),img.id));
   };
 
   // Arrastrar una esquina para cambiar el tamaño (en % del ancho del texto, dentro del rango de su lado)
@@ -495,7 +506,7 @@ function BodyEditor({blocks,setBlocks,pick,label}){
         {sizing?.i===i&&<span className="cms-body-size-badge">{sizing.size}%</span>}
       </div>
       <div className="cms-body-tools">
-        {BODY_IMAGE_ALIGNS.map(([v,l])=><button key={v} type="button" className={(b.align||'right')===v?'active':''} onClick={stop(()=>put(i,{align:v}))}>{l}</button>)}
+        {BODY_IMAGE_ALIGNS.map(([v,l])=><button key={v} type="button" className={(b.align||'right')===v?'active':''} onClick={stop(()=>{const id=b.id||blockId();setBlocks(besideText(list.map((x,j)=>j===i?{...x,id,align:v}:x),id))})}>{l}</button>)}
         <span/>
         <button type="button" onClick={stop(()=>pick({bodyImage:i}))} title="Cambiar imagen" aria-label="Cambiar imagen"><ImagePlus/></button>
         <button type="button" onClick={ask('esta imagen',()=>remove(i))} title="Quitar imagen" aria-label="Quitar imagen"><Trash2/></button>
