@@ -104,7 +104,7 @@ function RecordEditorInner(){
     else setDraft({record:{...records.find(x=>x.id===record.id)},extra:structuredClone(extraOf(record.id))});
   };
   const remove=async()=>{
-    if(!await confirm({title:`¿Eliminar “${r.title}”?`,text:'La ficha dejará de aparecer en el sitio y se quitará de los relacionados de otras fichas. Esta acción no se puede deshacer.',ok:'Eliminar ficha',danger:true}))return;
+    if(!await confirm({title:`¿Eliminar “${r.title}”?`,text:'La ficha dejará de aparecer en el sitio y se quitará de los relacionados de otras fichas. Queda guardada en la base de datos por si hay que recuperarla.',ok:'Eliminar ficha',danger:true}))return;
     await deleteRecord(r.id);clearLocal();setNavDirty(false);toast('Ficha eliminada.');navigate(`/admin/registros/${slug}`);
   };
   const discard=async()=>{

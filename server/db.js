@@ -49,17 +49,21 @@ async function mysqlStore(){
     connectionLimit:5, charset:'utf8mb4', dateStrings:false
   });
   for(const sql of TABLES)await pool.query(sql);
+  // Las cuentas eliminadas no se borran: quedan marcadas con la fecha en que se eliminaron
+  await pool.query('ALTER TABLE cms_users ADD COLUMN deleted_at DATETIME NULL').catch(err=>{if(err.code!=='ER_DUP_FIELDNAME')throw err});
   const one=async(sql,args)=>(await pool.query(sql,args))[0][0]||null;
   return {
     kind:'mysql',
-    countUsers:async()=>(await one('SELECT COUNT(*) AS n FROM cms_users')).n,
-    listUsers:async()=>(await pool.query('SELECT id,name,username,created_at AS createdAt FROM cms_users ORDER BY created_at'))[0],
-    userByName:username=>one('SELECT * FROM cms_users WHERE username=?',[username]),
-    userById:id=>one('SELECT * FROM cms_users WHERE id=?',[id]),
+    countUsers:async()=>(await one('SELECT COUNT(*) AS n FROM cms_users WHERE deleted_at IS NULL')).n,
+    listUsers:async()=>(await pool.query('SELECT id,name,username,created_at AS createdAt FROM cms_users WHERE deleted_at IS NULL ORDER BY created_at'))[0],
+    userByName:username=>one('SELECT * FROM cms_users WHERE username=? AND deleted_at IS NULL',[username]),
+    userById:id=>one('SELECT * FROM cms_users WHERE id=? AND deleted_at IS NULL',[id]),
     insertUser:u=>pool.query('INSERT INTO cms_users(id,name,username,salt,hash,created_at) VALUES(?,?,?,?,?,?)',[u.id,u.name,u.username,u.salt,u.hash,new Date()]),
     setPassword:(id,salt,hash)=>pool.query('UPDATE cms_users SET salt=?,hash=? WHERE id=?',[salt,hash,id]),
     updateUser:(id,name,username)=>pool.query('UPDATE cms_users SET name=?,username=? WHERE id=?',[name,username,id]),
-    deleteUser:async id=>{await pool.query('DELETE FROM cms_sessions WHERE user_id=?',[id]);await pool.query('DELETE FROM cms_tutorials WHERE user_id=?',[id]);await pool.query('DELETE FROM cms_users WHERE id=?',[id])},
+    deleteUser:async id=>{await pool.query('DELETE FROM cms_sessions WHERE user_id=?',[id]);
+      // El usuario queda libre para una cuenta nueva; la eliminada conserva el original en su nombre de usuario
+      await pool.query("UPDATE cms_users SET deleted_at=?,username=CONCAT(LEFT(username,90),'~eliminada~',id) WHERE id=?",[new Date(),id])},
     tutorials:async userId=>(await pool.query('SELECT screen FROM cms_tutorials WHERE user_id=?',[userId]))[0].map(r=>r.screen),
     markTutorial:(userId,view)=>pool.query('INSERT IGNORE INTO cms_tutorials(user_id,screen,seen_at) VALUES(?,?,?)',[userId,view,new Date()]),
     createSession:(token,userId,expires)=>pool.query('INSERT INTO cms_sessions(token,user_id,expires_at) VALUES(?,?,?)',[token,userId,expires]),
@@ -101,9 +105,10 @@ async function mysqlStore(){
       return {mime:m.mime,data:Buffer.concat(rows.map(r=>r.data))};
     },
     addSubmission:(id,data)=>pool.query('INSERT INTO cms_submissions(id,data,status,created_at) VALUES(?,?,?,?)',[id,JSON.stringify(data),'nueva',new Date()]),
-    submissions:async()=>(await pool.query('SELECT id,data,status,created_at AS createdAt FROM cms_submissions ORDER BY created_at DESC'))[0].map(r=>({id:r.id,status:r.status,createdAt:new Date(r.createdAt).toISOString(),...JSON.parse(r.data)})),
+    submissions:async()=>(await pool.query(`SELECT id,data,status,created_at AS createdAt FROM cms_submissions WHERE status<>'eliminada' ORDER BY created_at DESC`))[0].map(r=>({id:r.id,status:r.status,createdAt:new Date(r.createdAt).toISOString(),...JSON.parse(r.data)})),
     setSubmissionStatus:(id,status)=>pool.query('UPDATE cms_submissions SET status=? WHERE id=?',[status,id]),
-    deleteSubmission:id=>pool.query('DELETE FROM cms_submissions WHERE id=?',[id])
+    // Una inscripción eliminada desaparece del gestor pero sigue en la base de datos
+    deleteSubmission:id=>pool.query("UPDATE cms_submissions SET status='eliminada' WHERE id=?",[id])
   };
 }
 
@@ -116,14 +121,14 @@ async function fileStore(){
   const alive=s=>new Date(s.expiresAt)>new Date();
   return {
     kind:'archivos locales',
-    countUsers:async()=>(await read('users',[])).length,
-    listUsers:async()=>(await read('users',[])).map(({id,name,username,createdAt})=>({id,name,username,createdAt})),
-    userByName:async username=>(await read('users',[])).find(u=>u.username===username)||null,
-    userById:async id=>(await read('users',[])).find(u=>u.id===id)||null,
+    countUsers:async()=>(await read('users',[])).filter(u=>!u.deletedAt).length,
+    listUsers:async()=>(await read('users',[])).filter(u=>!u.deletedAt).map(({id,name,username,createdAt})=>({id,name,username,createdAt})),
+    userByName:async username=>(await read('users',[])).find(u=>u.username===username&&!u.deletedAt)||null,
+    userById:async id=>(await read('users',[])).find(u=>u.id===id&&!u.deletedAt)||null,
     insertUser:async u=>write('users',[...await read('users',[]),{...u,createdAt:new Date().toISOString()}]),
     setPassword:async(id,salt,hash)=>write('users',(await read('users',[])).map(u=>u.id===id?{...u,salt,hash}:u)),
     updateUser:async(id,name,username)=>write('users',(await read('users',[])).map(u=>u.id===id?{...u,name,username}:u)),
-    deleteUser:async id=>{await write('sessions',(await read('sessions',[])).filter(x=>x.user_id!==id));const t=await read('tutorials',{});delete t[id];await write('tutorials',t);await write('users',(await read('users',[])).filter(u=>u.id!==id))},
+    deleteUser:async id=>{await write('sessions',(await read('sessions',[])).filter(x=>x.user_id!==id));await write('users',(await read('users',[])).map(u=>u.id===id?{...u,deletedAt:new Date().toISOString(),username:`${u.username.slice(0,90)}~eliminada~${u.id}`}:u))},
     tutorials:async userId=>(await read('tutorials',{}))[userId]||[],
     markTutorial:async(userId,view)=>{const t=await read('tutorials',{}), seen=t[userId]||[];if(!seen.includes(view))await write('tutorials',{...t,[userId]:[...seen,view]})},
     createSession:async(token,userId,expires)=>write('sessions',[...(await read('sessions',[])).filter(alive),{token,user_id:userId,expiresAt:expires.toISOString()}]),
@@ -150,9 +155,9 @@ async function fileStore(){
     hasMedia:async id=>{try{await fs.access(path.join(dir,'media',id));return true}catch{return false}},
     media:async id=>{try{const {mime}=await read(`media-${id}`,{});return {mime,data:await fs.readFile(path.join(dir,'media',id))}}catch{return null}},
     addSubmission:async(id,data)=>write('submissions',[{id,status:'nueva',createdAt:new Date().toISOString(),...data},...await read('submissions',[])]),
-    submissions:()=>read('submissions',[]),
+    submissions:async()=>(await read('submissions',[])).filter(x=>x.status!=='eliminada'),
     setSubmissionStatus:async(id,status)=>write('submissions',(await read('submissions',[])).map(x=>x.id===id?{...x,status}:x)),
-    deleteSubmission:async id=>write('submissions',(await read('submissions',[])).filter(x=>x.id!==id))
+    deleteSubmission:async id=>write('submissions',(await read('submissions',[])).map(x=>x.id===id?{...x,status:'eliminada'}:x))
   };
 }
 

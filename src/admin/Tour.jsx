@@ -28,7 +28,7 @@ export function takeLegacySeen(uid){
 // Pasos comunes a todos los editores
 const SAVE={target:'.cms-editor-actions .cms-btn.is-primary',title:'Guardar',text:'Los cambios no se publican hasta que presionas Guardar (o Ctrl + S). Arriba verás «Cambios sin guardar» mientras tengas algo pendiente; con «Descartar» vuelves a la última versión guardada.'};
 const PREVIEW={target:'.cms-site-frame',title:'La página real',text:'Esta es la página tal como se ve en el sitio. Haz clic en cualquier texto para reescribirlo ahí mismo: Enter hace un salto de línea y un clic afuera termina. Los botones negros sobre las fotos sirven para cambiarlas.'};
-const DANGER={target:'.cms-danger-zone',title:'Zona de peligro',text:'Lo que no se puede deshacer, como eliminar, está siempre al final y separado del resto. Siempre te pedirá confirmación.'};
+const DANGER={target:'.cms-danger-zone',title:'Zona de peligro',text:'Las acciones delicadas, como eliminar, están siempre al final y separadas del resto. Siempre te pedirá confirmación.'};
 const BACK={target:'.cms-editor-bar .cms-icon-btn',title:'Volver',text:'Con la flecha vuelves al listado. Si tienes cambios sin guardar, te avisará antes de salir.'};
 
 export const TOURS={

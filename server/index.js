@@ -256,7 +256,8 @@ api.get('/content',async(req,res)=>{
   let data=saved.data;
   if(!user&&Array.isArray(data.records)){
     const hidden=new Set(data.records.filter(r=>r.draft).map(r=>String(r.id)));
-    data={...data,records:data.records.filter(r=>!r.draft),recordExtras:Object.fromEntries(Object.entries(data.recordExtras||{}).filter(([id])=>!hidden.has(id)))};
+    const {trash,...rest}=data;// eslint-disable-line no-unused-vars -- lo eliminado nunca llega al sitio público
+    data={...rest,records:data.records.filter(r=>!r.draft),recordExtras:Object.fromEntries(Object.entries(data.recordExtras||{}).filter(([id])=>!hidden.has(id)))};
   }
   res.json({data,version:saved.version,updatedAt:saved.updatedAt,full:!!user,build:currentBuild()});
 });
@@ -267,7 +268,7 @@ api.get('/content/history',needUser,async(req,res)=>res.json({versions:await db.
 api.post('/content/restore',needUser,async(req,res)=>{
   const old=await db.historyVersion(Number(req.body?.version));
   if(!old)return res.status(404).json({error:'Esa versión no existe.'});
-  const version=await db.saveContent(old,Number(req.body?.baseVersion)||0,req.user.id);
+  const version=await db.saveContent(await keepTrash(old),Number(req.body?.baseVersion)||0,req.user.id);
   if(!version)return res.status(409).json({error:'Otra persona guardó cambios mientras editabas.'});
   res.json({version,updatedAt:new Date().toISOString()});
 });
@@ -275,10 +276,17 @@ api.post('/content/restore',needUser,async(req,res)=>{
 api.put('/content',needUser,async(req,res)=>{
   const {data,baseVersion}=req.body||{};
   if(!data||typeof data!=='object'||!Array.isArray(data.records))return res.status(400).json({error:'Contenido no válido.'});
-  const version=await db.saveContent(data,Number(baseVersion)||0,req.user.id);
+  const version=await db.saveContent(await keepTrash(data),Number(baseVersion)||0,req.user.id);
   if(!version)return res.status(409).json({error:'Otra persona guardó cambios mientras editabas.'});
   res.json({version,updatedAt:new Date().toISOString()});
 });
+
+// La papelera solo crece: lo que ya estaba en ella se conserva aunque el contenido nuevo no lo traiga
+async function keepTrash(data){
+  const current=(await db.content())?.data?.trash||[], incoming=Array.isArray(data.trash)?data.trash:[];
+  const ids=new Set(incoming.map(t=>t?.id));
+  return {...data,trash:[...current.filter(t=>!ids.has(t?.id)),...incoming].sort((a,b)=>String(a?.deletedAt).localeCompare(String(b?.deletedAt)))};
+}
 
 // Imágenes, audios, videos y documentos subidos desde el gestor
 const MEDIA_TYPES=/^(image\/(jpeg|png|webp|gif|svg\+xml)|audio\/[a-z0-9.+-]+|video\/[a-z0-9.+-]+|application\/pdf)$/;

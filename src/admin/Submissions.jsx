@@ -44,7 +44,7 @@ export function SubmissionsPage(){
     const next=list.map(x=>x.id===s.id?{...x,status}:x);setList(next);announce(next);toast(msg);
   };
   const remove=async s=>{
-    if(!await confirm({title:`¿Eliminar la inscripción de «${s.title}»?`,text:'Se borran los datos de contacto y de la obra. Esta acción no se puede deshacer.',ok:'Eliminar',danger:true}))return;
+    if(!await confirm({title:`¿Eliminar la inscripción de «${s.title}»?`,text:'Dejará de aparecer en esta lista. Los datos quedan guardados en la base de datos por si hay que recuperarlos.',ok:'Eliminar',danger:true}))return;
     try{await removeSubmission(s.id)}catch(err){return toast(err.message,'error')}
     const next=list.filter(x=>x.id!==s.id);setList(next);announce(next);toast('Inscripción eliminada.');
   };

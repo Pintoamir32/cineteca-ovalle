@@ -26,6 +26,9 @@ function apply(name,value){
 let version=0, lastSaved=null, serverVersion=0;
 // ¿Se cargó el contenido completo (con borradores)? Solo así se puede guardar sin perder fichas
 let fullLoaded=false;
+// Lo eliminado desde el gestor no se borra: desaparece del sitio y queda guardado aquí, en la base de datos
+let trash=[];
+const toTrash=(kind,item,more)=>{trash=[...trash,{id:`${Date.now().toString(36)}${Math.random().toString(36).slice(2,8)}`,kind,item,...more,deletedAt:new Date().toISOString()}]};
 const listeners=new Set();
 const notify=()=>{version++;listeners.forEach(fn=>fn())};
 export const subscribe=fn=>{listeners.add(fn);return()=>listeners.delete(fn)};
@@ -97,6 +100,7 @@ export async function hydrate(){
     const saved=await request('/api/content');
     serverVersion=saved.version||0;
     fullLoaded=!!saved.full;
+    trash=Array.isArray(saved.data?.trash)?saved.data.trash:[];
     // La versión del sitio con que se abrió esta página (la primera carga), para detectar despliegues nuevos
     if(!loadedBuild&&saved.build)loadedBuild=saved.build;
     if(saved.data){
@@ -131,7 +135,7 @@ function persist(){
     // Sin el contenido completo, guardar borraría lo que no llegó (por ejemplo, las fichas en borrador)
     if(!fullLoaded)throw Object.assign(new Error('El contenido no terminó de cargar.'),{status:'partial'});
     await externalize(LIVE);
-    const res=await request('/api/content',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:LIVE,baseVersion:serverVersion})});
+    const res=await request('/api/content',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:{...LIVE,trash},baseVersion:serverVersion})});
     serverVersion=res.version;lastSaved=res.updatedAt;
     notify();
   };
@@ -181,6 +185,8 @@ export function setRecordPublished(id,published){
 }
 
 export function deleteRecord(id){
+  const record=records.find(r=>r.id===id);
+  if(record)toTrash('records',record,{extra:recordExtras[id]});
   const extras={};
   for(const [k,v] of Object.entries(recordExtras))if(Number(k)!==id)extras[k]={...v,relations:(v.relations||[]).filter(r=>r!==id)};
   return setData({records:records.filter(r=>r.id!==id),recordExtras:extras});
@@ -222,7 +228,10 @@ export function saveListItem(name,index,next){
   index<0?list.push(next):list[index]=next;
   return setData({[name]:list});
 }
-export const removeListItem=(name,index)=>setData({[name]:LIVE[name].filter((_,i)=>i!==index)});
+export function removeListItem(name,index){
+  if(LIVE[name][index])toTrash(name,LIVE[name][index]);
+  return setData({[name]:LIVE[name].filter((_,i)=>i!==index)});
+}
 export function moveListItem(name,index,dir){
   const list=[...LIVE[name]], to=index+dir;
   if(to<0||to>=list.length)return;
@@ -246,6 +255,7 @@ export async function importData(file){
   if(!Array.isArray(data.records)||typeof data.recordExtras!=='object')throw new Error('El archivo no parece un respaldo de la Cineteca.');
   const changes={};
   for(const k of Object.keys(LIVE))if(data[k])changes[k]=data[k];
+  toTrash('todo',structuredClone(LIVE),{reason:'importar respaldo'});
   return setData(changes);
 }
 
@@ -259,7 +269,8 @@ export async function restoreVersion(v){
   await hydrate();
 }
 
-export const resetData=()=>setData(structuredClone(ORIGINAL));
+// Lo que se reemplaza en bloque (importar, restablecer, vaciar) también queda en la papelera
+export const resetData=()=>{toTrash('todo',structuredClone(LIVE),{reason:'restablecer'});return setData(structuredClone(ORIGINAL))};
 
 // Archivo vacío para cargar el real desde cero: sin fichas, colecciones, hitos ni comunas.
 // Se mantienen los textos de la portada, los colores y las diapositivas propias; las que
@@ -270,7 +281,7 @@ export const emptyData=()=>({
   site:{...site,featuredId:null},
   homeContent:{...homeContent,latestIds:[]}
 });
-export const emptyArchive=()=>setData(emptyData());
+export const emptyArchive=()=>{toTrash('todo',structuredClone(LIVE),{reason:'vaciar archivo'});return setData(emptyData())};
 export const originalTheme=()=>structuredClone(ORIGINAL.theme);
 export const originalHome=()=>structuredClone(ORIGINAL.homeContent);
 
