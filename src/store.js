@@ -164,7 +164,11 @@ export function setData(changes){
 /* ---------- Operaciones de dominio ---------- */
 
 export const SLUG_BY_TYPE={Película:'peliculas',Persona:'personas',Prensa:'prensa',Entrevista:'entrevistas',Artículo:'articulos'};
-export const nextId=()=>Math.max(0,...records.filter(r=>r.id<1e9).map(r=>r.id))+1;
+// Los números de las fichas eliminadas (que siguen en la papelera) no se reutilizan
+export const nextId=()=>{
+  const trashed=trash.flatMap(t=>t.kind==='records'?[t.item]:t.kind==='todo'?t.item?.records||[]:[]);
+  return Math.max(0,...[...records,...trashed].map(r=>Number(r?.id)).filter(id=>id<1e9))+1;
+};
 
 export function saveRecord(record,extra){
   const clean={...record,slug:SLUG_BY_TYPE[record.type]||'archivo',updatedAt:new Date().toISOString()};
