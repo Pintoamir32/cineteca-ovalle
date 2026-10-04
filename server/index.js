@@ -250,15 +250,26 @@ api.delete('/submissions/:id',needUser,async(req,res)=>{await db.deleteSubmissio
 /* Contenido: un solo documento con todo lo editable del sitio.
    Quien no inició sesión no recibe las fichas en borrador. */
 api.get('/content',async(req,res)=>{
-  const saved=await db.content();
-  if(!saved)return res.json({data:null,version:0,build:currentBuild()});
-  const user=await sessionUser(req);
+  const saved=await db.content(), user=await sessionUser(req);
+  // full: el contenido viene completo (con borradores). El gestor solo guarda si lo recibió así.
+  if(!saved)return res.json({data:null,version:0,full:!!user,build:currentBuild()});
   let data=saved.data;
   if(!user&&Array.isArray(data.records)){
     const hidden=new Set(data.records.filter(r=>r.draft).map(r=>String(r.id)));
     data={...data,records:data.records.filter(r=>!r.draft),recordExtras:Object.fromEntries(Object.entries(data.recordExtras||{}).filter(([id])=>!hidden.has(id)))};
   }
-  res.json({data,version:saved.version,updatedAt:saved.updatedAt,build:currentBuild()});
+  res.json({data,version:saved.version,updatedAt:saved.updatedAt,full:!!user,build:currentBuild()});
+});
+
+// Historial: cada versión guardada se conserva y se puede volver a ella
+api.get('/content/history',needUser,async(req,res)=>res.json({versions:await db.history()}));
+// Restaurar guarda la versión antigua como una nueva: la actual también queda en el historial
+api.post('/content/restore',needUser,async(req,res)=>{
+  const old=await db.historyVersion(Number(req.body?.version));
+  if(!old)return res.status(404).json({error:'Esa versión no existe.'});
+  const version=await db.saveContent(old,Number(req.body?.baseVersion)||0,req.user.id);
+  if(!version)return res.status(409).json({error:'Otra persona guardó cambios mientras editabas.'});
+  res.json({version,updatedAt:new Date().toISOString()});
 });
 
 api.put('/content',needUser,async(req,res)=>{
@@ -276,7 +287,7 @@ api.post('/media',needUser,express.raw({type:()=>true,limit:'40mb'}),async(req,r
   if(!MEDIA_TYPES.test(mime))return res.status(415).json({error:'Tipo de archivo no permitido.'});
   if(!req.body?.length)return res.status(400).json({error:'Archivo vacío.'});
   const id=crypto.createHash('sha256').update(req.body).digest('hex').slice(0,32);
-  if(!await db.media(id))await db.putMedia(id,mime,req.body);
+  if(!await db.hasMedia(id))await db.putMedia(id,mime,req.body);
   res.json({url:`/api/media/${id}`});
 });
 app.get('/api/media/:id',async(req,res,next)=>{
@@ -290,6 +301,16 @@ app.get('/api/media/:id',async(req,res,next)=>{
     // Un SVG subido no puede ejecutar código aunque se abra directo. Los PDF quedan fuera: con «sandbox»
     // el navegador no los muestra dentro de la ficha
     if(m.mime!=='application/pdf')res.setHeader('Content-Security-Policy',"default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox");
+    // Audios y videos se piden por partes (Safari no los reproduce sin esto, y así se puede adelantar)
+    res.setHeader('Accept-Ranges','bytes');
+    const range=/^bytes=(\d*)-(\d*)$/.exec(req.headers.range||''), size=m.data.length;
+    if(range&&(range[1]||range[2])){
+      let start=range[1]?Number(range[1]):size-Number(range[2]), end=range[1]&&range[2]?Math.min(Number(range[2]),size-1):size-1;
+      start=Math.max(0,start);
+      if(start>=size||start>end){res.setHeader('Content-Range',`bytes */${size}`);return res.status(416).end()}
+      res.status(206).setHeader('Content-Range',`bytes ${start}-${end}/${size}`);
+      return res.send(m.data.subarray(start,end+1));
+    }
     res.send(m.data);
   }catch(err){next(err)}
 });

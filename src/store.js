@@ -24,6 +24,8 @@ function apply(name,value){
 }
 
 let version=0, lastSaved=null, serverVersion=0;
+// ¿Se cargó el contenido completo (con borradores)? Solo así se puede guardar sin perder fichas
+let fullLoaded=false;
 const listeners=new Set();
 const notify=()=>{version++;listeners.forEach(fn=>fn())};
 export const subscribe=fn=>{listeners.add(fn);return()=>listeners.delete(fn)};
@@ -90,9 +92,11 @@ function withoutPlaceholders(home){
 
 // Carga el contenido guardado. Si el servidor no responde, el sitio muestra el contenido original.
 export async function hydrate(){
+  fullLoaded=false;
   try{
     const saved=await request('/api/content');
     serverVersion=saved.version||0;
+    fullLoaded=!!saved.full;
     // La versión del sitio con que se abrió esta página (la primera carga), para detectar despliegues nuevos
     if(!loadedBuild&&saved.build)loadedBuild=saved.build;
     if(saved.data){
@@ -124,6 +128,8 @@ async function externalize(node){
 let queue=Promise.resolve();
 function persist(){
   const run=async()=>{
+    // Sin el contenido completo, guardar borraría lo que no llegó (por ejemplo, las fichas en borrador)
+    if(!fullLoaded)throw Object.assign(new Error('El contenido no terminó de cargar.'),{status:'partial'});
     await externalize(LIVE);
     const res=await request('/api/content',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:LIVE,baseVersion:serverVersion})});
     serverVersion=res.version;lastSaved=res.updatedAt;
@@ -136,6 +142,7 @@ function persist(){
 
 // Mensaje claro cuando un guardado falla (la sesión vencida y el conflicto ya abren su propio aviso)
 export function saveError(err){
+  if(err?.status==='partial')return 'No se guardó: el contenido no terminó de cargar. Recarga la página e inténtalo de nuevo.';
   if(err?.status===401)return 'Tu sesión terminó. Vuelve a iniciar sesión; tus cambios siguen en pantalla.';
   if(err?.status===409)return 'No se guardó: otra persona guardó antes. Recarga la página y vuelve a hacer el cambio.';
   if(err?.status===413)return 'No se guardó: el archivo o la imagen es demasiado grande.';
@@ -240,6 +247,16 @@ export async function importData(file){
   const changes={};
   for(const k of Object.keys(LIVE))if(data[k])changes[k]=data[k];
   return setData(changes);
+}
+
+/* ---------- Historial de versiones ----------
+   Cada vez que se guarda, la versión anterior queda en el servidor y se puede volver a ella. */
+export const contentHistory=()=>request('/api/content/history').then(r=>r.versions||[]);
+export async function restoreVersion(v){
+  await queue;
+  const res=await request('/api/content/restore',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:v,baseVersion:serverVersion})});
+  serverVersion=res.version;
+  await hydrate();
 }
 
 export const resetData=()=>setData(structuredClone(ORIGINAL));

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle, Inbox, Info, ArrowLeft, ArrowUpRight, BookOpen, CalendarRange, Check, CircleCheck, CircleHelp, Database, LogOut, UserPlus, Download, ExternalLink, Eye, EyeOff, FileText, Film, Home, Layers, LayoutDashboard, MapPin, Menu, Mic2, Palette, Plus, RotateCcw, Save, Search, Trash2, Upload, UserRound, Users, X } from 'lucide-react';
 import { collections, heroSlides, locations, recordExtras, records, timelineEvents } from '../data';
-import { emptyArchive, exportData, getLastSaved, hydrate, importData, newVersionAvailable, resetData, saveError, setRecordPublished, useStoreVersion } from '../store';
+import { contentHistory, emptyArchive, exportData, getLastSaved, hydrate, importData, newVersionAvailable, resetData, restoreVersion, saveError, setRecordPublished, useStoreVersion } from '../store';
 import { tagStyle } from '../color';
 import { Modal, UiProvider, thumb, useUi } from './fields';
 import { authStatus, changePassword, logout as endSession, markTutorials } from './auth';
@@ -426,6 +426,37 @@ function RecordList(){
 
 /* ---------- Respaldo ---------- */
 
+// Cada guardado deja la versión anterior en el servidor: aquí se puede volver a cualquiera
+const HISTORY_STEP=15;
+function VersionHistory(){
+  const {toast,confirm}=useUi();
+  const [list,setList]=useState(null), [error,setError]=useState(''), [shown,setShown]=useState(HISTORY_STEP), [busy,setBusy]=useState(null);
+  const load=()=>contentHistory().then(setList).catch(err=>setError(err.message));
+  useEffect(()=>{load()},[]);
+  const when=iso=>new Date(iso).toLocaleString('es-CL',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const restore=async v=>{
+    if(!await confirm({title:'¿Volver a esta versión?',text:`El sitio quedará como estaba el ${when(v.savedAt)}${v.records!=null?` (${v.records} fichas)`:''}. La versión actual no se pierde: queda en este historial.`,ok:'Volver a esta versión'}))return;
+    setBusy(v.version);
+    try{await restoreVersion(v.version);toast('Listo: el contenido volvió a esa versión.');load()}
+    catch(err){toast(saveError(err),'error')}
+    finally{setBusy(null)}
+  };
+  return <section className="cms-card cms-history">
+    <h2><RotateCcw/> Historial de versiones</h2>
+    <p>Cada vez que se guarda, la versión anterior queda guardada en el servidor. Si algo se borró o cambió por error, vuelve a una versión anterior.</p>
+    {error&&<p className="login-error">{error}</p>}
+    {!list&&!error&&<p className="cms-help">Cargando…</p>}
+    {list&&!list.length&&<p className="cms-help">Todavía no hay versiones anteriores. Aparecerán aquí desde el próximo guardado.</p>}
+    {list?.length>0&&<ul>
+      {list.slice(0,shown).map(v=><li key={v.version}>
+        <span><strong>{when(v.savedAt)}</strong><small>{[v.savedBy,v.records!=null&&`${v.records} fichas`].filter(Boolean).join(' · ')}</small></span>
+        <button type="button" className="cms-btn" disabled={busy!=null} onClick={()=>restore(v)}><RotateCcw/> {busy===v.version?'Restaurando…':'Volver a esta'}</button>
+      </li>)}
+    </ul>}
+    {list?.length>shown&&<button type="button" className="cms-btn" onClick={()=>setShown(shown+HISTORY_STEP*2)}>Ver más antiguas</button>}
+  </section>;
+}
+
 function Backup(){
   const {toast,confirm}=useUi(), inputRef=useRef(null);
   const onImport=async file=>{
@@ -442,8 +473,9 @@ function Backup(){
     toast('Archivo vaciado. El respaldo quedó en tu carpeta de descargas.');
   };
   const onReset=async()=>{
-    if(!await confirm({title:'¿Restablecer el contenido original?',text:'Se perderán todas las fichas creadas, las imágenes subidas y los cambios hechos desde el gestor.',ok:'Restablecer',danger:true}))return;
-    await resetData();toast('Contenido original restablecido.');
+    if(!await confirm({title:'¿Restablecer el contenido original?',text:'Se reemplazarán todas las fichas creadas y los cambios hechos desde el gestor por el contenido de ejemplo. La versión actual queda en el historial por si necesitas volver a ella.',ok:'Restablecer',danger:true}))return;
+    try{await resetData()}catch(err){return toast(saveError(err),'error')}
+    toast('Contenido original restablecido.');
   };
   return <div className="cms-page">
     <PageHead eyebrow="DATOS" title="Respaldo" desc="El contenido se guarda en el servidor del sitio y lo ven todos los visitantes. Descarga un respaldo de vez en cuando para tener una copia propia."/>
@@ -452,6 +484,7 @@ function Backup(){
       <article className="cms-card"><Upload/><h2>Importar</h2><p>Carga un respaldo exportado antes. Reemplaza el contenido actual por el del archivo.</p><button type="button" className="cms-btn" onClick={()=>inputRef.current.click()}><Upload/> Elegir archivo…</button><input ref={inputRef} type="file" accept="application/json,.json" hidden onChange={e=>onImport(e.target.files[0])}/></article>
     </div>
     <p className="cms-help"><Check/> {savedLabel()}</p>
+    <VersionHistory/>
     <section className="cms-danger-section">
       <h2>Zona de peligro</h2>
       <div><p><strong>Vaciar el archivo.</strong> Borra todas las fichas, colecciones, hitos y comunas para cargar el archivo real desde cero. Se mantienen las cuentas, los textos de la portada y los colores. Antes descarga un respaldo automáticamente.</p>

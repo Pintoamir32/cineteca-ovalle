@@ -136,6 +136,15 @@
 .cms-backup h2{font:600 22px 'Syne';letter-spacing:-.03em}
 .cms-backup p{margin:0 0 6px;color:var(--muted);font-size:13px;flex:1}
 .cms-backup .is-danger>svg{color:var(--danger)}
+.cms-history{margin-top:18px}
+.cms-history h2{display:flex;align-items:center;gap:8px;font:600 22px 'Syne';letter-spacing:-.03em;margin:0 0 6px}
+.cms-history h2 svg{width:20px;height:20px;color:var(--forest)}
+.cms-history>p{margin:0 0 12px;color:var(--muted);font-size:13px}
+.cms-history ul{list-style:none;margin:0 0 12px;padding:0}
+.cms-history li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid rgba(16,18,16,.08);flex-wrap:wrap}
+.cms-history li>span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cms-history li strong{font-size:14px}
+.cms-history li small{font-size:12px;color:var(--muted)}
 
 /* ---------- Editor ---------- */
 .cms-editor{min-height:100vh;display:flex;flex-direction:column}

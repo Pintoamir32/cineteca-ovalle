@@ -5,6 +5,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import zlib from 'node:zlib';
+
+// Los archivos grandes se guardan en trozos: MySQL rechaza paquetes mayores que max_allowed_packet
+const CHUNK=512*1024;
+const recordCount=json=>{try{return (JSON.parse(json).records||[]).length}catch{return null}};
 
 const TABLES=[
   `CREATE TABLE IF NOT EXISTS cms_users(
@@ -23,6 +28,13 @@ const TABLES=[
   `CREATE TABLE IF NOT EXISTS cms_media(
     id CHAR(32) PRIMARY KEY, mime VARCHAR(80) NOT NULL, size INT NOT NULL, data LONGBLOB NOT NULL, created_at DATETIME NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS cms_media_chunks(
+    id CHAR(32) NOT NULL, n INT NOT NULL, data MEDIUMBLOB NOT NULL, PRIMARY KEY(id,n)
+  )`,
+  // Cada versión del contenido que se reemplaza queda guardada aquí (comprimida): nada se pierde
+  `CREATE TABLE IF NOT EXISTS cms_content_history(
+    version INT PRIMARY KEY, data LONGBLOB NOT NULL, records INT, saved_at DATETIME NOT NULL, saved_by VARCHAR(32)
+  ) CHARACTER SET utf8mb4`,
   // Obras inscritas desde el sitio («Inscribe tu obra»); se revisan en el gestor
   `CREATE TABLE IF NOT EXISTS cms_submissions(
     id CHAR(24) PRIMARY KEY, data TEXT NOT NULL, status VARCHAR(20) NOT NULL, created_at DATETIME NOT NULL, INDEX(created_at)
@@ -63,11 +75,31 @@ async function mysqlStore(){
         const [r]=await pool.query('INSERT IGNORE INTO cms_content(id,data,version,updated_at,updated_by) VALUES(1,?,1,?,?)',[json,now,userId]);
         return r.affectedRows?1:null;
       }
+      const prev=await one('SELECT data,version,updated_at,updated_by FROM cms_content WHERE id=1 AND version=?',[baseVersion]);
+      if(!prev)return null;
+      // Antes de reemplazarla, la versión actual pasa al historial
+      await pool.query('INSERT IGNORE INTO cms_content_history(version,data,records,saved_at,saved_by) VALUES(?,?,?,?,?)',
+        [prev.version,zlib.gzipSync(prev.data),recordCount(prev.data),prev.updated_at,prev.updated_by]);
       const [r]=await pool.query('UPDATE cms_content SET data=?,version=version+1,updated_at=?,updated_by=? WHERE id=1 AND version=?',[json,now,userId,baseVersion]);
       return r.affectedRows?baseVersion+1:null;
     },
-    putMedia:(id,mime,buf)=>pool.query('INSERT INTO cms_media(id,mime,size,data,created_at) VALUES(?,?,?,?,?)',[id,mime,buf.length,buf,new Date()]),
-    media:id=>one('SELECT mime,data FROM cms_media WHERE id=?',[id]),
+    history:async()=>(await pool.query('SELECT h.version,h.records,h.saved_at AS savedAt,u.name AS savedBy FROM cms_content_history h LEFT JOIN cms_users u ON u.id=h.saved_by ORDER BY h.version DESC LIMIT 1000'))[0]
+      .map(r=>({...r,savedAt:new Date(r.savedAt).toISOString()})),
+    historyVersion:async version=>{const r=await one('SELECT data FROM cms_content_history WHERE version=?',[version]);return r&&JSON.parse(zlib.gunzipSync(r.data).toString('utf8'))},
+    // Los trozos van primero: la fila de cms_media aparece solo cuando el archivo está completo
+    putMedia:async(id,mime,buf)=>{
+      if(buf.length<=CHUNK)return pool.query('INSERT IGNORE INTO cms_media(id,mime,size,data,created_at) VALUES(?,?,?,?,?)',[id,mime,buf.length,buf,new Date()]);
+      for(let n=0;n*CHUNK<buf.length;n++)await pool.query('REPLACE INTO cms_media_chunks(id,n,data) VALUES(?,?,?)',[id,n,buf.subarray(n*CHUNK,(n+1)*CHUNK)]);
+      await pool.query('INSERT IGNORE INTO cms_media(id,mime,size,data,created_at) VALUES(?,?,?,?,?)',[id,mime,buf.length,Buffer.alloc(0),new Date()]);
+    },
+    hasMedia:async id=>!!await one('SELECT 1 AS ok FROM cms_media WHERE id=?',[id]),
+    media:async id=>{
+      const m=await one('SELECT mime,size,data FROM cms_media WHERE id=?',[id]);
+      if(!m)return null;
+      if(m.data.length||!m.size)return {mime:m.mime,data:m.data};
+      const [rows]=await pool.query('SELECT data FROM cms_media_chunks WHERE id=? ORDER BY n',[id]);
+      return {mime:m.mime,data:Buffer.concat(rows.map(r=>r.data))};
+    },
     addSubmission:(id,data)=>pool.query('INSERT INTO cms_submissions(id,data,status,created_at) VALUES(?,?,?,?)',[id,JSON.stringify(data),'nueva',new Date()]),
     submissions:async()=>(await pool.query('SELECT id,data,status,created_at AS createdAt FROM cms_submissions ORDER BY created_at DESC'))[0].map(r=>({id:r.id,status:r.status,createdAt:new Date(r.createdAt).toISOString(),...JSON.parse(r.data)})),
     setSubmissionStatus:(id,status)=>pool.query('UPDATE cms_submissions SET status=? WHERE id=?',[status,id]),
@@ -104,10 +136,18 @@ async function fileStore(){
       const cur=await read('content',null);
       if((cur?.version||0)!==(baseVersion||0))return null;
       const version=(cur?.version||0)+1;
+      if(cur){await fs.mkdir(path.join(dir,'history'),{recursive:true});await fs.writeFile(path.join(dir,'history',`${cur.version}.json`),JSON.stringify(cur))}
       await write('content',{data,version,updatedAt:new Date().toISOString(),updatedBy:userId});
       return version;
     },
+    history:async()=>{
+      const files=await fs.readdir(path.join(dir,'history')).catch(()=>[]), users=await read('users',[]), list=[];
+      for(const f of files){const h=JSON.parse(await fs.readFile(path.join(dir,'history',f),'utf8'));list.push({version:h.version,records:(h.data.records||[]).length,savedAt:h.updatedAt,savedBy:users.find(u=>u.id===h.updatedBy)?.name||null})}
+      return list.sort((a,b)=>b.version-a.version);
+    },
+    historyVersion:async version=>{try{return JSON.parse(await fs.readFile(path.join(dir,'history',`${Number(version)}.json`),'utf8')).data}catch{return null}},
     putMedia:async(id,mime,buf)=>{await fs.writeFile(path.join(dir,'media',id),buf);await write(`media-${id}`,{mime})},
+    hasMedia:async id=>{try{await fs.access(path.join(dir,'media',id));return true}catch{return false}},
     media:async id=>{try{const {mime}=await read(`media-${id}`,{});return {mime,data:await fs.readFile(path.join(dir,'media',id))}}catch{return null}},
     addSubmission:async(id,data)=>write('submissions',[{id,status:'nueva',createdAt:new Date().toISOString(),...data},...await read('submissions',[])]),
     submissions:()=>read('submissions',[]),
