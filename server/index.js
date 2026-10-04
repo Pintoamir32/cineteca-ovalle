@@ -192,6 +192,15 @@ api.delete('/users/:id',needUser,async(req,res)=>{
   await db.deleteUser(req.params.id);
   res.json({ok:true});
 });
+// Papelera: las cuentas eliminadas se pueden recuperar (con su misma contraseña)
+api.get('/users/deleted',needUser,async(req,res)=>res.json({users:(await db.deletedUsers()).map(u=>({id:u.id,name:u.name,user:u.username,deletedAt:u.deletedAt}))}));
+api.post('/users/:id/restore',needUser,async(req,res)=>{
+  const target=await db.deletedUserById(req.params.id);
+  if(!target)return res.status(404).json({error:'Esa cuenta no está en la papelera.'});
+  if(await db.userByName(target.username))return res.status(409).json({error:`Ya existe otra cuenta con el usuario «${target.username}». Cámbiale el usuario a esa cuenta y vuelve a intentarlo.`});
+  await db.restoreUser(target.id,target.username);
+  res.json({user:publicUser(target)});
+});
 api.post('/users',needUser,async(req,res)=>{
   const user=await newUser(req.body);
   if(user.error)return res.status(400).json(user);
@@ -241,6 +250,7 @@ api.post('/submissions',async(req,res)=>{
   res.json({ok:true});
 });
 api.get('/submissions',needUser,async(req,res)=>res.json({submissions:await db.submissions()}));
+api.get('/submissions/deleted',needUser,async(req,res)=>res.json({submissions:await db.deletedSubmissions()}));
 api.put('/submissions/:id',needUser,async(req,res)=>{
   if(!SUBMISSION_STATUS.includes(req.body?.status))return res.status(400).json({error:'Estado no válido.'});
   await db.setSubmissionStatus(req.params.id,req.body.status);res.json({ok:true});

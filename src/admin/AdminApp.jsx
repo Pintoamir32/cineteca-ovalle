@@ -17,6 +17,7 @@ import { AboutEditor, HomeEditor } from './HomeEditor';
 import { TOURS, Tour, takeLegacySeen, tourViewOf } from './Tour';
 import { ThemeEditor } from './ThemeEditor';
 import { SubmissionsPage, listSubmissions } from './Submissions';
+import { TrashPage } from './Trash';
 import './admin.css';
 
 const TYPE_ICONS={Película:Film,Persona:UserRound,Prensa:FileText,Entrevista:Mic2,Artículo:BookOpen};
@@ -146,6 +147,7 @@ function AdminShell({session,onLogout}){
           {group('Sistema',<>
             {item('usuarios',Users,'Usuarios')}
             {item('respaldo',Database,'Respaldo')}
+            {item('papelera',Trash2,'Papelera')}
           </>)}
         </nav>
         <div className="cms-side-foot">
@@ -183,6 +185,7 @@ function AdminShell({session,onLogout}){
           <Route path="inscripciones" element={<SubmissionsPage/>}/>
           <Route path="usuarios" element={<UsersPage session={session}/>}/>
           <Route path="respaldo" element={<Backup/>}/>
+          <Route path="papelera" element={<TrashPage/>}/>
           <Route path="*" element={<Dashboard/>}/>
         </Routes>
       </main>

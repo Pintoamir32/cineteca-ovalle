@@ -16,7 +16,7 @@ export function tourViewOf(path){
   if(a==='colecciones')return 'colecciones';
   if(a==='linea-de-tiempo')return 'linea';
   if(a==='comunas')return b?'comuna':'comunas';
-  return {inicio:'inicio',colores:'colores',respaldo:'respaldo',usuarios:'usuarios'}[a]||'dashboard';
+  return {inicio:'inicio',colores:'colores',respaldo:'respaldo',usuarios:'usuarios',papelera:'papelera'}[a]||'dashboard';
 }
 
 // Antes las pantallas vistas se guardaban en el navegador; se leen una vez para pasarlas a la base de datos
@@ -34,7 +34,7 @@ const BACK={target:'.cms-editor-bar .cms-icon-btn',title:'Volver',text:'Con la f
 export const TOURS={
   dashboard:[
     {title:'Bienvenida al gestor',text:'Desde aquí se edita todo lo que se publica en el sitio de la Cineteca. Este recorrido corto te muestra dónde está cada cosa. Puedes saltarlo cuando quieras y volver a verlo con el botón «Tutorial».'},
-    {target:'.cms-side-nav',title:'El menú',text:'Las secciones están agrupadas: el Archivo (películas, personas, prensa, entrevistas y artículos), cómo se organiza (colecciones, línea de tiempo, comunas), el sitio (la página de inicio y los colores) y el sistema (usuarios y respaldo). El número al lado indica cuántos elementos hay.'},
+    {target:'.cms-side-nav',title:'El menú',text:'Las secciones están agrupadas: el Archivo (películas, personas, prensa, entrevistas y artículos), cómo se organiza (colecciones, línea de tiempo, comunas), el sitio (la página de inicio y los colores) y el sistema (usuarios, respaldo y papelera). El número al lado indica cuántos elementos hay.'},
     {target:'.cms-new',title:'Crear una ficha',text:'Con «Nueva ficha» eliges qué tipo de ficha crear. También puedes crearla desde cada sección.'},
     {target:'.cms-kpis',title:'El archivo en cifras',text:'Cuántas fichas hay, cuántas están incompletas y cuántos archivos digitales (videos, audios y documentos) tiene el archivo.'},
     {target:'.cms-dash-grid',title:'Qué hay que hacer',text:'«Por completar» lista las fichas a las que les falta algo (imagen, descripción, archivo…). Haz clic en una para completarla. «Editado recientemente» te lleva de vuelta a lo último que tocaste.'},
@@ -106,6 +106,11 @@ export const TOURS={
     {target:'.cms-head',title:'Usuarios',text:'Aquí están todas las personas que pueden entrar al gestor y editar el sitio.'},
     {target:'.cms-head-actions',title:'Nuevo usuario',text:'Crea una cuenta con nombre, usuario y una contraseña inicial. Dale esos datos a la persona: después puede cambiar su contraseña desde «Mi cuenta».'},
     {target:'.cms-table',title:'Cada cuenta',text:'El lápiz cambia el nombre o el usuario. La llave pone una contraseña nueva (útil si alguien la olvidó) y cierra sus sesiones abiertas. El basurero elimina la cuenta; no puedes eliminar la tuya y siempre queda al menos una.'}
+  ],
+  papelera:[
+    {target:'.cms-head',title:'Papelera',text:'Nada de lo que se elimina en el gestor se borra de verdad: fichas, colecciones, hitos, comunas, cuentas e inscripciones quedan aquí.'},
+    {target:'.cms-trash-filter',title:'Filtrar',text:'Muestra solo un tipo de elemento eliminado.'},
+    {target:'.cms-trash',title:'Recuperar',text:'Pulsa «Recuperar» y el elemento vuelve a su lugar, tal como estaba.'}
   ],
   respaldo:[
     {target:'.cms-head',title:'Respaldo',text:'Todo lo que editas se guarda en el servidor del sitio y lo ven todos los visitantes. Aun así, descarga un respaldo de vez en cuando para tener una copia propia.'},

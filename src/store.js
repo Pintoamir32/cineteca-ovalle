@@ -263,6 +263,32 @@ export async function importData(file){
   return setData(changes);
 }
 
+/* ---------- Papelera ----------
+   Lo recuperado no sale de la papelera: queda marcado con restoredAt y deja de mostrarse. */
+export const getTrash=()=>trash.filter(t=>!t.restoredAt).slice().reverse();
+export function restoreFromTrash(entryId){
+  const entry=trash.find(t=>t.id===entryId&&!t.restoredAt);
+  if(!entry)return Promise.reject(new Error('Ese elemento ya no está en la papelera.'));
+  const changes={};
+  if(entry.kind==='records'){
+    // Si su número ya lo usa otra ficha, vuelve con uno nuevo
+    const id=records.some(r=>r.id===entry.item.id)?nextId():entry.item.id;
+    changes.records=[...records,{...entry.item,id}];
+    changes.recordExtras={...recordExtras,[id]:entry.extra||{}};
+  }else if(entry.kind==='todo'){
+    toTrash('todo',structuredClone(LIVE),{reason:'antes de recuperar contenido de la papelera'});
+    Object.assign(changes,structuredClone(entry.item));
+  }else if(entry.kind in LIVE&&Array.isArray(LIVE[entry.kind])){
+    // Las comunas tienen número propio: si otra lo tomó, vuelve con uno nuevo
+    const taken=entry.item?.id!=null&&LIVE[entry.kind].some(x=>x.id===entry.item.id);
+    const item=taken?{...entry.item,id:Math.max(0,...LIVE[entry.kind].map(x=>Number(x.id)||0))+1}:entry.item;
+    const list=[...LIVE[entry.kind],item];
+    changes[entry.kind]=entry.kind==='timelineEvents'?list.sort((a,b)=>yearKey(a)-yearKey(b)):list;
+  }else return Promise.reject(new Error('No se reconoce este elemento.'));
+  trash=trash.map(t=>t.id===entryId?{...t,restoredAt:new Date().toISOString()}:t);
+  return setData(changes);
+}
+
 /* ---------- Historial de versiones ----------
    Cada vez que se guarda, la versión anterior queda en el servidor y se puede volver a ella. */
 export const contentHistory=()=>request('/api/content/history').then(r=>r.versions||[]);

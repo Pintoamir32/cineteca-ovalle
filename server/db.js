@@ -9,6 +9,8 @@ import zlib from 'node:zlib';
 
 // Los archivos grandes se guardan en trozos: MySQL rechaza paquetes mayores que max_allowed_packet
 const CHUNK=512*1024;
+// Una cuenta eliminada guarda su usuario como «usuario~eliminada~id»
+const originalUsername=u=>String(u).replace(/~eliminada~[a-f0-9]+$/,'');
 const recordCount=json=>{try{return (JSON.parse(json).records||[]).length}catch{return null}};
 
 const TABLES=[
@@ -64,6 +66,9 @@ async function mysqlStore(){
     deleteUser:async id=>{await pool.query('DELETE FROM cms_sessions WHERE user_id=?',[id]);
       // El usuario queda libre para una cuenta nueva; la eliminada conserva el original en su nombre de usuario
       await pool.query("UPDATE cms_users SET deleted_at=?,username=CONCAT(LEFT(username,90),'~eliminada~',id) WHERE id=?",[new Date(),id])},
+    deletedUsers:async()=>(await pool.query('SELECT id,name,username,deleted_at AS deletedAt FROM cms_users WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC'))[0].map(u=>({...u,username:originalUsername(u.username),deletedAt:new Date(u.deletedAt).toISOString()})),
+    deletedUserById:async id=>{const u=await one('SELECT * FROM cms_users WHERE id=? AND deleted_at IS NOT NULL',[id]);return u&&{...u,username:originalUsername(u.username)}},
+    restoreUser:(id,username)=>pool.query('UPDATE cms_users SET deleted_at=NULL,username=? WHERE id=?',[username,id]),
     tutorials:async userId=>(await pool.query('SELECT screen FROM cms_tutorials WHERE user_id=?',[userId]))[0].map(r=>r.screen),
     markTutorial:(userId,view)=>pool.query('INSERT IGNORE INTO cms_tutorials(user_id,screen,seen_at) VALUES(?,?,?)',[userId,view,new Date()]),
     createSession:(token,userId,expires)=>pool.query('INSERT INTO cms_sessions(token,user_id,expires_at) VALUES(?,?,?)',[token,userId,expires]),
@@ -106,6 +111,7 @@ async function mysqlStore(){
     },
     addSubmission:(id,data)=>pool.query('INSERT INTO cms_submissions(id,data,status,created_at) VALUES(?,?,?,?)',[id,JSON.stringify(data),'nueva',new Date()]),
     submissions:async()=>(await pool.query(`SELECT id,data,status,created_at AS createdAt FROM cms_submissions WHERE status<>'eliminada' ORDER BY created_at DESC`))[0].map(r=>({id:r.id,status:r.status,createdAt:new Date(r.createdAt).toISOString(),...JSON.parse(r.data)})),
+    deletedSubmissions:async()=>(await pool.query(`SELECT id,data,status,created_at AS createdAt FROM cms_submissions WHERE status='eliminada' ORDER BY created_at DESC`))[0].map(r=>({id:r.id,status:r.status,createdAt:new Date(r.createdAt).toISOString(),...JSON.parse(r.data)})),
     setSubmissionStatus:(id,status)=>pool.query('UPDATE cms_submissions SET status=? WHERE id=?',[status,id]),
     // Una inscripción eliminada desaparece del gestor pero sigue en la base de datos
     deleteSubmission:id=>pool.query("UPDATE cms_submissions SET status='eliminada' WHERE id=?",[id])
@@ -129,6 +135,9 @@ async function fileStore(){
     setPassword:async(id,salt,hash)=>write('users',(await read('users',[])).map(u=>u.id===id?{...u,salt,hash}:u)),
     updateUser:async(id,name,username)=>write('users',(await read('users',[])).map(u=>u.id===id?{...u,name,username}:u)),
     deleteUser:async id=>{await write('sessions',(await read('sessions',[])).filter(x=>x.user_id!==id));await write('users',(await read('users',[])).map(u=>u.id===id?{...u,deletedAt:new Date().toISOString(),username:`${u.username.slice(0,90)}~eliminada~${u.id}`}:u))},
+    deletedUsers:async()=>(await read('users',[])).filter(u=>u.deletedAt).map(({id,name,username,deletedAt})=>({id,name,username:originalUsername(username),deletedAt})),
+    deletedUserById:async id=>{const u=(await read('users',[])).find(u=>u.id===id&&u.deletedAt);return u&&{...u,username:originalUsername(u.username)}},
+    restoreUser:async(id,username)=>write('users',(await read('users',[])).map(u=>{if(u.id!==id)return u;const {deletedAt,...rest}=u;return {...rest,username}})),
     tutorials:async userId=>(await read('tutorials',{}))[userId]||[],
     markTutorial:async(userId,view)=>{const t=await read('tutorials',{}), seen=t[userId]||[];if(!seen.includes(view))await write('tutorials',{...t,[userId]:[...seen,view]})},
     createSession:async(token,userId,expires)=>write('sessions',[...(await read('sessions',[])).filter(alive),{token,user_id:userId,expiresAt:expires.toISOString()}]),
@@ -156,6 +165,7 @@ async function fileStore(){
     media:async id=>{try{const {mime}=await read(`media-${id}`,{});return {mime,data:await fs.readFile(path.join(dir,'media',id))}}catch{return null}},
     addSubmission:async(id,data)=>write('submissions',[{id,status:'nueva',createdAt:new Date().toISOString(),...data},...await read('submissions',[])]),
     submissions:async()=>(await read('submissions',[])).filter(x=>x.status!=='eliminada'),
+    deletedSubmissions:async()=>(await read('submissions',[])).filter(x=>x.status==='eliminada'),
     setSubmissionStatus:async(id,status)=>write('submissions',(await read('submissions',[])).map(x=>x.id===id?{...x,status}:x)),
     deleteSubmission:async id=>write('submissions',(await read('submissions',[])).map(x=>x.id===id?{...x,status:'eliminada'}:x))
   };
