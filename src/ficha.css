@@ -101,6 +101,7 @@
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .ficha-film .ficha-aside{padding:28px 28px 36px;position:static}
 .ficha-poster{position:relative;margin:0;aspect-ratio:5/6;overflow:hidden;background:var(--black);box-shadow:0 24px 50px -24px color-mix(in srgb,var(--black) 45%,transparent)}
+.ficha-poster.is-horizontal{aspect-ratio:4/3}
 .ficha-poster img{width:100%;height:100%;object-fit:cover;filter:grayscale(.15)}
 .ficha-poster figcaption{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;gap:12px;padding:40px 16px 14px;background:linear-gradient(0deg,rgba(6,9,7,.85),transparent);font:700 8px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:#fff}
 .ficha-poster figcaption span:last-child{color:var(--acid)}
@@ -125,8 +126,8 @@
 .ficha-film-related a>svg{width:14px;flex-shrink:0}
 .ficha-film-related a:hover{border-color:var(--forest)}
 .ficha-film-related a:hover img{filter:none}
-@media(max-width:1000px){.ficha-film .ficha-film-aside{display:grid;grid-template-columns:minmax(0,280px) 1fr;gap:0 28px;align-items:start}.ficha-film .ficha-film-aside>.ficha-poster{grid-row:1/span 20}.ficha-film .ficha-film-aside>:not(.ficha-poster){grid-column:2}}
-@media(max-width:600px){.ficha-film .ficha-film-aside{display:block}.ficha-film .ficha-film-aside>.ficha-poster{width:100%;max-width:360px;margin:0 auto 20px}}
+@media(max-width:1000px){.ficha-film .ficha-film-aside,.ficha-person-body .ficha-film-aside{display:grid;grid-template-columns:minmax(0,280px) 1fr;gap:0 28px;align-items:start}.ficha-film .ficha-film-aside>.ficha-poster,.ficha-person-body .ficha-film-aside>.ficha-poster{grid-row:1/span 20}.ficha-film .ficha-film-aside>:not(.ficha-poster),.ficha-person-body .ficha-film-aside>:not(.ficha-poster){grid-column:2}}
+@media(max-width:600px){.ficha-film .ficha-film-aside,.ficha-person-body .ficha-film-aside{display:block}.ficha-film .ficha-film-aside>.ficha-poster,.ficha-person-body .ficha-film-aside>.ficha-poster{width:100%;max-width:360px;margin:0 auto 20px}}
 @media(max-width:760px){.ficha-film .ficha-body{margin-top:14px}.ficha-film-head{margin-bottom:48px}.ficha-film-top{margin-bottom:36px}.ficha-film-director{padding-right:0;border-right:0}}
 .ficha-film-director{color:var(--black);transition:color .2s}
 .ficha-film-director strong{text-decoration:underline;text-decoration-color:transparent;text-underline-offset:4px;transition:text-decoration-color .2s}
@@ -199,9 +200,8 @@ a.back-link.back-link:hover .back-link-icon{background:var(--acid);color:var(--b
 .ficha-person-card:hover>svg{opacity:1;transform:translateX(3px)}
 
 
-/* Ficha de persona: nombre, rol(es) y foto arriba; biografía y obras en una sola columna */
-.ficha-person-body{grid-template-columns:1fr;margin-bottom:24px}
-.ficha-person-body .ficha-main{border-right:0}
+/* Ficha de persona: nombre, rol(es) y foto arriba; biografía y obras a la izquierda, panel como el de las películas a la derecha */
+.ficha-person-body{margin-bottom:24px}
 .ficha-person-body .ficha-person-bio{max-width:none}
 .ficha-person-roles{font-weight:600;letter-spacing:.01em}
 .ficha-person-bio{white-space:pre-line}

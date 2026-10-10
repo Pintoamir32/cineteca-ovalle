@@ -7,7 +7,7 @@ import { countByCollection, countByLocation, countByType, getAllRecords, getFilm
 import { useEdit } from './edit-context';
 import { useSiteText } from './site-text';
 import { SearchSelect } from './SearchSelect';
-import { BackLink, DocumentView, MediaViewer } from './record-views';
+import { BackLink, DocumentView, MediaViewer, panelShape } from './record-views';
 import { tagStyle } from './color';
 import { filmPeopleNames, filtersFor, matches, optionsOf, valueLabel } from './filters';
 
@@ -152,11 +152,15 @@ export function RecordDetail({item,extra}){
   const initials=(item.subtitle||'').split(' ').filter(Boolean).map(w=>w[0]).slice(0,2).join('');
   // «Dirigida por» lleva a la ficha de esa persona si está en el archivo
   const director=isFilm&&item.subtitle?getAllRecords().find(r=>r.type==='Persona'&&r.title.trim().toLowerCase()===item.subtitle.trim().toLowerCase()):null;
+  const shape=panelShape(item,extra);
+  // Persona: panel derecho como el de las películas, con sus propios datos (roles, obras y período de su filmografía)
+  const workYears=works.map(w=>yearNum(w.year)).filter(y=>y<9999), first=Math.min(...workYears), last=Math.max(...workYears);
+  const personFacts=[['Roles',item.subtitle,true,'subtitle'],['Películas',String(works.length)],['Período',workYears.length?(first===last?String(first):`${first}—${last}`):''],['Vida',item.year],['Colección',item.collection,true]].filter(([,v,,key])=>v||(edit&&key));
   return <main className={`ficha-page${isFilm?' ficha-film':' ficha-person'}`}>
     {!isFilm&&<section className={`ficha-hero${isPerson&&['center','right'].includes(extra.heroAlign)?` is-align-${extra.heroAlign}`:''}`}>
       <img src={item.image} alt="" loading="lazy" decoding="async"/>
       <div className="ficha-hero-shade"/>
-      {slot('image')}
+      {!isPerson&&slot('image')}
       <BackLink item={item}/>
       {/* Persona: fotografía, nombre y rol(es); abajo, biografía y filmografía */}
       <div className="ficha-hero-content">
@@ -188,6 +192,15 @@ export function RecordDetail({item,extra}){
           {slot('works')}
         </div>
       </article>
+      <aside className="ficha-aside ficha-film-aside">
+        <figure className={`ficha-poster is-${shape}`}><img src={item.image} alt={`Fotografía de ${item.title}`} decoding="async"/>{slot('image')}<figcaption><span>{item.type}</span><span>{works.length} {works.length===1?'película':'películas'}</span></figcaption></figure>
+        <a className="ficha-cta" href="#filmografia"><Film/> Ver filmografía</a>
+        <div className="ficha-aside-label">Ficha biográfica</div>
+        <dl className="ficha-film-facts">{personFacts.map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>
+        {placeList.length>0&&<><div className="ficha-aside-label">{placeList.length>1?`Territorios · ${placeList.length}`:'Territorio'}</div>
+        <ul className="ficha-film-locations">{placeList.map(l=><li key={l}><Link to={`/${item.slug}?locacion=${encodeURIComponent(l)}`} title={`Ver ${item.slug} vinculadas a ${l}`}><MapPin/><strong>{l}</strong><ArrowRight/></Link></li>)}</ul>
+        <Link className="ficha-film-maplink" to="/mapa">Ver en el mapa <ArrowRight/></Link></>}
+      </aside>
     </section>}
     {!isPerson&&<>
     <section className="ficha-body" data-reveal>
@@ -228,7 +241,7 @@ export function RecordDetail({item,extra}){
         </div>}
       </article>
       <aside className="ficha-aside ficha-film-aside">
-        {isFilm&&<figure className="ficha-poster"><img src={item.image} alt={`Imagen de ${item.title}`} decoding="async"/>{slot('image')}<figcaption><span>{item.collection}</span><span>{item.year}</span></figcaption></figure>}
+        {isFilm&&<figure className={`ficha-poster is-${shape}`}><img src={item.image} alt={`Imagen de ${item.title}`} decoding="async"/>{slot('image')}<figcaption><span>{item.collection}</span><span>{item.year}</span></figcaption></figure>}
         <a className="ficha-cta" href={ctaHref}><CtaIcon/> {ctaText}</a>
         {related.length>0&&<><div className="ficha-aside-label">Relacionados</div><div className="ficha-film-related">{related.map(r=><Link to={recordPath(r)} key={r.id}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><small>{r.type}</small><strong>{r.title}</strong></div><ArrowRight/></Link>)}</div>{slot('relations')}</>}
         <div className="ficha-aside-label">{view.label}</div>

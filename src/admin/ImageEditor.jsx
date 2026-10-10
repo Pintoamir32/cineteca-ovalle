@@ -75,10 +75,12 @@ export function renderImage(img,st,type='image/jpeg'){
 // La proporción medida en el sitio se ajusta a una estándar si está a menos de un 2 %
 const snapAspect=a=>{if(a==null||a==='orig')return a;const hit=ASPECTS.find(([,x])=>typeof x==='number'&&Math.abs(x-a)/a<.02);return hit?hit[1]:a};
 
-export function ImageEditor({sources,onDone,onClose,aspect:siteAspect=null}){
-  const aspect=snapAspect(siteAspect);
+// Con `shapes` ([etiqueta, proporción]) solo se ofrecen esas formas (el panel de las fichas: vertical u horizontal),
+// y onDone recibe también la forma elegida para cada imagen
+export function ImageEditor({sources,onDone,onClose,aspect:siteAspect=null,shapes=null}){
+  const aspect=shapes?(shapes.find(([,a])=>a===siteAspect)||shapes[0])[1]:snapAspect(siteAspect);
   // Si la forma del lugar no es una estándar, se ofrece como primera opción
-  const aspects=aspect!=null&&!ASPECTS.some(([,a])=>a===aspect)?[['Como en el sitio',aspect],...ASPECTS]:ASPECTS;
+  const aspects=shapes||(aspect!=null&&!ASPECTS.some(([,a])=>a===aspect)?[['Como en el sitio',aspect],...ASPECTS]:ASPECTS);
   const [items,setItems]=useState(()=>sources.map(s=>({...s,st:fresh(aspect)})));
   const [i,setI]=useState(0), [img,setImg]=useState(null), [error,setError]=useState(''), [busy,setBusy]=useState(false);
   const cache=useRef(new Map()), stageRef=useRef(null), canvasRef=useRef(null);
@@ -130,7 +132,7 @@ export function ImageEditor({sources,onDone,onClose,aspect:siteAspect=null}){
   };
   const rotate=d=>{const rot=(st.rot+d+360)%360;update({rot,crop:centeredCrop(normRatio(st.aspect,img,rot))})};
   const setAspect=a=>update({aspect:a,crop:centeredCrop(normRatio(a,img,st.rot))});
-  const reset=()=>update({...fresh(null),pending:false});
+  const reset=()=>shapes?update({...fresh(st.aspect),crop:centeredCrop(normRatio(st.aspect,img,0)),pending:false}):update({...fresh(null),pending:false});
   const remove=j=>{
     if(items.length===1)return onClose();
     setItems(list=>list.filter((_,x)=>x!==j));setI(x=>Math.max(0,x>=j&&x>0?x-1:x));
@@ -145,7 +147,7 @@ export function ImageEditor({sources,onDone,onClose,aspect:siteAspect=null}){
         const keep=im.tainted||(untouched(it.st)&&!it.src.startsWith('blob:'));
         out.push(keep?it.src:renderImage(im,it.st,it.type||'image/jpeg'));
       }
-      onDone(out);
+      onDone(out,items.map(it=>it.st.aspect));
     }catch{setError('No se pudo procesar una de las imágenes.');setBusy(false)}
   };
 
@@ -172,9 +174,9 @@ export function ImageEditor({sources,onDone,onClose,aspect:siteAspect=null}){
         {img?.tainted&&<p className="ie-note">El sitio de origen no permite editar esta imagen. Se usará tal cual; para editarla, descárgala y súbela desde tu equipo.</p>}
         <fieldset disabled={!img||img.tainted}>
           <div className="ie-group"><span>Recorte</span>
-            <div className="ie-chips">{aspects.map(([label,a])=><button key={label} type="button" className={st.aspect===a?'active':''} onClick={()=>setAspect(a)}>{label}{aspect!=null&&a===aspect&&label!=='Como en el sitio'?' · sitio':''}</button>)}</div>
-            <p className="ie-help">{aspect!=null?`El recuadro tiene la forma del lugar donde va la imagen${aspects[0][0]==='Como en el sitio'?'':` (${aspects.find(([,a])=>a===aspect)[0]})`}: lo que queda dentro es lo que se verá. «Libre» deja recortar a mano.`:'«Libre» deja recortar a mano; las proporciones fijan la forma del recuadro.'}{cropped(st)?'':' Ahora se usa la foto completa.'}</p>
-            {cropped(st)&&<button type="button" className="cms-btn is-ghost ie-reset" onClick={()=>update({crop:{x:0,y:0,w:1,h:1},aspect:null})}><Undo2/> Quitar recorte</button>}
+            <div className="ie-chips">{aspects.map(([label,a])=><button key={label} type="button" className={st.aspect===a?'active':''} onClick={()=>setAspect(a)}>{label}{!shapes&&aspect!=null&&a===aspect&&label!=='Como en el sitio'?' · sitio':''}</button>)}</div>
+            <p className="ie-help">{shapes?'Elige si la imagen va vertical u horizontal en el panel de la ficha: lo que queda dentro del recuadro es lo que se verá.':aspect!=null?`El recuadro tiene la forma del lugar donde va la imagen${aspects[0][0]==='Como en el sitio'?'':` (${aspects.find(([,a])=>a===aspect)[0]})`}: lo que queda dentro es lo que se verá. «Libre» deja recortar a mano.`:'«Libre» deja recortar a mano; las proporciones fijan la forma del recuadro.'}{shapes||cropped(st)?'':' Ahora se usa la foto completa.'}</p>
+            {!shapes&&cropped(st)&&<button type="button" className="cms-btn is-ghost ie-reset" onClick={()=>update({crop:{x:0,y:0,w:1,h:1},aspect:null})}><Undo2/> Quitar recorte</button>}
           </div>
           <div className="ie-group"><span>Orientación</span>
             <div className="ie-row">

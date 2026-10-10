@@ -5,11 +5,11 @@ import { RecordCard, RecordRow } from '../components';
 import { collections, locations, records, site } from '../data';
 import { EditContext } from '../edit-context';
 import { RecordDetail } from '../pages';
-import { BODY_IMAGE_ALIGNS, BODY_IMAGE_SIZE, bodyBlocks, bodyImageStyle, bodyPlainText } from '../record-views';
+import { BODY_IMAGE_ALIGNS, BODY_IMAGE_SIZE, PANEL_SHAPES, bodyBlocks, bodyImageStyle, bodyPlainText, panelShape } from '../record-views';
 import { getFilmography, getInterviewees, INTERVIEW_FORMATS, interviewFormat, joinNames } from '../repository';
 import { deleteRecord, nextId, saveError, saveRecord, setData, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
-import { aspectNear, Choice, ColorSwatches, Editable, EditableChoice, EditableImage, ImagePicker, MEDIA_TYPES, MediaPicker, RecordPicker, thumb, useUi, useAskRemove } from './fields';
+import { Choice, ColorSwatches, Editable, EditableChoice, EditableImage, ImagePicker, MEDIA_TYPES, MediaPicker, RecordPicker, thumb, useUi, useAskRemove } from './fields';
 import { SiteFrame } from './SiteFrame';
 import { HomeEditContext } from '../site-text';
 import { useSharedTexts } from './shared-text';
@@ -214,7 +214,7 @@ function withArticle(label){
 
 // Conecta los campos de la ficha pública (ver edit-context) con el borrador del gestor
 function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
-  const [picker,setPicker]=useState(null), [pickAspect,setPickAspect]=useState(null);
+  const [picker,setPicker]=useState(null);
   const credits=e.credits||[], gallery=e.gallery||[], places=e.locations||[];
   const blocks=bodyBlocks(r.description,e);
   // Cada cambio del cuerpo actualiza también el texto completo (listados y buscador)
@@ -234,8 +234,8 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
   const needsFile=['video','audio','document'].includes(e.mediaType);
   const slotBtn=(key,onClick,Icon,label)=><button key={key} type="button" className={`cms-slot-btn is-${key}`} onClick={ev=>{ev.preventDefault();ev.stopPropagation();onClick(ev)}}><Icon/> {label}</button>;
   const slots={
-    // El recorte parte con la forma del lugar donde está la imagen (póster, portada…)
-    image:()=>slotBtn('image',ev=>{setPickAspect(aspectNear(ev.currentTarget));setPicker('image')},ImagePlus,r.image?'Cambiar imagen principal':'Añadir imagen principal'),
+    // La imagen principal va en el panel derecho: al recortarla solo se elige vertical u horizontal
+    image:()=>slotBtn('image',()=>setPicker('image'),ImagePlus,r.image?'Cambiar imagen principal':'Añadir imagen principal'),
     // Galería: añadir varias imágenes a la vez, también desde la vista previa
     // Cuerpo de entrevistas y artículos: texto e imágenes intercalados, escritos ahí mismo
     body:()=><BodyEditor blocks={blocks} setBlocks={setBlocks} pick={setPicker} label={field('description')[2]}/>,
@@ -265,7 +265,8 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     slot:name=>slots[name]?.()
   };
   const modals=<>
-    {picker==='image'&&<ImagePicker value={r.image} aspect={pickAspect} onPick={image=>setR({image})} onRemove={r.image?()=>setR({image:''}):undefined} onClose={()=>setPicker(null)} title="Imagen principal"/>}
+    {picker==='image'&&<ImagePicker value={r.image} shapes={PANEL_SHAPES.map(([,label,a])=>[label,a])} aspect={PANEL_SHAPES.find(([k])=>k===panelShape(r,e))[2]}
+      onPick={(image,a)=>{setR({image});const shape=PANEL_SHAPES.find(s=>s[2]===a);if(shape)setE({imageShape:shape[0]})}} onRemove={r.image?()=>setR({image:''}):undefined} onClose={()=>setPicker(null)} title="Imagen principal"/>}
     {picker==='media'&&<MediaPicker mediaType={e.mediaType} media={e.media} onChange={(mediaType,media)=>setE({mediaType,media})} onClose={()=>setPicker(null)}/>}
     {picker==='work'&&<RecordPicker title="Vincular una película" types={['Película']} exclude={e.relations||[]} onPick={x=>setE({relations:[...(e.relations||[]),x.id]})} onClose={()=>setPicker(null)}/>}
     {picker==='interviewee'&&<RecordPicker title="Añadir persona entrevistada" types={['Persona']} action="Añadir" exclude={(e.interviewees||[]).map(x=>x.id).filter(id=>id!=null)}

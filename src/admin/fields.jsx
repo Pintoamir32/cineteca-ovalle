@@ -204,13 +204,14 @@ export function aspectNear(el){
   return null;
 }
 
-export function ImagePicker({value,onPick,onPickMany,multiple=false,onClose,title,onRemove,aspect=null}){
+// Con `shapes` el recorte solo ofrece esas formas y onPick recibe también la elegida (ver ImageEditor)
+export function ImagePicker({value,onPick,onPickMany,multiple=false,onClose,title,onRemove,aspect=null,shapes=null}){
   const ask=useAskRemove();
   const [tab,setTab]=useState('upload'), [urls,setUrls]=useState(isUploaded(value)||multiple?'':value||''), [error,setError]=useState(''), [over,setOver]=useState(false);
   const [editing,setEditing]=useState(null), [selected,setSelected]=useState([]);
   const inputRef=useRef(null), direct=useRef([]);
   const library=useMemo(libraryImages,[]);
-  const deliver=list=>{if(!list.length)return;multiple?onPickMany(list):onPick(list[0]);onClose()};
+  const deliver=(list,chosen=[])=>{if(!list.length)return;multiple?onPickMany(list):shapes?onPick(list[0],chosen[0]):onPick(list[0]);onClose()};
   const edit=(sources,passThrough=[])=>{direct.current=passThrough;setError('');setEditing(sources)};
   const openFiles=async fileList=>{
     const files=[...(fileList||[])].filter(f=>f.type.startsWith('image/'));
@@ -225,9 +226,9 @@ export function ImagePicker({value,onPick,onPickMany,multiple=false,onClose,titl
     const onPaste=e=>{if(editing)return;const files=[...(e.clipboardData?.files||[])];if(files.some(f=>f.type.startsWith('image/'))){e.preventDefault();openFiles(files)}};
     window.addEventListener('paste',onPaste);return()=>window.removeEventListener('paste',onPaste);
   });
-  if(editing)return <ImageEditor sources={editing} aspect={aspect}
+  if(editing)return <ImageEditor sources={editing} aspect={aspect} shapes={shapes}
     onClose={()=>{revoke(editing);setEditing(null)}}
-    onDone={out=>{revoke(editing);deliver([...out,...direct.current])}}/>;
+    onDone={(out,chosen)=>{revoke(editing);deliver([...out,...direct.current],chosen)}}/>;
   return <Modal onClose={onClose} title={title||(multiple?'Añadir imágenes':'Elegir imagen')} className="cms-picker">
     {value&&!multiple&&<div className="cms-current">
       <img src={thumb(value,200)} alt=""/>

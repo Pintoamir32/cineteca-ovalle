@@ -10,6 +10,10 @@ import './record-views.css';
 
 const code=item=>`FICHA CDO—${String(item.id).padStart(4,'0')}`;
 
+// Imagen del panel derecho de toda ficha: vertical u horizontal (el artículo parte horizontal; lo demás, vertical)
+export const PANEL_SHAPES=[['vertical','Vertical',5/6],['horizontal','Horizontal',4/3]];
+export const panelShape=(item,extra)=>PANEL_SHAPES.some(([k])=>k===extra?.imageShape)?extra.imageShape:item.type==='Artículo'?'horizontal':'vertical';
+
 // Botón volver compartido: muestra el nombre real de la sección
 export function BackLink({item}){
   const label=sections.find(s=>s.slug===item.slug)?.label||'Archivo';
@@ -162,7 +166,7 @@ export function DocumentView({item,extra,related,people}){
   // Panel derecho, como el de las películas: la imagen principal y los campos propios de cada tipo (y en prensa, sus películas vinculadas)
   const pressFilms=cfg.press?related.filter(r=>r.type==='Película'):[];
   const aside=<aside className="ficha-aside ficha-film-aside doc-aside"><div className="doc-aside-inner">
-    <figure className="press-clipping doc-aside-image">
+    <figure className={`press-clipping doc-aside-image is-${panelShape(item,extra)}`}>
       <button type="button" onClick={()=>setZoom(0)} aria-label="Ampliar imagen">
         <img src={cfg.image||item.image} alt={item.title} decoding="async"/>
         <span className="press-zoom"><Maximize2/> Ampliar</span>
