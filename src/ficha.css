@@ -100,7 +100,7 @@
 .ficha-film-specs a:hover{border-color:var(--forest);background:var(--acid)}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .ficha-film .ficha-aside{padding:28px 28px 36px;position:static}
-.ficha-poster{position:relative;margin:0;aspect-ratio:7/10;overflow:hidden;background:var(--black);box-shadow:0 24px 50px -24px color-mix(in srgb,var(--black) 45%,transparent)}
+.ficha-poster{position:relative;margin:0;aspect-ratio:5/6;overflow:hidden;background:var(--black);box-shadow:0 24px 50px -24px color-mix(in srgb,var(--black) 45%,transparent)}
 .ficha-poster img{width:100%;height:100%;object-fit:cover;filter:grayscale(.15)}
 .ficha-poster figcaption{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;gap:12px;padding:40px 16px 14px;background:linear-gradient(0deg,rgba(6,9,7,.85),transparent);font:700 8px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:#fff}
 .ficha-poster figcaption span:last-child{color:var(--acid)}
