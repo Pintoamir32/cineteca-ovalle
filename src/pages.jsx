@@ -167,6 +167,12 @@ export function RecordDetail({item,extra}){
     {isPerson&&<section className="ficha-body ficha-person-body" data-reveal>
       <div className="ficha-film-top ficha-person-top"><BackLink item={item}/><span className="ficha-code">FICHA CDO—{String(item.id).padStart(4,'0')}</span></div>
       <article className="ficha-main">
+        {/* Nombre y roles encabezan la ficha, como el título en las películas */}
+        <header className="ficha-film-head ficha-person-head">
+          <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
+          <h1>{f('title',item.title)}</h1>
+          <p className="ficha-person-roles">{f('subtitle',item.subtitle,{placeholder:'Roles'})}</p>
+        </header>
         <div className="ficha-section-label"><span>01</span> BIOGRAFÍA</div>
         <p className="ficha-person-bio">{f('description',item.description,{multiline:true})}</p>
         <div className="ficha-media ficha-filmography" id="filmografia">
@@ -188,11 +194,6 @@ export function RecordDetail({item,extra}){
         </div>
       </article>
       <aside className="ficha-aside ficha-film-aside">
-        <header className="ficha-person-head">
-          <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
-          <h1>{f('title',item.title)}</h1>
-          <p className="ficha-person-roles">{f('subtitle',item.subtitle,{placeholder:'Roles'})}</p>
-        </header>
         <figure className={`ficha-poster is-${shape}`}><img src={item.image} alt={`Fotografía de ${item.title}`} decoding="async"/>{slot('image')}<figcaption><span>{item.type}</span><span>{works.length} {works.length===1?'película':'películas'}</span></figcaption></figure>
         <a className="ficha-cta" href="#filmografia"><Film/> Ver filmografía</a>
         <div className="ficha-aside-label">Ficha biográfica</div>
