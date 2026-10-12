@@ -32,12 +32,18 @@ export function FilmMap({places,points,focus,onPlace}){
     for(const l of places)L.marker([l.lat,l.lon],{icon:placeDot,title:l.name}).on('click',()=>placeRef.current?.(l)).bindTooltip(l.name,{direction:'top',offset:[0,-6]}).addTo(layer);
     for(const pt of points){
       const r=pt.record;
-      L.marker([pt.lat,pt.lon],{icon:filmPin,title:r.title}).bindPopup(`<div class="film-map-pop">
+      // Al pasar el mouse: carátula, título y algunos datos; al hacer clic se abre la ficha
+      const [genre,duration]=String(r.format||'').split(' · ');
+      const details=[r.year,genre,duration].filter(Boolean).join(' · ');
+      L.marker([pt.lat,pt.lon],{icon:filmPin,title:r.title,keyboard:true}).bindTooltip(`<div class="film-map-pop">
         ${r.image?`<img src="${esc(r.image)}" alt="">`:''}
-        <small>${esc([r.year,pt.label||pt.place].filter(Boolean).join(' · '))}</small>
+        <small>${esc(details)}</small>
         <strong>${esc(r.title)}</strong>
-        <a href="${esc(recordPath(r))}" data-to="${esc(recordPath(r))}">Ver ficha →</a>
-      </div>`,{maxWidth:240,minWidth:200}).addTo(layer);
+        ${r.subtitle?`<span>Dirección: ${esc(r.subtitle)}</span>`:''}
+        <span class="film-map-place-label">${esc(pt.label?`${pt.label} · ${pt.place}`:pt.place)}</span>
+        <em>Clic para ver la ficha →</em>
+      </div>`,{direction:'top',offset:[0,-30],opacity:1,className:'film-map-tip'})
+        .on('click',()=>navigate(recordPath(r))).addTo(layer);
     }
     const all=[...places.map(l=>[l.lat,l.lon]),...points.map(p=>[p.lat,p.lon])];
     if(all.length&&!focus)map.fitBounds(all,{padding:[40,40],maxZoom:11});

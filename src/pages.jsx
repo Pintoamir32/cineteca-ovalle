@@ -223,9 +223,6 @@ export function RecordDetail({item,extra}){
         <a className="ficha-cta" href="#filmografia" {...z('cta','Botón principal')}><Film/> Ver filmografía</a>
         <div className="ficha-aside-label" {...z('aside.facts','Título «Ficha biográfica»')}>Ficha biográfica</div>
         <dl className="ficha-film-facts">{personFacts.map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined} {...z(`fact.${k}`,`Dato «${k}»`)}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>
-        {placeList.length>0&&<><div className="ficha-aside-label" {...z('aside.places','Título «Territorios»')}>{placeList.length>1?`Territorios · ${placeList.length}`:'Territorio'}</div>
-        <ul className="ficha-film-locations" {...z('places','Territorios')}>{placeList.map(l=>{const spots=pointsOf(extra).filter(pt=>pt.place===l&&pt.label);return <li key={l}><Link to={`/${item.slug}?locacion=${encodeURIComponent(l)}`} title={`Ver ${item.slug} vinculadas a ${l}`}><MapPin/><strong>{l}{spots.length>0&&<small>{spots.map(pt=>pt.label).join(' · ')}</small>}</strong><ArrowRight/></Link></li>})}</ul>
-        <Link className="ficha-film-maplink" to="/mapa" {...z('maplink','Enlace «Ver en el mapa»')}>Ver en el mapa <ArrowRight/></Link></>}
       </aside>
     </section>}
     {!isPerson&&<>
