@@ -38,8 +38,7 @@ export const FILTERS={
   ],
   Persona:[
     {key:'rol',label:'Rol',get:r=>split(r.subtitle)},
-    {key:'pelicula',label:'Película',get:r=>getFilmography(r).map(e=>e.film.title)},
-    PLACE
+    {key:'pelicula',label:'Película',get:r=>getFilmography(r).map(e=>e.film.title)}
   ],
   Prensa:[
     {key:'medio',label:'Medio de origen',get:r=>r.subtitle},
