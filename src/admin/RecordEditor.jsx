@@ -15,6 +15,7 @@ import { HomeEditContext } from '../site-text';
 import { useSharedTexts } from './shared-text';
 import { TYPE_META, code, extraOf, missingFields, typeBySlug, typeColor } from './meta';
 import { PREFILL_KEY } from './Submissions';
+import { formatDuration } from '../duration';
 import { useLocalDraft } from './autosave';
 
 
@@ -223,7 +224,8 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
   // Clave del campo en la página pública → valor, cómo cambiarlo, cómo se llama y un ejemplo
   const field=key=>{
     const [name,i]=key.split('.'), n=Number(i);
-    if(name==='format')return [parts[n]??'',v=>setPart(n,v),meta.format[n]||'Formato',meta.formatHint?.[n]];
+    // Duración: «10» queda «10 min», «90» queda «1 h 30 min»
+    if(name==='format')return [parts[n]??'',v=>setPart(n,meta.format[n]==='Duración'?formatDuration(v):v),meta.format[n]||'Formato',meta.formatHint?.[n]];
     // Cargos: el nombre del cargo y quién lo ocupó (el 5.º valor es la indicación completa)
     if(name==='credits')return [credits[n]?.[1]??'',v=>setCredit(n,1,v),credits[n]?.[0]||'Nombre',undefined,'Escribe el nombre (ej. María Cortés)'];
     if(name==='creditKey')return [credits[n]?.[0]??'',v=>setCredit(n,0,v),'Cargo',undefined,'Escribe el cargo (ej. Fotografía)'];
@@ -259,7 +261,7 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
       // La indicación siempre dice qué escribir (la página solo aporta la clave del campo)
       const [value,onChange,label,example,hint]=field(key), options=choices(key);
       if(hint)return <Editable key={key} value={value} onChange={onChange} placeholder={hint} label={label}/>;
-      if(options)return <EditableChoice key={key} value={value} onChange={onChange} options={options} label={label} placeholder={`Elige ${withArticle(label)}${example?` (ej. ${example})`:''}`}/>;
+      if(options)return <EditableChoice key={key} value={value} onChange={onChange} options={options} label={label} normalize={label==='Duración'?formatDuration:undefined} placeholder={`Elige ${withArticle(label)}${example?` (ej. ${example})`:''}`}/>;
       return <Editable key={key} as={as} render={render} value={value} onChange={onChange} multiline={multiline} wrap={key==='title'} placeholder={`Escribe ${withArticle(label)}${example?` (ej. ${example})`:''}`} label={label}/>;
     },
     slot:name=>slots[name]?.()

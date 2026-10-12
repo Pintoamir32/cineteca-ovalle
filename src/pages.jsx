@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpDown, CalendarDays, CirclePlay, Clapperboard, Clock, Film, Grid2X2, List, MapPin, Search, Settings2, Table2, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpDown, CalendarDays, CirclePlay, Clapperboard, Clock, Film, Grid2X2, List, MapPin, Ruler, Search, Settings2, Table2, X } from 'lucide-react';
 import { Counter, Paged, Pager, RecordCard, RecordRow, usePaged } from './components';
 import { collections, locations, recordExtras, sections, timelineEvents } from './data';
 import { countByCollection, countByLocation, countByType, getAllRecords, getFilmPeople, getFilmography, getLocations, getRecordPeople, placesOf, findRecordByParam, recordPath, recordSlug } from './repository';
@@ -10,6 +10,7 @@ import { SearchSelect } from './SearchSelect';
 import { BackLink, DocumentView, MediaViewer, panelShape } from './record-views';
 import { tagStyle } from './color';
 import { filmPeopleNames, filtersFor, matches, optionsOf, valueLabel } from './filters';
+import { durationMinutes, metrajeOfDuration } from './duration';
 
 
 const PAGE_SIZE=8, COLLECTIONS_PER_PAGE=8, TIMELINE_PER_PAGE=10, FILMOGRAPHY_PER_PAGE=10;
@@ -32,11 +33,11 @@ const LINK_FACETS=[
   {key:'anio',label:'Año',get:r=>r.year},
   {key:'duracion',label:'Duración',get:r=>formatParts(r)[1]}
 ];
-const FACET_KEY={Dirección:'director',Año:'anio',Género:'genero',Duración:'duracion',Soporte:'soporte'};
+const FACET_KEY={Dirección:'director',Año:'anio',Género:'genero',Duración:'duracion',Metraje:'metraje',Soporte:'soporte'};
 
 /* Vista de tabla: columnas según la sección, ordenables desde el encabezado */
 const yearNum=r=>Number((/\d{4}/.exec(r.year)||[])[0])||0;
-const minutes=r=>Number((/(\d+)\s*min/.exec(formatParts(r)[1]||'')||[])[1])||0;
+const minutes=r=>durationMinutes(formatParts(r)[1]);
 const SUBTITLE={peliculas:'Dirección',personas:'Roles',prensa:'Medio de origen',entrevistas:'Entrevistado(a)',articulos:'Autor(a)'};
 function tableColumns(kind){
   const cols=[{key:'title',label:'Título',get:r=>r.title}];
@@ -141,7 +142,9 @@ export function RecordDetail({item,extra}){
   const credits=extra.credits||[], gallery=extra.gallery||[];
   const [genre,duration,medium]=(item.format||'').split(' · ');
   // En el gestor se muestran los tres datos aunque estén vacíos, para poder completarlos
-  const parts=[['Género',genre,'format.0'],['Duración',duration,'format.1'],['Soporte',medium,'format.2']];
+  // El metraje (corto, medio o largo) sale solo de la duración
+  const metraje=isFilm?metrajeOfDuration(duration):undefined;
+  const parts=[['Género',genre,'format.0'],['Duración',duration,'format.1'],...(metraje?[['Metraje',metraje]]:[]),['Soporte',medium,'format.2']];
   const filmFormat=edit&&isFilm?parts:duration?parts.filter(([,v])=>v):[['Formato',item.format,'format.0']];
   // Películas y personas comparten sidebar, con sus propios datos y llamada a la acción
   const view={
@@ -211,7 +214,7 @@ export function RecordDetail({item,extra}){
           <h1>{f('title',item.title)}</h1>
           <div className="ficha-film-byline">
             <Link className="ficha-film-director" to={director?recordPath(director):`/peliculas?director=${encodeURIComponent(item.subtitle)}`} title={director?`Ver la ficha de ${item.subtitle}`:`Ver todas las películas de ${item.subtitle}`}><span aria-hidden="true">{initials}</span><div><small>Dirigida por</small><strong>{f('subtitle',item.subtitle)}</strong></div><ArrowRight className="ficha-film-director-arrow" aria-hidden="true"/></Link>
-            <ul className="ficha-film-specs">{[['Año',item.year,'year'],...filmFormat].map(([k,v,field])=>{const Icon={Año:CalendarDays,Género:Clapperboard,Duración:Clock,Soporte:Film}[k]||Film;const key=FACET_KEY[k];const text=f(field,v,{placeholder:k});return <li key={k}>{key?<Link to={`/peliculas?${key}=${encodeURIComponent(v)}`} title={`Ver películas · ${k}: ${v}`}><Icon aria-hidden="true"/><span className="sr-only">{k}: </span>{text}</Link>:<span><Icon aria-hidden="true"/>{text}</span>}</li>})}</ul>
+            <ul className="ficha-film-specs">{[['Año',item.year,'year'],...filmFormat].map(([k,v,field])=>{const Icon={Año:CalendarDays,Género:Clapperboard,Duración:Clock,Metraje:Ruler,Soporte:Film}[k]||Film;const key=FACET_KEY[k];const text=field?f(field,v,{placeholder:k}):v;return <li key={k}>{key?<Link to={`/peliculas?${key}=${encodeURIComponent(v)}`} title={`Ver películas · ${k}: ${v}`}><Icon aria-hidden="true"/><span className="sr-only">{k}: </span>{text}</Link>:<span><Icon aria-hidden="true"/>{text}</span>}</li>})}</ul>
           </div>
         </header>}
         <div className="ficha-section-label"><span>01</span> {isFilm?'SINOPSIS':'DESCRIPCIÓN'}</div>

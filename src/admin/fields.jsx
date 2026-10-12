@@ -133,7 +133,7 @@ export function Editable({value,onChange,placeholder='Escribe aquí…',multilin
 /* Campo de la vista previa que se elige de una lista con buscador; si lo escrito no existe,
    se puede usar como valor nuevo. La lista flota a tamaño normal aunque la vista previa esté achicada. */
 const foldText=s=>String(s).normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
-export function EditableChoice({value,onChange,options,placeholder='Elegir…',label='Valor',as:Tag='span',className=''}){
+export function EditableChoice({value,onChange,options,placeholder='Elegir…',label='Valor',as:Tag='span',className='',normalize=v=>v}){
   const [open,setOpen]=useState(false), [q,setQ]=useState(''), [hi,setHi]=useState(0), [pos,setPos]=useState(null);
   const tagRef=useRef(null), boxRef=useRef(null), inputRef=useRef(null);
   const close=()=>{setOpen(false);setQ('');setHi(0);setPos(null)};
@@ -155,8 +155,8 @@ export function EditableChoice({value,onChange,options,placeholder='Elegir…',l
     return()=>{window.removeEventListener('scroll',place,true);window.removeEventListener('resize',place);docs.forEach(d=>d.removeEventListener('mousedown',onDown))};
   },[open]);
   useEffect(()=>{if(open&&pos)inputRef.current?.focus()},[open,pos!==null]);// eslint-disable-line react-hooks/exhaustive-deps
-  const term=q.trim(), all=[...new Set(options.map(o=>String(o).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
-  const items=[...all.filter(o=>foldText(o).includes(foldText(term))).map(v=>({v})),...(term&&!all.some(o=>foldText(o)===foldText(term))?[{v:term,isNew:true}]:[])];
+  const term=q.trim(), typed=term?normalize(term):'', all=[...new Set(options.map(o=>normalize(String(o).trim())).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+  const items=[...all.filter(o=>o===typed||foldText(o).includes(foldText(term))).map(v=>({v})),...(typed&&!all.some(o=>foldText(o)===foldText(typed))?[{v:typed,isNew:true}]:[])];
   const onKey=e=>{
     if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close()}
     else if(e.key==='ArrowDown'){e.preventDefault();setHi(i=>Math.min(i+1,items.length-1))}

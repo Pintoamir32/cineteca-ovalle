@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Check, CheckCircle2, Mail, Send } from 'lucide-react';
 import { useSiteText } from './site-text';
 import './submit.css';
+import { formatDuration } from './duration';
 
 /* «Inscribe tu obra»: realizadoras y realizadores envían su película para que la Cineteca la conozca.
    Llega al gestor, sección «Inscripciones» (ver server/index.js, /api/submissions). */
@@ -41,7 +42,7 @@ export function SubmitPage(){
   // Campo con su etiqueta arriba (en mono) y la línea inferior como único borde
   const field=(k,label,{type='text',required=false,placeholder='',hint,max,autoComplete,inputMode,wide=false}={})=><label className={`sb-field${wide?' is-wide':''}`}>
     <span className="sb-label">{label}{required&&<b aria-hidden="true">*</b>}</span>
-    <input type={type} value={form[k]} onChange={set(k)} required={required} placeholder={placeholder} maxLength={max} autoComplete={autoComplete} inputMode={inputMode}/>
+    <input type={type} value={form[k]} onChange={set(k)} onBlur={k==='duration'?()=>setForm(f=>({...f,duration:formatDuration(f.duration)})):undefined} required={required} placeholder={placeholder} maxLength={max} autoComplete={autoComplete} inputMode={inputMode}/>
     {hint&&<em className="sb-hint">{hint}</em>}
   </label>;
   const area=(k,label,{required=false,rows=5,max,placeholder,counter=false}={})=><label className="sb-field is-wide">

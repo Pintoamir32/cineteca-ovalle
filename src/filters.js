@@ -1,4 +1,5 @@
 import { recordExtras } from './data';
+import { METRAJES, metrajeOfDuration } from './duration';
 import { getAllRecords, getFilmPeople, getFilmography, getInterviewees, getLocations, getRecordPeople, interviewFormat } from './repository';
 
 /* Filtros del catálogo: cada sección tiene los suyos, según los campos de sus fichas.
@@ -11,13 +12,9 @@ const formatParts=r=>(r.format||'').split(' · ').map(s=>s.trim());
 const split=s=>String(s||'').split(/\s*(?:·|,|\/| y )\s*/).map(x=>x.trim()).filter(Boolean);
 export const decadeOf=r=>{const m=/\d{4}/.exec(r.year);return m?Math.floor(Number(m[0])/10)*10:null};
 
-// Rangos de duración: minutos → categoría de metraje
-export const METRAJES=[
-  {label:'Cortometraje',hint:'menos de 30 min',test:m=>m<30},
-  {label:'Mediometraje',hint:'30 a 59 min',test:m=>m>=30&&m<60},
-  {label:'Largometraje',hint:'60 min o más',test:m=>m>=60}
-];
-export const metrajeOf=r=>{const m=Number((/(\d+)\s*min/.exec(formatParts(r)[1]||'')||[])[1]);return m?METRAJES.find(x=>x.test(m))?.label:undefined};
+// Duración → categoría de metraje (corto, medio o largo)
+export { METRAJES };
+export const metrajeOf=r=>metrajeOfDuration(formatParts(r)[1]);
 
 // Fichas de un tipo vinculadas a esta (películas citadas en prensa, artículos…)
 const relatedTitles=(r,type)=>{const ids=recordExtras[r.id]?.relations||[];return getAllRecords().filter(x=>x.type===type&&ids.includes(x.id)).map(x=>x.title)};

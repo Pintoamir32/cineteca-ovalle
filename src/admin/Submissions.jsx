@@ -3,6 +3,7 @@ import { Archive, Check, ChevronDown, Clapperboard, ExternalLink, Film, Mail, Ph
 import { Paged } from '../components';
 import { PageHead, useAdminNav } from './AdminApp';
 import { useUi } from './fields';
+import { formatDuration } from '../duration';
 
 /* Inscripciones: las obras enviadas desde «Inscribe tu obra» en el sitio.
    Se revisan, se archivan o se convierten en una ficha de película (en borrador). */
@@ -29,7 +30,7 @@ export const PREFILL_KEY='cdo-prefill';
 function toFilmDraft(s){
   const credits=[...(s.production?[['Producción',s.production]]:[]),
     ...String(s.credits||'').split('\n').map(l=>l.split(/:\s*/)).filter(p=>p.length>1&&p[0].trim()&&p.slice(1).join(':').trim()).map(p=>[p[0].trim(),p.slice(1).join(':').trim()])];
-  return {record:{title:s.title,subtitle:s.direction||'',year:s.year||'',format:[s.genre,s.duration,s.format].map(x=>x||'').join(' · ').replace(/( · )+$/,''),description:s.synopsis||'',draft:true},
+  return {record:{title:s.title,subtitle:s.direction||'',year:s.year||'',format:[s.genre,formatDuration(s.duration),s.format].map(x=>x||'').join(' · ').replace(/( · )+$/,''),description:s.synopsis||'',draft:true},
     extra:{credits,media:s.link||'',mediaType:'video'}};
 }
 
