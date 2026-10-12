@@ -69,9 +69,9 @@ export function Pager({page,total,onChange,scrollRef,className=''}){
     <button type="button" disabled={page===total} onClick={()=>go(page+1)}>Siguiente <ArrowRight/></button>
   </nav>;
 }
-// «Mostrar 25 · 50 · 100»: va arriba de la lista; solo aparece si hay más de 25 registros
+// «Mostrar 25 · 50 · 100»: va arriba de cada lista, siempre que tenga registros
 export function PageSize({perPage,onPerPage,count=0,className=''}){
-  if(!onPerPage||count<=PAGE_SIZES[0])return null;
+  if(!onPerPage||!count)return null;
   return <div className={`pagination-size ${className}`} role="group" aria-label="Registros por página">
     <span>Mostrar</span>
     {PAGE_SIZES.map(n=><button type="button" key={n} className={n===perPage?'active':''} aria-pressed={n===perPage} onClick={()=>onPerPage(n)}>{n}</button>)}
