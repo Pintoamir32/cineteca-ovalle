@@ -70,7 +70,7 @@ function RecordEditorInner(){
     if(!base.title.trim())return toast('Escribe un título antes de guardar.','error');
     if(!base.image)return toast('Añade una imagen principal antes de guardar.','error');
     const {draft:isDraft,...rest}=base;
-    let record={...rest,...(isDraft&&{draft:true}),title:base.title.trim(),format:parts.map(p=>p.trim()).filter(Boolean).join(' · ')};
+    let record={...rest,...(isDraft&&{draft:true}),title:base.title.trim(),format:parts.map(p=>p.trim()).join(' · ').replace(/( · )+$/,'')};// cada dato en su posición (género · duración · soporte), aunque falte uno
     let {location,...extra}={...e,credits:e.credits.filter(([k,v])=>k.trim()&&v.trim()),gallery:e.gallery.filter(Boolean)};// eslint-disable-line no-unused-vars,prefer-const
     // Persona: solo nombre, biografía, rol(es), fotografía y obras (películas vinculadas); lo demás no se guarda
     if(isPerson){
@@ -108,7 +108,8 @@ function RecordEditorInner(){
   };
   const remove=async()=>{
     if(!await confirm({title:`¿Eliminar “${r.title}”?`,text:'La ficha dejará de aparecer en el sitio y se quitará de los relacionados de otras fichas. Queda guardada en la base de datos por si hay que recuperarla.',ok:'Eliminar ficha',danger:true}))return;
-    await deleteRecord(r.id);clearLocal();setNavDirty(false);toast('Ficha eliminada.');navigate(`/admin/registros/${slug}`);
+    try{await deleteRecord(r.id)}catch(err){return toast(saveError(err),'error')}
+    clearLocal();setNavDirty(false);toast('Ficha eliminada.');navigate(`/admin/registros/${slug}`);
   };
   const discard=async()=>{
     if(await confirm({title:'¿Descartar los cambios?',text:'La ficha volverá a su última versión guardada.',ok:'Descartar'})){setDraft(load());setFeatured(isFeatured());shared.reset();setDirty(false)}

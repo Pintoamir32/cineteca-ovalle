@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-r
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpDown, CalendarDays, CirclePlay, Clapperboard, Clock, Film, Grid2X2, List, MapPin, Ruler, Search, Settings2, Table2, X } from 'lucide-react';
 import { Counter, PageSize, Paged, Pager, RecordCard, RecordRow, usePaged, usePageSize } from './components';
 import { collections, locations, recordExtras, sections, timelineEvents } from './data';
-import { countByCollection, countByLocation, countByType, getAllRecords, getMapPoints, pointsOf, getFilmPeople, getFilmography, getLocations, getRecordPeople, interviewFormat, placesOf, findRecordByParam, recordPath, recordSlug } from './repository';
+import { countByCollection, countByLocation, countByType, getAllRecords, getMapPoints, pointsOf, getFilmPeople, getFilmography, getLocations, getRecordPeople, interviewFormat, placesOf, findPerson, findRecordByParam, recordPath, recordSlug } from './repository';
 import { useEdit, useFz } from './edit-context';
 import { useHero, useSiteText } from './site-text';
 // Leaflet solo se descarga al abrir el mapa
@@ -141,8 +141,8 @@ export function RichDetailPage(){
 // Ficha pública de un registro. El gestor la usa también como vista previa editable (ver edit-context)
 // Nombre de un cargo: lleva a la ficha de esa persona si está en el archivo; si no, lo busca en el archivo
 function CreditName({name}){
-  const person=getAllRecords().find(r=>r.type==='Persona'&&r.title.trim().toLowerCase()===name.trim().toLowerCase());
-  return <Link className="ficha-credit-link" to={person?recordPath(person):`/archivo?q=${encodeURIComponent(name)}`} title={person?`Ver la ficha de ${name}`:`Buscar ${name} en el archivo`}>{name}</Link>
+  const person=findPerson(name), q=name.trim().replace(/\s+/g,' ');
+  return <Link className="ficha-credit-link" to={person?recordPath(person):`/archivo?q=${encodeURIComponent(q)}`} title={person?`Ver la ficha de ${name}`:`Buscar ${name} en el archivo`}>{name}</Link>
 }
 
 export function RecordDetail({item,extra}){
@@ -161,7 +161,7 @@ export function RecordDetail({item,extra}){
   // El metraje (corto, medio o largo) sale solo de la duración
   const metraje=isFilm?metrajeOfDuration(duration):undefined;
   const parts=[['Género',genre,'format.0'],['Duración',duration,'format.1'],...(metraje?[['Metraje',metraje]]:[]),['Soporte',medium,'format.2']];
-  const filmFormat=edit&&isFilm?parts:duration?parts.filter(([,v])=>v):[['Formato',item.format,'format.0']];
+  const filmFormat=edit&&isFilm?parts:duration||isFilm?parts.filter(([,v])=>v):[['Formato',item.format,'format.0']];
   // Películas y personas comparten sidebar, con sus propios datos y llamada a la acción
   const view={
     Película:{facts:[['Dirección',item.subtitle,true,'subtitle'],['Año',item.year,false,'year'],...filmFormat.map(([k,v,key])=>[k,v,false,key]),['Colección',item.collection,true,'collection']],label:'Ficha técnica',cta:['#media',CirclePlay,'Ver película'],places:'Locación'},
@@ -170,7 +170,7 @@ export function RecordDetail({item,extra}){
   const [ctaHref,CtaIcon,ctaText]=view.cta;
   const initials=(item.subtitle||'').split(' ').filter(Boolean).map(w=>w[0]).slice(0,2).join('');
   // «Dirigida por» lleva a la ficha de esa persona si está en el archivo
-  const director=isFilm&&item.subtitle?getAllRecords().find(r=>r.type==='Persona'&&r.title.trim().toLowerCase()===item.subtitle.trim().toLowerCase()):null;
+  const director=isFilm&&item.subtitle?findPerson(item.subtitle):null;
   const shape=panelShape(item,extra);
   // Persona: panel derecho como el de las películas, con sus propios datos (roles, obras y período de su filmografía)
   const workYears=works.map(w=>yearNum(w.year)).filter(y=>y<9999), first=Math.min(...workYears), last=Math.max(...workYears);
@@ -292,7 +292,7 @@ export function CollectionsPage(){
   const v=(i,key,value,opts)=>on(i)?f(key,value,opts):value;
   // En el sitio, de a 8; en la vista previa del gestor se ven todas (se eligen desde su lista)
   const gridRef=useRef(null), paged=usePaged(list,edit?Math.max(list.length,1):null), offset=(paged.page-1)*paged.perPage;
-  return <main className="discovery-page"><HeroBanner id="colecciones"/>{!edit&&<div className="page-size-bar"><PageSize perPage={paged.perPage} onPerPage={paged.setPerPage} count={paged.count}/></div>}<section className="collections-grid" data-reveal ref={gridRef}>{paged.items.map((c,k)=>{const i=edit?k:offset+k;return <Link to={`/archivo?collection=${encodeURIComponent(c.title)}`} className={`collection-card stagger-item${on(i)?' is-editing':''}`} style={{transitionDelay:`${k*80}ms`}} key={c.slug||i} onClick={edit&&!on(i)?ev=>{ev.preventDefault();edit.pick?.(i)}:undefined}><img src={c.image} alt="" loading="lazy" decoding="async"/><div className="collection-shade"/>{on(i)&&slot('image')}<span>{String(i+1).padStart(2,'0')}</span><h2>{v(i,'title',c.title)}</h2><p>{v(i,'description',c.description,{multiline:true})}</p><b style={tagStyle(c.color)}>{on(i)&&edit.count!=null?edit.count:countByCollection(c.title)} registros <ArrowRight/></b></Link>})}</section>{(paged.total>1||paged.count>25)&&<div className="page-pager"><Pager page={paged.page} total={paged.total} onChange={paged.setPage} scrollRef={gridRef}/></div>}</main>;
+  return <main className="discovery-page"><HeroBanner id="colecciones"/>{!edit&&<div className="page-size-bar"><PageSize perPage={paged.perPage} onPerPage={paged.setPerPage} count={paged.count}/></div>}<section className="collections-grid" data-reveal ref={gridRef}>{paged.items.map((c,k)=>{const i=edit?k:offset+k;return <Link to={`/archivo?collection=${encodeURIComponent(c.title)}`} className={`collection-card stagger-item${on(i)?' is-editing':''}`} style={{transitionDelay:`${k*80}ms`}} key={c.slug||i} onClick={edit&&!on(i)?ev=>{ev.preventDefault();edit.pick?.(i)}:undefined}><img src={c.image} alt="" loading="lazy" decoding="async"/><div className="collection-shade"/>{on(i)&&slot('image')}<span>{String(i+1).padStart(2,'0')}</span><h2>{v(i,'title',c.title)}</h2><p>{v(i,'description',c.description,{multiline:true})}</p><b style={tagStyle(c.color)}>{(n=>`${n} ${n===1?'registro':'registros'}`)(on(i)&&edit.count!=null?edit.count:countByCollection(c.title))} <ArrowRight/></b></Link>})}</section>{(paged.total>1||paged.count>25)&&<div className="page-pager"><Pager page={paged.page} total={paged.total} onChange={paged.setPage} scrollRef={gridRef}/></div>}</main>;
 }
 
 export function TimelinePage(){

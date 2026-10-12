@@ -34,11 +34,21 @@ export const INTERVIEW_FORMATS=[['text','Texto'],['audio','Audio'],['video','Vid
 export const interviewFormat=extra=>(INTERVIEW_FORMATS.find(([v])=>v===extra?.mediaType)||[])[1]||'';
 // Filmografía: películas donde la persona aparece en dirección o créditos
 const norm=s=>(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+// ¿El nombre de una persona (normalizado) corresponde a lo escrito en una dirección o un cargo? Basta el
+// comienzo del nombre, hasta el fin de una palabra («Mateo Yuras» → «Mateo Yuras (1941-2008)»). Si nombra
+// a varias personas («Ana Pérez, Luis Soto»), vale cada una que tenga nombre y apellido
+const startsName=(name,who)=>!!who&&name.startsWith(who)&&!/[a-z0-9]/.test(name[who.length]||'');
+const isNamed=(name,who)=>{const w=norm(who);return startsName(name,w)||w.split(/\s*,\s*|\s+y\s+/).some(p=>p!==w&&p.includes(' ')&&startsName(name,p))};
+// Ficha de la persona nombrada (para los enlaces de «Dirigida por» y de los cargos)
+export function findPerson(who){
+  const people=getAllRecords().filter(r=>r.type==='Persona'), w=norm(who);
+  return w?people.find(p=>norm(p.title)===w)||people.find(p=>isNamed(norm(p.title),who))||null:null;
+}
 // Roles de una persona en una película, según su dirección y sus créditos
 function filmRoles(name,film,credits=recordExtras[film.id]?.credits){
   const roles=new Set();
-  if(film.subtitle&&name.startsWith(norm(film.subtitle)))roles.add('Dirección');
-  for(const [role,who] of credits||[])if(who&&name.startsWith(norm(who)))roles.add(role);
+  if(film.subtitle&&isNamed(name,film.subtitle))roles.add('Dirección');
+  for(const [role,who] of credits||[])if(who&&isNamed(name,who))roles.add(role);
   return roles;
 }
 // `extra` permite calcular con un borrador sin guardar (vista previa del gestor)
@@ -65,11 +75,11 @@ export function getRecordPeople(record,extra=recordExtras[record.id]){
   const linked=extra?.relations||[];
   // Entrevista: cada persona entrevistada con ficha
   if(record.type==='Entrevista')return getInterviewees(record,extra).filter(x=>x.person).map(({person})=>({person,roles:['Entrevistado(a)']}));
-  const names=[record.subtitle,...(extra?.credits||[]).map(c=>c[1])].map(norm).filter(Boolean);
+  const names=[record.subtitle,...(extra?.credits||[]).map(c=>c[1])].filter(Boolean);
   return getAllRecords().filter(r=>r.type==='Persona'&&r.id!==record.id).map(person=>{
     const pn=norm(person.title);
-    const roles=(extra?.credits||[]).filter(([,who])=>who&&pn.startsWith(norm(who))).map(([role])=>role);
-    if(!roles.length&&names.some(n=>pn.startsWith(n)))roles.push('Autoría');
+    const roles=(extra?.credits||[]).filter(([,who])=>who&&isNamed(pn,who)).map(([role])=>role);
+    if(!roles.length&&names.some(n=>isNamed(pn,n)))roles.push('Autoría');
     if(!roles.length&&linked.includes(person.id))roles.push('Mencionada');
     return {person,roles:[...new Set(roles)]};
   }).filter(e=>e.roles.length);

@@ -84,6 +84,8 @@ app.set('trust proxy',true);
 app.disable('x-powered-by');
 const api=express.Router();
 api.use(express.json({limit:'25mb'}));
+// Express 5 deja req.body sin definir si la petición no trae JSON: así ninguna ruta falla con un error 500
+api.use((req,res,next)=>{req.body??={};next()});
 // Nada de la API se guarda en caché
 api.use((req,res,next)=>{res.setHeader('Cache-Control','no-store');next()});
 

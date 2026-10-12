@@ -466,9 +466,10 @@ function Backup(){
   const {toast,confirm}=useUi(), inputRef=useRef(null);
   const onImport=async file=>{
     if(!file)return;
-    if(!await confirm({title:'¿Reemplazar los datos actuales?',text:`Se cargará “${file.name}” y reemplazará todo el contenido del archivo. Te recomendamos exportar un respaldo antes.`,ok:'Importar',danger:true}))return;
-    try{await importData(file);toast('Respaldo importado correctamente.')}catch(err){toast(err.message,'error')}
+    // Se vacía al tiro: así se puede volver a elegir el mismo archivo aunque se cancele
     inputRef.current.value='';
+    if(!await confirm({title:'¿Reemplazar los datos actuales?',text:`Se cargará “${file.name}” y reemplazará todo el contenido del archivo. Te recomendamos exportar un respaldo antes.`,ok:'Importar',danger:true}))return;
+    try{await importData(file);toast('Respaldo importado correctamente.')}catch(err){toast(err.status?saveError(err):err.message,'error')}
   };
   // Deja el archivo vacío; antes descarga un respaldo para poder volver atrás
   const onEmpty=async()=>{

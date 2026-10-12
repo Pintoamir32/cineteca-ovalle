@@ -8,7 +8,7 @@ import { countByType, getAllRecords, newestRecords, recordPath } from './reposit
 import { buildSearchIndex, matchIndex } from './search-index';
 import { SearchSelect } from './SearchSelect';
 import { filtersFor, optionsOf } from './filters';
-import { useSiteText } from './site-text';
+import { rich, useSiteText } from './site-text';
 
 export { HomeEditContext, rich } from './site-text';
 
@@ -67,6 +67,8 @@ export function Home(){
   const years=Number.isFinite(firstYear)?Math.floor((new Date().getFullYear()-firstYear)/10)*10:0;
   const latest=(c.latestIds?.length?c.latestIds.map(id=>allRecords.find(r=>r.id===id)).filter(Boolean):newestRecords());
   const s=i=>`slides.${Math.min(slide,slides.length-1)}.${i}`;
+  // En el sitio puede faltar alguna diapositiva (de una ficha en borrador): los textos salen de la que se ve
+  const st=i=>edit?t(s(i)):rich(current[i]);
 
   return <main className="home-page">
     <section className="hero-new" data-edit={edit?'Portada':undefined} onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)}>
@@ -74,9 +76,9 @@ export function Home(){
       {edit&&edit.image(s('image'),{label:`Cambiar foto · diapositiva ${slide+1}`,className:'home-edit-hero-img',aspect:null})}
       <div className="hero-edition">{t('heroEdition')}</div>
       <div className="hero-title" key={`title-${slide}`}>
-        <div className="eyebrow"><span>●</span> {t(s('eyebrow'))}</div>
-        <h1>{t(s('title'))}{(edit||current.em)&&<><br/>{edit?t(s('em'),{as:'em'}):<em>{current.em}</em>}</>}</h1>
-        <p>{t(s('desc'))}</p>
+        <div className="eyebrow"><span>●</span> {st('eyebrow')}</div>
+        <h1>{st('title')}{(edit||current.em)&&<><br/>{edit?t(s('em'),{as:'em'}):<em>{current.em}</em>}</>}</h1>
+        <p>{st('desc')}</p>
       </div>
       <div className="hero-bottom-right">
         <Link className="hero-cta" to={current.link}>{t('heroCta')} <ArrowRight/></Link>
