@@ -15,7 +15,7 @@ export function FilmMap({places,points,focus,onPlace}){
   placeRef.current=onPlace;
 
   useEffect(()=>{
-    const map=L.map(boxRef.current,{scrollWheelZoom:false}).setView([-30.65,-71.05],9);
+    const map=L.map(boxRef.current,{scrollWheelZoom:true,wheelPxPerZoomLevel:90}).setView([-30.65,-71.05],9);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
     layerRef.current=L.layerGroup().addTo(map);mapRef.current=map;
     // Los enlaces de las ventanas abren la ficha sin recargar la página
