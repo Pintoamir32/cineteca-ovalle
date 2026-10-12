@@ -104,7 +104,7 @@ export function ArchivePage({kind='archivo'}){
   const setView=v=>{const next=new URLSearchParams(params);v==='grid'?next.delete('view'):next.set('view',v);setParams(next)};
   const headerCount=section?countByType(section.type):getAllRecords().length;
   return <main className="catalog-page"><section className="page-hero"><img src={hero.image} alt=""/>{hero.imageButton}<div className="page-hero-shade"/><div><span>{hero.kicker}</span><h1>{hero.title}</h1><p>{hero.text}</p></div><b><Counter value={headerCount} pad={3}/><small>REGISTROS</small></b></section>
-    <section className="catalog-content" data-reveal><div className="catalog-tools"><div className="catalog-search"><Search/><input value={q} onChange={update} placeholder={kind==='peliculas'?'Buscar por título, director o persona…':`Buscar en ${hero.plainTitle.toLowerCase()}…`}/>{q&&<button onClick={()=>setParams({})}><X/></button>}</div><button className="filter-toggle" onClick={()=>setShowFilters(!showFilters)} aria-expanded={showFilters}><Settings2/> Filtros{chips.length>0&&<b className="filter-count">{chips.length}</b>}</button></div>
+    <section className="catalog-content" data-reveal><div className="catalog-tools"><div className="catalog-search"><Search/><input value={q} onChange={update} placeholder={kind==='peliculas'?'Buscar por título, director o persona…':`Buscar en ${hero.plainTitle.toLowerCase()}…`}/>{q&&<button onClick={()=>{const next=new URLSearchParams(params);next.delete('q');next.delete('page');setParams(next)}} aria-label="Borrar búsqueda"><X/></button>}</div><button className="filter-toggle" onClick={()=>setShowFilters(!showFilters)} aria-expanded={showFilters}><Settings2/> Filtros{chips.length>0&&<b className="filter-count">{chips.length}</b>}</button></div>
     {showFilters&&<div className="filter-panel filter-panel-wide">{!section&&<SearchSelect label="Tipo de registro" value={recordType} onChange={setType} options={[{value:'',label:'Todos los tipos'},...sections.map(x=>({value:x.type,label:`${x.type} (${countByType(x.type)})`}))]}/>}{panelFilters.map(f=><SearchSelect key={f.key} label={f.label} value={params.get(f.key)||''} onChange={v=>setFilter(f.key,v)} disabled={!f.options.length} options={[{value:'',label:f.options.length?'Todos':'Sin datos todavía'},...f.options]}/>)}</div>}
     <div className="catalog-heading"><PageSize perPage={perPage} onPerPage={n=>{setPerPage(n);goToPage(1)}} count={list.length}/><p><b>{list.length}</b> resultados {q&&<>para “{q}”</>}{chips.map(f=><button key={f.key} className="catalog-chip" onClick={()=>f.key==='type'?setType(''):setFilter(f.key,'')}>{f.label}: {f.text} <X/></button>)}{chips.length>1&&<button className="catalog-chip is-clear" onClick={clearFilters}>Quitar filtros</button>}</p><div className="view-toggle"><button className={view==='grid'?'active':''} onClick={()=>setView('grid')} aria-label="Vista de cuadrícula"><Grid2X2/></button><button className={view==='list'?'active':''} onClick={()=>setView('list')} aria-label="Vista de lista"><List/></button><button className={view==='table'?'active':''} onClick={()=>setView('table')} aria-label="Vista de tabla" title="Tabla ordenable"><Table2/></button></div></div>
     {view==='grid'
@@ -119,7 +119,9 @@ export function ArchivePage({kind='archivo'}){
           {columns.map((c,i)=><td key={c.key} className={c.num?'is-num':undefined}>{i===0?<Link to={recordPath(r)} onClick={e=>e.stopPropagation()}>{c.get(r)}</Link>:c.key==='type'?<span className="record-table-tag" style={tagStyle(r.color)}>{c.get(r)}</span>:(c.get(r)||'—')}</td>)}
         </tr>)}</tbody>
       </table></div>}
-    {!list.length&&<div className="no-results"><Search/><h3>No encontramos coincidencias.</h3><p>Prueba con otro término de búsqueda.</p><button onClick={()=>setParams({})}>Limpiar búsqueda</button></div>}
+    {/* Sección todavía sin registros: no hay búsqueda que limpiar */}
+    {!list.length&&(scoped.length?<div className="no-results"><Search/><h3>No encontramos coincidencias.</h3><p>Prueba con otro término de búsqueda.</p><button onClick={()=>setParams({})}>Limpiar búsqueda</button></div>
+      :<div className="no-results"><Search/><h3>Aún no hay registros aquí.</h3><p>El archivo sigue creciendo: pronto se sumarán documentos a esta sección.</p></div>)}
     <Pager page={page} total={totalPages} onChange={goToPage}/></section>
   </main>
 }
@@ -269,10 +271,13 @@ export function RecordDetail({item,extra}){
         {related.length>0&&<><div className="ficha-aside-label" {...z('aside.related','Título «Relacionados»')}>Relacionados</div><div className="ficha-film-related">{related.map(r=><Link to={recordPath(r)} key={r.id}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><small {...z('related.meta','Relacionados · tipo')}>{r.type}</small><strong {...z('related.title','Relacionados · títulos')}>{r.title}</strong></div><ArrowRight/></Link>)}</div>{slot('relations')}</>}
         <div className="ficha-aside-label" {...z('aside.facts',`Título «${view.label}»`)}>{view.label}</div>
         <dl className="ficha-film-facts">{view.facts.map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined} {...z(`fact.${k}`,`Dato «${k}»`)}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>
+        {/* Sin locaciones no se muestra el bloque (en el gestor sí, para poder agregarlas) */}
+        {(placeList.length>0||edit)&&<>
         <div className="ficha-aside-label" {...z('aside.places','Título «Locaciones»')}>{placeList.length>1?`${isFilm?'Locaciones':'Territorios'} · ${placeList.length}`:view.places}</div>
         <ul className="ficha-film-locations" {...z('places','Locaciones')}>{placeList.map(l=>{const spots=pointsOf(extra).filter(pt=>pt.place===l&&pt.label);return <li key={l}><Link to={`/${item.slug}?locacion=${encodeURIComponent(l)}`} title={`Ver ${item.slug} vinculadas a ${l}`}><MapPin/><strong>{l}{spots.length>0&&<small>{spots.map(pt=>pt.label).join(' · ')}</small>}</strong><ArrowRight/></Link></li>})}</ul>
         {slot('places')}
         <Link className="ficha-film-maplink" to="/mapa" {...z('maplink','Enlace «Ver en el mapa»')}>Ver en el mapa <ArrowRight/></Link>
+        </>}
       </aside>
     </section>
     </>}

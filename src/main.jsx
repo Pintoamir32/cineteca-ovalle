@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Layout } from './components';
 import { ArchivePage, CollectionsPage, MapPage, RichDetailPage, TimelinePage } from './pages';
 import { AboutPage } from './about';
@@ -49,4 +49,5 @@ hydrate().finally(()=>createRoot(document.getElementById('root')).render(<Browse
   <Route path="/admin/*" element={<Suspense fallback={null}><AdminApp/></Suspense>}/>
 </Routes></BrowserRouter>));
 
-function NavigateHome(){return <Home/>}
+// Rutas desconocidas vuelven al inicio con la dirección corregida
+function NavigateHome(){return <Navigate to="/" replace/>}
