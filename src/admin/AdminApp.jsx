@@ -404,11 +404,13 @@ function RecordList(){
     try{await setRecordPublished(r.id,!!r.draft)}catch(err){return toast(saveError(err),'error')}
     toast(r.draft?`“${r.title}” ya se ve en el sitio.`:`“${r.title}” quedó como borrador.`);
   };
-  list=[...list].sort(sort==='title'?(a,b)=>a.title.localeCompare(b.title,'es'):sort==='year'?(a,b)=>String(a.year).localeCompare(String(b.year)):(a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||'')||b.id-a.id);
+  // A–Z ignora signos iniciales («¿Y qué fue…» va en la Y); Año usa el primer año escrito («c. 1938» → 1938)
+  const yearNum=y=>Number((/\d{4}/.exec(y||'')||[])[0])||9999;
+  list=[...list].sort(sort==='title'?(a,b)=>String(a.title).localeCompare(String(b.title),'es',{sensitivity:'base',ignorePunctuation:true}):sort==='year'?(a,b)=>yearNum(a.year)-yearNum(b.year)||String(a.year).localeCompare(String(b.year)):(a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||'')||b.id-a.id);
   const totalPages=Math.max(1,Math.ceil(list.length/perPage)), current=Math.min(page,totalPages);
   const shown=list.slice((current-1)*perPage,current*perPage);
   return <div className="cms-page" ref={topRef}>
-    <PageHead eyebrow="ARCHIVO" title={meta.label} desc={`${records.filter(r=>r.type===type).length} fichas. Haz clic en una para editarla.`}><NewRecordMenu type={type}/></PageHead>
+    <PageHead eyebrow="ARCHIVO" title={meta.label} desc={`${(n=>`${n} ${n===1?'ficha':'fichas'}`)(records.filter(r=>r.type===type).length)}. Haz clic en una para editarla.`}><NewRecordMenu type={type}/></PageHead>
     <div className="cms-toolbar">
       <label className="cms-search"><Search/><input value={q} onChange={e=>setQ(e.target.value)} placeholder={`Buscar en ${meta.label.toLowerCase()}…`}/>{q&&<button type="button" onClick={()=>setQ('')} aria-label="Limpiar"><X/></button>}</label>
       <div className="cms-segment is-small">{[['recent','Recientes'],['title','A–Z'],['year','Año']].map(([k,l])=><button key={k} type="button" className={sort===k?'active':''} onClick={()=>setSort(k)}>{l}</button>)}</div>
@@ -425,7 +427,7 @@ function RecordList(){
       </div>})}
     </div>
     <Pager page={current} total={totalPages} onChange={setPage} scrollRef={topRef} className="is-compact"/>
-    {!list.length&&<p className="cms-empty">{filter==='drafts'?'No hay fichas en borrador.':'No hay fichas que coincidan.'}</p>}
+    {!list.length&&<p className="cms-empty">{filter==='drafts'?'No hay fichas en borrador.':q||filter?'No hay fichas que coincidan.':`Aún no hay fichas en ${meta.label.toLowerCase()}. Crea la primera con el botón de arriba.`}</p>}
   </div>;
 }
 

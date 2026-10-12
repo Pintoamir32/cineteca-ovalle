@@ -132,7 +132,7 @@ export function CollectionList(){
     </PageHead>
     <Paged items={collections.map((c,i)=>({c,i}))} >{page=><div className="cms-collections">{page.map(({c,i})=><button type="button" key={c.slug||i} className="cms-collection" onClick={()=>go(`/admin/colecciones/${i}`)}>
       <img src={c.image} alt=""/><div className="cms-collection-shade"/>
-      <span>{pad(i+1)}</span><h3>{c.title}</h3><b style={tagStyle(c.color)}>{countByCollection(c.title)} fichas</b>
+      <span>{pad(i+1)}</span><h3>{c.title}</h3><b style={tagStyle(c.color)}>{(n=>`${n} ${n===1?'ficha':'fichas'}`)(countByCollection(c.title))}</b>
     </button>)}</div>}</Paged>
     {index!==undefined&&<CollectionModal key={index}/>}
   </div>;
@@ -148,9 +148,9 @@ function CollectionModal(){
     validate={()=>!c.title.trim()?'Escribe un nombre para la colección.':!c.image?'Añade una imagen de portada.':collections.some((x,j)=>j!==item.i&&x.title===c.title.trim())?'Ya existe una colección con ese nombre.':null}
     save={()=>saveCollection(item.i,{...c,title:c.title.trim(),slug:slugify(c.title)})}
     remove={()=>removeListItem('collections',item.i)}
-    removeText={count?`Tiene ${count} registros. Las fichas conservarán el nombre de la colección, pero esta dejará de aparecer en la página de colecciones.`:'Dejará de aparecer en la página de colecciones.'}>
+    removeText={count?`Tiene ${count} ${count===1?'registro':'registros'}. Las fichas conservarán el nombre de la colección, pero esta dejará de aparecer en la página de colecciones.`:'Dejará de aparecer en la página de colecciones.'}>
     {({busy})=><>
-      <Field label="Nombre" hint={item.existing&&item.existing.title!==c.title&&count>0&&<small className="cms-help">Al guardar, las {count} fichas de esta colección se actualizarán con el nuevo nombre.</small>}>
+      <Field label="Nombre" hint={item.existing&&item.existing.title!==c.title&&count>0&&<small className="cms-help">Al guardar, {count===1?'la ficha de esta colección se actualizará':`las ${count} fichas de esta colección se actualizarán`} con el nuevo nombre.</small>}>
         <input value={c.title} onChange={e=>set({title:e.target.value})} placeholder="Ej. Cine club de Ovalle" autoFocus={item.isNew}/></Field>
       <Field label="Descripción"><textarea rows={4} value={c.description} onChange={e=>set({description:e.target.value})} placeholder="De qué trata este recorrido"/></Field>
       <ImageField label="Portada" value={c.image} onChange={image=>set({image})} aspect={3/4} busy={busy}/>
@@ -273,7 +273,7 @@ export const LocationEditor=keyed(function LocationEditor(){
         <div className="cms-coords"><label><small>Latitud</small><Editable type="number" value={String(l.lat)} onChange={v=>set({lat:v})} label="Latitud"/></label><label><small>Longitud</small><Editable type="number" value={String(l.lon)} onChange={v=>set({lon:v})} label="Longitud"/></label></div>
         <p className="cms-help">Se completan solas al buscar el lugar o marcarlo en el mapa. También puedes escribirlas.</p>
       </PanelBlock>
-      {item.existing&&item.existing.name!==l.name&&<PanelBlock title="Cambio de nombre"><p className="cms-help">Al guardar, las {count} fichas vinculadas se actualizarán con el nuevo nombre.</p></PanelBlock>}
+      {item.existing&&item.existing.name!==l.name&&<PanelBlock title="Cambio de nombre"><p className="cms-help">Al guardar, {count===1?'la ficha vinculada se actualizará':`las ${count} fichas vinculadas se actualizarán`} con el nuevo nombre.</p></PanelBlock>}
     </>}>
     <div className="pv-map">
       {/* Al elegir un resultado de búsqueda, una comuna nueva toma también su nombre */}
