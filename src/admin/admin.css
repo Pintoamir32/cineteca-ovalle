@@ -1069,3 +1069,14 @@ html:has(.cms-preview-doc){overflow:hidden}
 .cms-point-map .cms-locpicker{display:flex;flex-direction:column;height:100%;min-height:0}
 .cms-point-map .cms-locpicker-map{min-height:0}
 .cms-point-map .cms-locpicker>.cms-help{display:none}
+/* Tamaño de letra por texto: barra del gestor y textos que se pueden elegir en la vista previa */
+.cms-fz-bar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);width:min(760px,calc(100vw - 32px));z-index:60;display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:0;padding:10px 14px;background:var(--surface);border:1px solid rgba(16,18,16,.1);border-radius:14px;box-shadow:0 14px 40px rgba(16,18,16,.22)}
+.cms-fz-name{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.cms-fz-name small{font:600 10px 'IBM Plex Mono';letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.cms-fz-name strong{font-size:14px}
+.cms-fz-bar .cms-icon-btn{font:700 14px 'Manrope',sans-serif;width:38px}
+.cms-fz-bar output{min-width:52px;text-align:center;font:700 13px 'IBM Plex Mono'}
+.cms-fz-end{display:flex;gap:8px;margin-left:auto}
+[data-fz-mode] [data-fz]{cursor:pointer;outline:1px dashed transparent;outline-offset:3px;transition:outline-color .15s}
+[data-fz-mode] [data-fz]:hover{outline-color:color-mix(in srgb,var(--forest) 55%,transparent)}
+[data-fz-mode] [data-fz][data-fz-on]{outline:2px solid var(--acid);box-shadow:0 0 0 4px color-mix(in srgb,var(--acid) 30%,transparent)}

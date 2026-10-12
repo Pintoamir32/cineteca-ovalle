@@ -4,7 +4,7 @@ import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpDown, CalendarDays, C
 import { Counter, PageSize, Paged, Pager, RecordCard, RecordRow, usePaged, usePageSize } from './components';
 import { collections, locations, recordExtras, sections, timelineEvents } from './data';
 import { countByCollection, countByLocation, countByType, getAllRecords, getMapPoints, pointsOf, getFilmPeople, getFilmography, getLocations, getRecordPeople, placesOf, findRecordByParam, recordPath, recordSlug } from './repository';
-import { useEdit } from './edit-context';
+import { useEdit, useFz } from './edit-context';
 import { useHero, useSiteText } from './site-text';
 // Leaflet solo se descarga al abrir el mapa
 const FilmMap=lazy(()=>import('./FilmMap').then(m=>({default:m.FilmMap})));
@@ -123,7 +123,7 @@ function CreditName({name}){
 
 export function RecordDetail({item,extra}){
   const {t}=useSiteText();
-  const {edit,f,slot}=useEdit();
+  const {edit,f,slot}=useEdit(), {z,root}=useFz(extra);
   const related=(extra.relations||[]).map(rid=>getAllRecords().find(r=>r.id===rid)).filter(Boolean);
   if(['Prensa','Entrevista','Artículo'].includes(item.type))return <DocumentView item={item} extra={extra} related={related} people={getRecordPeople(item,extra)}/>;
   const isFilm=item.type==='Película', isPerson=item.type==='Persona', placeList=placesOf(extra);
@@ -151,7 +151,7 @@ export function RecordDetail({item,extra}){
   // Persona: panel derecho como el de las películas, con sus propios datos (roles, obras y período de su filmografía)
   const workYears=works.map(w=>yearNum(w.year)).filter(y=>y<9999), first=Math.min(...workYears), last=Math.max(...workYears);
   const personFacts=[['Películas',String(works.length)],['Período',workYears.length?(first===last?String(first):`${first}—${last}`):''],['Vida',item.year],['Colección',item.collection,true]].filter(([,v,,key])=>v||(edit&&key));
-  return <main className={`ficha-page${isFilm?' ficha-film':' ficha-person'}`}>
+  return <main className={`ficha-page${isFilm?' ficha-film':' ficha-person'}`} {...root}>
     {/* Persona: sin portada; nombre, roles y datos van en el panel derecho */}
     {!isFilm&&!isPerson&&<section className="ficha-hero">
       <img src={item.image} alt="" loading="lazy" decoding="async"/>
@@ -171,37 +171,37 @@ export function RecordDetail({item,extra}){
         {/* Nombre y roles encabezan la ficha, como el título en las películas */}
         <header className="ficha-film-head ficha-person-head">
           <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
-          <h1>{f('title',item.title)}</h1>
-          <p className="ficha-person-roles">{f('subtitle',item.subtitle,{placeholder:'Roles'})}</p>
+          <h1 {...z('title','Nombre')}>{f('title',item.title)}</h1>
+          <p className="ficha-person-roles" {...z('subtitle','Roles')}>{f('subtitle',item.subtitle,{placeholder:'Roles'})}</p>
         </header>
-        <div className="ficha-section-label"><span>01</span> BIOGRAFÍA</div>
-        <p className="ficha-person-bio">{f('description',item.description,{multiline:true})}</p>
+        <div className="ficha-section-label" {...z('label.1','Título «Biografía»')}><span>01</span> BIOGRAFÍA</div>
+        <p className="ficha-person-bio" {...z('description','Biografía')}>{f('description',item.description,{multiline:true})}</p>
         <div className="ficha-media ficha-filmography" id="filmografia">
-          <div className="ficha-filmography-head"><div className="ficha-section-label"><span>02</span> FILMOGRAFÍA</div><span>{String(works.length).padStart(2,'0')} {works.length===1?'PELÍCULA':'PELÍCULAS'}</span></div>
+          <div className="ficha-filmography-head"><div className="ficha-section-label" {...z('label.2','Título «Filmografía»')}><span>02</span> FILMOGRAFÍA</div><span {...z('filmo.count','Cantidad de películas')}>{String(works.length).padStart(2,'0')} {works.length===1?'PELÍCULA':'PELÍCULAS'}</span></div>
           {works.length?<Paged items={works}>{page=><ol className="ficha-filmography-list">{page.map(w=>w.film?(()=>{const film=w.film,[fGenre,fDuration]=(film.format||'').split(' · ');return <li key={`f${film.id}`}>
             <img src={film.image} alt="" loading="lazy" decoding="async"/>
             <div className="ficha-filmography-info">
-              <small>{film.year}{fGenre&&` · ${fGenre}`}{fDuration&&` · ${fDuration}`}</small>
-              <h3>{film.title}</h3>
+              <small {...z('filmo.meta','Filmografía · año y datos')}>{film.year}{fGenre&&` · ${fGenre}`}{fDuration&&` · ${fDuration}`}</small>
+              <h3 {...z('filmo.title','Filmografía · títulos')}>{film.title}</h3>
             </div>
-            <Link className="ficha-filmography-btn" to={recordPath(film)}>Ver ficha <ArrowRight/></Link>
+            <Link className="ficha-filmography-btn" to={recordPath(film)} {...z('filmo.btn','Filmografía · botón «Ver ficha»')}>Ver ficha <ArrowRight/></Link>
           </li>})()
             // Escrita a mano: sin ficha en el archivo, por eso sin enlace
             :<li key={`w${w.i}`} className="is-written">
             <span className="ficha-filmography-noimg" aria-hidden="true"><Film/></span>
-            <div className="ficha-filmography-info">{w.year&&<small>{w.year}</small>}<h3>{w.title}</h3></div>
+            <div className="ficha-filmography-info">{w.year&&<small {...z('filmo.meta','Filmografía · año y datos')}>{w.year}</small>}<h3 {...z('filmo.title','Filmografía · títulos')}>{w.title}</h3></div>
           </li>)}</ol>}</Paged>:<p className="ficha-filmography-empty">Aún no hay películas en la filmografía de esta persona.</p>}
           {slot('works')}
         </div>
       </article>
       <aside className="ficha-aside ficha-film-aside">
-        <figure className={`ficha-poster is-${shape}`}><img src={item.image} alt={`Fotografía de ${item.title}`} decoding="async"/>{slot('image')}<figcaption><span>{item.type}</span><span>{works.length} {works.length===1?'película':'películas'}</span></figcaption></figure>
-        <a className="ficha-cta" href="#filmografia"><Film/> Ver filmografía</a>
-        <div className="ficha-aside-label">Ficha biográfica</div>
-        <dl className="ficha-film-facts">{personFacts.map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>
-        {placeList.length>0&&<><div className="ficha-aside-label">{placeList.length>1?`Territorios · ${placeList.length}`:'Territorio'}</div>
-        <ul className="ficha-film-locations">{placeList.map(l=>{const spots=pointsOf(extra).filter(pt=>pt.place===l&&pt.label);return <li key={l}><Link to={`/${item.slug}?locacion=${encodeURIComponent(l)}`} title={`Ver ${item.slug} vinculadas a ${l}`}><MapPin/><strong>{l}{spots.length>0&&<small>{spots.map(pt=>pt.label).join(' · ')}</small>}</strong><ArrowRight/></Link></li>})}</ul>
-        <Link className="ficha-film-maplink" to="/mapa">Ver en el mapa <ArrowRight/></Link></>}
+        <figure className={`ficha-poster is-${shape}`}><img src={item.image} alt={`Fotografía de ${item.title}`} decoding="async"/>{slot('image')}<figcaption {...z('poster','Pie de la foto')}><span>{item.type}</span><span>{works.length} {works.length===1?'película':'películas'}</span></figcaption></figure>
+        <a className="ficha-cta" href="#filmografia" {...z('cta','Botón principal')}><Film/> Ver filmografía</a>
+        <div className="ficha-aside-label" {...z('aside.facts','Título «Ficha biográfica»')}>Ficha biográfica</div>
+        <dl className="ficha-film-facts">{personFacts.map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined} {...z(`fact.${k}`,`Dato «${k}»`)}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>
+        {placeList.length>0&&<><div className="ficha-aside-label" {...z('aside.places','Título «Territorios»')}>{placeList.length>1?`Territorios · ${placeList.length}`:'Territorio'}</div>
+        <ul className="ficha-film-locations" {...z('places','Territorios')}>{placeList.map(l=>{const spots=pointsOf(extra).filter(pt=>pt.place===l&&pt.label);return <li key={l}><Link to={`/${item.slug}?locacion=${encodeURIComponent(l)}`} title={`Ver ${item.slug} vinculadas a ${l}`}><MapPin/><strong>{l}{spots.length>0&&<small>{spots.map(pt=>pt.label).join(' · ')}</small>}</strong><ArrowRight/></Link></li>})}</ul>
+        <Link className="ficha-film-maplink" to="/mapa" {...z('maplink','Enlace «Ver en el mapa»')}>Ver en el mapa <ArrowRight/></Link></>}
       </aside>
     </section>}
     {!isPerson&&<>
@@ -210,16 +210,16 @@ export function RecordDetail({item,extra}){
         {isFilm&&<header className="ficha-film-head">
           <div className="ficha-film-top"><BackLink item={item}/><span className="ficha-code">FICHA CDO—{String(item.id).padStart(4,'0')}</span></div>
           <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
-          <h1>{f('title',item.title)}</h1>
+          <h1 {...z('title','Título')}>{f('title',item.title)}</h1>
           <div className="ficha-film-byline">
-            <Link className="ficha-film-director" to={director?recordPath(director):`/peliculas?director=${encodeURIComponent(item.subtitle)}`} title={director?`Ver la ficha de ${item.subtitle}`:`Ver todas las películas de ${item.subtitle}`}><span aria-hidden="true">{initials}</span><div><small>Dirigida por</small><strong>{f('subtitle',item.subtitle)}</strong></div><ArrowRight className="ficha-film-director-arrow" aria-hidden="true"/></Link>
-            <ul className="ficha-film-specs">{[['Año',item.year,'year'],...filmFormat].map(([k,v,field])=>{const Icon={Año:CalendarDays,Género:Clapperboard,Duración:Clock,Metraje:Ruler,Soporte:Film}[k]||Film;const key=FACET_KEY[k];const text=field?f(field,v,{placeholder:k}):v;return <li key={k}>{key?<Link to={`/peliculas?${key}=${encodeURIComponent(v)}`} title={`Ver películas · ${k}: ${v}`}><Icon aria-hidden="true"/><span className="sr-only">{k}: </span>{text}</Link>:<span><Icon aria-hidden="true"/>{text}</span>}</li>})}</ul>
+            <Link {...z('director','Dirigida por')} className="ficha-film-director" to={director?recordPath(director):`/peliculas?director=${encodeURIComponent(item.subtitle)}`} title={director?`Ver la ficha de ${item.subtitle}`:`Ver todas las películas de ${item.subtitle}`}><span aria-hidden="true">{initials}</span><div><small>Dirigida por</small><strong>{f('subtitle',item.subtitle)}</strong></div><ArrowRight className="ficha-film-director-arrow" aria-hidden="true"/></Link>
+            <ul className="ficha-film-specs">{[['Año',item.year,'year'],...filmFormat].map(([k,v,field])=>{const Icon={Año:CalendarDays,Género:Clapperboard,Duración:Clock,Metraje:Ruler,Soporte:Film}[k]||Film;const key=FACET_KEY[k];const text=field?f(field,v,{placeholder:k}):v;return <li key={k} {...z(`spec.${k}`,k)}>{key?<Link to={`/peliculas?${key}=${encodeURIComponent(v)}`} title={`Ver películas · ${k}: ${v}`}><Icon aria-hidden="true"/><span className="sr-only">{k}: </span>{text}</Link>:<span><Icon aria-hidden="true"/>{text}</span>}</li>})}</ul>
           </div>
         </header>}
-        <div className="ficha-section-label"><span>01</span> {isFilm?'SINOPSIS':'DESCRIPCIÓN'}</div>
-        {!isFilm&&<h2>{t('fichaLeadTitle')}</h2>}
-        <p>{f('description',item.description,{multiline:true})}</p>
-        <div className="ficha-credits">{credits.map(([k,v],i)=><div key={`${k}-${i}`} className="stagger-item" style={{transitionDelay:`${i*60}ms`}}><small>{f(`creditKey.${i}`,k,{placeholder:'Dato'})}</small><strong>{edit||!v?f(`credits.${i}`,v,{placeholder:'Completar…'}):<CreditName name={v}/>}</strong></div>)}{slot('credits')}</div>
+        <div className="ficha-section-label" {...z('label.1',isFilm?'Título «Sinopsis»':'Título «Descripción»')}><span>01</span> {isFilm?'SINOPSIS':'DESCRIPCIÓN'}</div>
+        {!isFilm&&<h2 {...z('lead','Título de la descripción')}>{t('fichaLeadTitle')}</h2>}
+        <p {...z('description',isFilm?'Sinopsis':'Descripción')}>{f('description',item.description,{multiline:true})}</p>
+        <div className="ficha-credits">{credits.map(([k,v],i)=><div key={`${k}-${i}`} className="stagger-item" {...z(`credit.${i}`,`Cargo «${k||i+1}»`,{transitionDelay:`${i*60}ms`})}><small>{f(`creditKey.${i}`,k,{placeholder:'Dato'})}</small><strong>{edit||!v?f(`credits.${i}`,v,{placeholder:'Completar…'}):<CreditName name={v}/>}</strong></div>)}{slot('credits')}</div>
         {isPerson?<div className="ficha-media ficha-filmography" id="filmografia">
           <div className="ficha-filmography-head"><div className="ficha-section-label"><span>02</span> FILMOGRAFÍA</div><span>{String(filmography.length).padStart(2,'0')} {filmography.length===1?'PELÍCULA':'PELÍCULAS'}</span></div>
           {filmography.length?<ol className="ficha-filmography-list">{filmography.map(({film,roles})=>{const [fGenre,fDuration]=(film.format||'').split(' · ');return <li key={film.id}>
@@ -232,26 +232,26 @@ export function RecordDetail({item,extra}){
             <Link className="ficha-filmography-btn" to={recordPath(film)}>Ver ficha <ArrowRight/></Link>
           </li>})}</ol>:<p className="ficha-filmography-empty">Aún no hay películas vinculadas a esta persona en el archivo.</p>}
         </div>:<div className="ficha-media" id="media">
-          <div className="ficha-section-label"><span>02</span> ARCHIVO DIGITAL</div>
+          <div className="ficha-section-label" {...z('label.2','Título «Archivo digital»')}><span>02</span> ARCHIVO DIGITAL</div>
           <MediaViewer item={item} extra={extra}/>
           {slot('media')}
         </div>}
         {(gallery.length>0||(edit&&!isPerson))&&<div className="ficha-gallery">
-          <div className="ficha-section-label"><span>03</span> GALERÍA</div>
+          <div className="ficha-section-label" {...z('label.3','Título «Galería»')}><span>03</span> GALERÍA</div>
           <div className="ficha-gallery-grid">{gallery.map((src,i)=><img src={src} alt={`${item.title} · imagen ${i+1}`} key={`${i}-${src.slice(-24)}`} loading="lazy" decoding="async"/>)}</div>
           {slot('gallery')}
         </div>}
       </article>
       <aside className="ficha-aside ficha-film-aside">
-        {isFilm&&<figure className={`ficha-poster is-${shape}`}><img src={item.image} alt={`Imagen de ${item.title}`} decoding="async"/>{slot('image')}<figcaption><span>{item.collection}</span><span>{item.year}</span></figcaption></figure>}
-        <a className="ficha-cta" href={ctaHref}><CtaIcon/> {ctaText}</a>
-        {related.length>0&&<><div className="ficha-aside-label">Relacionados</div><div className="ficha-film-related">{related.map(r=><Link to={recordPath(r)} key={r.id}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><small>{r.type}</small><strong>{r.title}</strong></div><ArrowRight/></Link>)}</div>{slot('relations')}</>}
-        <div className="ficha-aside-label">{view.label}</div>
-        <dl className="ficha-film-facts">{view.facts.map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>
-        <div className="ficha-aside-label">{placeList.length>1?`${isFilm?'Locaciones':'Territorios'} · ${placeList.length}`:view.places}</div>
-        <ul className="ficha-film-locations">{placeList.map(l=>{const spots=pointsOf(extra).filter(pt=>pt.place===l&&pt.label);return <li key={l}><Link to={`/${item.slug}?locacion=${encodeURIComponent(l)}`} title={`Ver ${item.slug} vinculadas a ${l}`}><MapPin/><strong>{l}{spots.length>0&&<small>{spots.map(pt=>pt.label).join(' · ')}</small>}</strong><ArrowRight/></Link></li>})}</ul>
+        {isFilm&&<figure className={`ficha-poster is-${shape}`}><img src={item.image} alt={`Imagen de ${item.title}`} decoding="async"/>{slot('image')}<figcaption {...z('poster','Pie de la imagen')}><span>{item.collection}</span><span>{item.year}</span></figcaption></figure>}
+        <a className="ficha-cta" href={ctaHref} {...z('cta','Botón principal')}><CtaIcon/> {ctaText}</a>
+        {related.length>0&&<><div className="ficha-aside-label" {...z('aside.related','Título «Relacionados»')}>Relacionados</div><div className="ficha-film-related">{related.map(r=><Link to={recordPath(r)} key={r.id}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><small {...z('related.meta','Relacionados · tipo')}>{r.type}</small><strong {...z('related.title','Relacionados · títulos')}>{r.title}</strong></div><ArrowRight/></Link>)}</div>{slot('relations')}</>}
+        <div className="ficha-aside-label" {...z('aside.facts',`Título «${view.label}»`)}>{view.label}</div>
+        <dl className="ficha-film-facts">{view.facts.map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined} {...z(`fact.${k}`,`Dato «${k}»`)}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>
+        <div className="ficha-aside-label" {...z('aside.places','Título «Locaciones»')}>{placeList.length>1?`${isFilm?'Locaciones':'Territorios'} · ${placeList.length}`:view.places}</div>
+        <ul className="ficha-film-locations" {...z('places','Locaciones')}>{placeList.map(l=>{const spots=pointsOf(extra).filter(pt=>pt.place===l&&pt.label);return <li key={l}><Link to={`/${item.slug}?locacion=${encodeURIComponent(l)}`} title={`Ver ${item.slug} vinculadas a ${l}`}><MapPin/><strong>{l}{spots.length>0&&<small>{spots.map(pt=>pt.label).join(' · ')}</small>}</strong><ArrowRight/></Link></li>})}</ul>
         {slot('places')}
-        <Link className="ficha-film-maplink" to="/mapa">Ver en el mapa <ArrowRight/></Link>
+        <Link className="ficha-film-maplink" to="/mapa" {...z('maplink','Enlace «Ver en el mapa»')}>Ver en el mapa <ArrowRight/></Link>
       </aside>
     </section>
     </>}

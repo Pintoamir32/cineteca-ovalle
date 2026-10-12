@@ -15,3 +15,20 @@ export function useEdit(){
     slot:name=>edit?.slot?.(name)??null
   };
 }
+
+/* Tamaño de letra de cada texto de una ficha (extra.fontScale: {clave: escala}).
+   z(clave, nombre) va en cada texto: le aplica su tamaño y lo marca para el modo «Tamaño de letra» del gestor,
+   donde un clic sobre el texto lo elige (root va en el contenedor de la ficha). */
+export function useFz(extra){
+  const fz=useContext(EditContext)?.fz;
+  const scales=extra?.fontScale||{};
+  const z=(key,label,style)=>{
+    const s=scales[key];
+    return {'data-fz':key,'data-fz-label':label,...(fz?.active&&fz.selected===key?{'data-fz-on':''}:{}),style:s&&s!==1?{...style,zoom:s}:style};
+  };
+  const root=fz?.active?{'data-fz-mode':'',onClickCapture:e=>{
+    e.preventDefault();e.stopPropagation();
+    const el=e.target.closest('[data-fz]');if(el)fz.pick(el.dataset.fz,el.dataset.fzLabel);
+  }}:{};
+  return {z,root};
+}

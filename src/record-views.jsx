@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, CirclePlay, Download, FileText, Headphones, Maximize2, X } from 'lucide-react';
 import { sections } from './data';
 import { getInterviewees, interviewFormat, joinNames, recordPath } from './repository';
-import { useEdit } from './edit-context';
+import { useEdit, useFz } from './edit-context';
 import { tagStyle } from './color';
 import { videoSource } from './video-links';
 import './record-views.css';
@@ -92,9 +92,9 @@ export function BodyText({blocks}){
 }
 
 // [etiqueta, valor, ancho, campo editable]: en el gestor los campos editables se muestran aunque estén vacíos
-function Facts({rows}){
+function Facts({rows,z}){
   const {edit,f}=useEdit();
-  return <dl className="ficha-film-facts">{rows.filter(([,v,,key])=>v||(edit&&key)).map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>;
+  return <dl className="ficha-film-facts">{rows.filter(([,v,,key])=>v||(edit&&key)).map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined} {...z(`fact.${k}`,`Dato «${k}»`)}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>;
 }
 
 // Relacionados como índice de diario: miniatura en papel, titular con serifa
@@ -140,7 +140,7 @@ function docConfig(item,extra){
 }
 
 export function DocumentView({item,extra,related,people}){
-  const {f,slot,edit}=useEdit();
+  const {f,slot,edit}=useEdit(), {z,root}=useFz(extra);
   const cfg=docConfig(item,extra);
   // Imágenes que se pueden ampliar: la principal (prensa, entrevistas y artículos no llevan galería)
   const gallery=useMemo(()=>[
@@ -173,40 +173,40 @@ export function DocumentView({item,extra,related,people}){
       </button>
       {slot('image')}
     </figure>
-    {cfg.press&&<><div className="ficha-aside-label">Personas vinculadas</div>
-      {people.length?<div className="ficha-film-related">{people.map(({person,roles})=><Link to={recordPath(person)} key={person.id}><img src={person.image} alt="" loading="lazy" decoding="async"/><div><small>{roles.join(' · ')||person.subtitle}</small><strong>{person.title}</strong></div><ArrowRight/></Link>)}</div>
+    {cfg.press&&<><div className="ficha-aside-label" {...z('aside.people','Título «Personas vinculadas»')}>Personas vinculadas</div>
+      {people.length?<div className="ficha-film-related">{people.map(({person,roles})=><Link to={recordPath(person)} key={person.id}><img src={person.image} alt="" loading="lazy" decoding="async"/><div><small {...z('related.meta','Vinculados · detalle')}>{roles.join(' · ')||person.subtitle}</small><strong {...z('related.title','Vinculados · nombres y títulos')}>{person.title}</strong></div><ArrowRight/></Link>)}</div>
       :<p className="ficha-filmography-empty">Aún no hay personas vinculadas a este registro.</p>}</>}
-    <div className="ficha-aside-label">{cfg.factsLabel}</div>
-    <Facts rows={cfg.facts}/>
-    {pressFilms.length>0&&<><div className="ficha-aside-label">Películas vinculadas</div><div className="ficha-film-related">{pressFilms.map(r=><Link to={recordPath(r)} key={r.id}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><small>{r.type}</small><strong>{r.title}</strong></div><ArrowRight/></Link>)}</div></>}
+    <div className="ficha-aside-label" {...z('aside.facts',`Título «${cfg.factsLabel}»`)}>{cfg.factsLabel}</div>
+    <Facts rows={cfg.facts} z={z}/>
+    {pressFilms.length>0&&<><div className="ficha-aside-label" {...z('aside.related','Título «Películas vinculadas»')}>Películas vinculadas</div><div className="ficha-film-related">{pressFilms.map(r=><Link to={recordPath(r)} key={r.id}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><small {...z('related.meta','Vinculados · detalle')}>{r.type}</small><strong {...z('related.title','Vinculados · nombres y títulos')}>{r.title}</strong></div><ArrowRight/></Link>)}</div></>}
   </div></aside>;
-  return <main className={`ficha-page doc-page doc-press doc-${item.slug}`}>
+  return <main className={`ficha-page doc-page doc-press doc-${item.slug}`} {...root}>
     <div className="doc-grid"><div className="doc-content">
     <section className="doc-shell" data-reveal>
       <div className="ficha-film-top"><BackLink item={item}/><span className="ficha-code">{code(item)}</span></div>
       <div className="press-layout">
         <article className="press-article">
           <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
-          <h1>{cfg.interview?cfg.title:f('title',item.title)}</h1>
-          {!cfg.press&&!cfg.interview&&!cfg.article&&<p className="press-dek">{f('description',item.description,{multiline:true})}</p>}
+          <h1 {...z('title','Título')}>{cfg.interview?cfg.title:f('title',item.title)}</h1>
+          {!cfg.press&&!cfg.interview&&!cfg.article&&<p className="press-dek" {...z('description','Descripción')}>{f('description',item.description,{multiline:true})}</p>}
           {(CtaIcon||slot('media'))&&<div className="press-actions">
-            {CtaIcon&&(ctaHref?<a className="ficha-cta" href={ctaHref}><CtaIcon/> {ctaText}</a>:<button type="button" className="ficha-cta" onClick={()=>setZoom(0)}><CtaIcon/> {ctaText}</button>)}
+            {CtaIcon&&(ctaHref?<a className="ficha-cta" href={ctaHref} {...z('cta','Botón principal')}><CtaIcon/> {ctaText}</a>:<button type="button" className="ficha-cta" onClick={()=>setZoom(0)} {...z('cta','Botón principal')}><CtaIcon/> {ctaText}</button>)}
             {!cfg.player&&slot('media')}
           </div>}
           {cfg.interview&&player}
-          {!cfg.press&&!cfg.interview&&!cfg.article&&<><div className="ficha-section-label" id="texto"><span>01</span> {cfg.textLabel}</div>
-          <div className="press-transcript"><p>{f('description',item.description,{multiline:true})}</p></div></>}
+          {!cfg.press&&!cfg.interview&&!cfg.article&&<><div className="ficha-section-label" id="texto" {...z('label.1',`Título «${cfg.textLabel}»`)}><span>01</span> {cfg.textLabel}</div>
+          <div className="press-transcript" {...z('description','Texto')}><p>{f('description',item.description,{multiline:true})}</p></div></>}
         </article>
       </div>
     </section>
     {/* Entrevista: el contenido va en su propia sección, a lo ancho y con columna de lectura; si no hay texto, no aparece */}
     {cfg.interview&&(edit||hasBody)&&<section className="interview-text" id="texto" data-reveal>
-      <div className="ficha-filmography-head"><div className="ficha-section-label"><span>01</span> CONTENIDO</div><span>ENTREVISTA{cfg.name?` A ${cfg.name.toUpperCase()}`:''}</span></div>
-      <div className="interview-text-body">{body}</div>
+      <div className="ficha-filmography-head"><div className="ficha-section-label" {...z('label.1','Título «Contenido»')}><span>01</span> CONTENIDO</div><span {...z('label.by','Entrevista a…')}>ENTREVISTA{cfg.name?` A ${cfg.name.toUpperCase()}`:''}</span></div>
+      <div className="interview-text-body" {...z('body','Texto')}>{body}</div>
     </section>}
     {cfg.article&&(edit||hasBody)&&<section className="interview-text" id="texto" data-reveal>
-      <div className="ficha-filmography-head"><div className="ficha-section-label"><span>01</span> CUERPO DEL ARTÍCULO</div>{item.subtitle&&<span>POR {item.subtitle.toUpperCase()}</span>}</div>
-      <div className="interview-text-body">{body}</div>
+      <div className="ficha-filmography-head"><div className="ficha-section-label" {...z('label.1','Título «Cuerpo del artículo»')}><span>01</span> CUERPO DEL ARTÍCULO</div>{item.subtitle&&<span {...z('label.by','Por…')}>POR {item.subtitle.toUpperCase()}</span>}</div>
+      <div className="interview-text-body" {...z('body','Texto')}>{body}</div>
     </section>}
     {hasPdf&&<section className="press-pdf" id="documento" data-reveal>
       <div className="ficha-filmography-head"><div className="ficha-section-label">DOCUMENTO DIGITALIZADO</div><div className="press-pdf-links"><a href={extra.media} download={`${item.title}.pdf`} target="_blank" rel="noreferrer"><Download/> Descargar PDF</a><a href={extra.media} target="_blank" rel="noreferrer">Abrir en otra pestaña <ArrowRight/></a></div></div>
