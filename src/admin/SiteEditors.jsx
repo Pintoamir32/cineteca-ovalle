@@ -117,7 +117,7 @@ function ImageField({label,value,onChange,aspect,optional=false,busy}){
         {!value&&optional&&<p className="cms-help">Opcional: sin imagen se muestra un fondo liso.</p>}
       </div>
     </div>
-    {picking&&<ImagePicker value={value} aspect={aspect} onPick={onChange} onRemove={value&&optional?()=>onChange(''):undefined} onClose={()=>open(false)} title={label}/>}
+    {picking&&<ImagePicker value={value} aspect={aspect} fixed onPick={onChange} onRemove={value&&optional?()=>onChange(''):undefined} onClose={()=>open(false)} title={label}/>}
   </div>;
 }
 
