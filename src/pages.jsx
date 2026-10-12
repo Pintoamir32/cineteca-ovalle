@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-r
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpDown, CalendarDays, CirclePlay, Clapperboard, Clock, Film, Grid2X2, List, MapPin, Ruler, Search, Settings2, Table2, X } from 'lucide-react';
 import { Counter, PageSize, Paged, Pager, RecordCard, RecordRow, usePaged, usePageSize } from './components';
 import { collections, locations, recordExtras, sections, timelineEvents } from './data';
-import { countByCollection, countByLocation, countByType, getAllRecords, getMapPoints, pointsOf, getFilmPeople, getFilmography, getLocations, getRecordPeople, placesOf, findRecordByParam, recordPath, recordSlug } from './repository';
+import { countByCollection, countByLocation, countByType, getAllRecords, getMapPoints, pointsOf, getFilmPeople, getFilmography, getLocations, getRecordPeople, interviewFormat, placesOf, findRecordByParam, recordPath, recordSlug } from './repository';
 import { useEdit, useFz } from './edit-context';
 import { useHero, useSiteText } from './site-text';
 // Leaflet solo se descarga al abrir el mapa
@@ -11,7 +11,7 @@ const FilmMap=lazy(()=>import('./FilmMap').then(m=>({default:m.FilmMap})));
 import { SearchSelect } from './SearchSelect';
 import { BackLink, DocumentView, MediaViewer, panelShape } from './record-views';
 import { tagStyle } from './color';
-import { filmPeopleNames, filtersFor, matches, optionsOf, valueLabel } from './filters';
+import { METRAJES, filmPeopleNames, filtersFor, matches, metrajeOf, optionsOf, relatedTitles, valueLabel } from './filters';
 import { durationMinutes, metrajeOfDuration } from './duration';
 
 
@@ -30,16 +30,40 @@ const FACET_KEY={Dirección:'director',Año:'anio',Género:'genero',Duración:'d
 /* Vista de tabla: columnas según la sección, ordenables desde el encabezado */
 const yearNum=r=>Number((/\d{4}/.exec(r.year)||[])[0])||0;
 const minutes=r=>durationMinutes(formatParts(r)[1]);
-const SUBTITLE={peliculas:'Dirección',personas:'Roles',prensa:'Medio de origen',entrevistas:'Entrevistado(a)',articulos:'Autor(a)'};
+// Columnas según lo que hoy guarda cada tipo de ficha (las personas ya no llevan años ni colección;
+// prensa, entrevistas y artículos no llevan formato ni colección)
+const joinList=v=>(Array.isArray(v)?v:[]).filter(Boolean).join(', ');
+const metrajeOrder=r=>{const m=metrajeOf(r);return m?METRAJES.findIndex(x=>x.label===m)+1:0};
+// Persona: películas del archivo y las escritas a mano, con sus años
+const personWorks=r=>[...getFilmography(r).map(({film})=>film.year),...(recordExtras[r.id]?.works||[]).filter(w=>String(w.title||'').trim()).map(w=>w.year)];
+const personYears=r=>personWorks(r).map(y=>Number((/\d{4}/.exec(y||'')||[])[0])).filter(Boolean);
+const period=r=>{const y=personYears(r);if(!y.length)return '';const a=Math.min(...y),b=Math.max(...y);return a===b?String(a):`${a}—${b}`};
+const COL={
+  title:label=>({key:'title',label,get:r=>r.title}),
+  subtitle:label=>({key:'subtitle',label,get:r=>r.subtitle}),
+  year:label=>({key:'year',label,get:r=>r.year,sort:yearNum,num:true}),
+  films:label=>({key:'films',label,get:r=>joinList(relatedTitles(r,'Película'))})
+};
 function tableColumns(kind){
-  const cols=[{key:'title',label:'Título',get:r=>r.title}];
-  if(kind==='archivo')cols.push({key:'type',label:'Tipo',get:r=>r.type});
-  cols.push({key:'subtitle',label:SUBTITLE[kind]||'Autoría',get:r=>r.subtitle});
-  cols.push({key:'year',label:{personas:'Años',prensa:'Fecha',entrevistas:'Fecha',articulos:'Fecha'}[kind]||'Año',get:r=>r.year,sort:yearNum,num:true});
-  if(kind==='peliculas')cols.push({key:'genre',label:'Género',get:r=>formatParts(r)[0]},{key:'duration',label:'Duración',get:r=>formatParts(r)[1],sort:minutes,num:true});
-  else if(!['personas','prensa','articulos'].includes(kind))cols.push({key:'format',label:'Formato',get:r=>formatParts(r)[0]});
-  if(!['prensa','entrevistas','articulos'].includes(kind))cols.push({key:'collection',label:'Colección',get:r=>r.collection});
-  return cols;
+  switch(kind){
+    case 'peliculas':return [COL.title('Título'),COL.subtitle('Dirección'),COL.year('Año'),
+      {key:'genre',label:'Género',get:r=>formatParts(r)[0]},
+      {key:'duration',label:'Duración',get:r=>formatParts(r)[1],sort:minutes,num:true},
+      {key:'metraje',label:'Metraje',get:metrajeOf,sort:metrajeOrder,num:true},
+      {key:'medium',label:'Soporte',get:r=>formatParts(r)[2]},
+      {key:'places',label:'Locaciones',get:r=>joinList(getLocations(r.id))},
+      {key:'collection',label:'Colección',get:r=>r.collection}];
+    case 'personas':return [COL.title('Nombre'),COL.subtitle('Roles'),
+      {key:'works',label:'Películas',get:r=>String(personWorks(r).length),sort:r=>personWorks(r).length,num:true},
+      {key:'period',label:'Período',get:period,sort:r=>Math.min(...personYears(r),9999),num:true}];
+    case 'prensa':return [COL.title('Título'),COL.subtitle('Medio de origen'),COL.year('Fecha'),
+      {key:'people',label:'Personas',get:r=>joinList(getRecordPeople(r).map(e=>e.person.title))},COL.films('Películas')];
+    case 'entrevistas':return [COL.title('Título'),COL.subtitle('Entrevistado(a)'),COL.year('Fecha'),
+      {key:'format',label:'Formato',get:r=>interviewFormat(recordExtras[r.id])||formatParts(r)[0]}];
+    case 'articulos':return [COL.title('Título'),COL.subtitle('Autor(a)'),COL.year('Fecha'),COL.films('Películas referenciadas')];
+    default:return [COL.title('Título'),{key:'type',label:'Tipo',get:r=>r.type},COL.subtitle('Autoría'),COL.year('Año o fecha'),
+      {key:'collection',label:'Colección',get:r=>r.collection}];
+  }
 }
 
 export function ArchivePage({kind='archivo'}){

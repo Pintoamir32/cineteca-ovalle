@@ -17,7 +17,7 @@ export { METRAJES };
 export const metrajeOf=r=>metrajeOfDuration(formatParts(r)[1]);
 
 // Fichas de un tipo vinculadas a esta (películas citadas en prensa, artículos…)
-const relatedTitles=(r,type)=>{const ids=recordExtras[r.id]?.relations||[];return getAllRecords().filter(x=>x.type===type&&ids.includes(x.id)).map(x=>x.title)};
+export const relatedTitles=(r,type)=>{const ids=recordExtras[r.id]?.relations||[];return getAllRecords().filter(x=>x.type===type&&ids.includes(x.id)).map(x=>x.title)};
 export const filmPeopleNames=r=>r.type==='Película'?getFilmPeople(r).map(e=>e.person.title):[];
 const peopleNames=r=>r.type==='Película'?filmPeopleNames(r):r.type==='Persona'?[]:getRecordPeople(r).map(e=>e.person.title);
 
