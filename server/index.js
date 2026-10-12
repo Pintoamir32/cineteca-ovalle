@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import express from 'express';
 import { openStore } from './db.js';
+import { normalizeDurations } from '../src/duration.js';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 // Producción por defecto (Hostinger ejecuta este archivo tal cual); «npm run dev» agrega --dev
@@ -18,6 +19,13 @@ const scrypt=promisify(crypto.scrypt);
 
 const db=await openStore();
 console.log(`[cineteca] almacenamiento: ${db.kind}`);
+
+// Duraciones guardadas antes de que se completaran solas («18 minutos» → «18 min», «90» → «1 h 30 min»):
+// se reescriben una vez como una versión nueva, así la anterior queda en el historial
+try{
+  const saved=await db.content(), fixed=saved&&normalizeDurations(saved.data);
+  if(saved&&fixed!==saved.data&&await db.saveContent(fixed,saved.version,null))console.log('[cineteca] duraciones actualizadas al formato nuevo');
+}catch(err){console.error('[cineteca] no se pudieron actualizar las duraciones',err)}
 
 /* ---------- Contraseñas y sesiones ---------- */
 
@@ -286,7 +294,7 @@ api.post('/content/restore',needUser,async(req,res)=>{
 api.put('/content',needUser,async(req,res)=>{
   const {data,baseVersion}=req.body||{};
   if(!data||typeof data!=='object'||!Array.isArray(data.records))return res.status(400).json({error:'Contenido no válido.'});
-  const version=await db.saveContent(await keepTrash(data),Number(baseVersion)||0,req.user.id);
+  const version=await db.saveContent(await keepTrash(normalizeDurations(data)),Number(baseVersion)||0,req.user.id);
   if(!version)return res.status(409).json({error:'Otra persona guardó cambios mientras editabas.'});
   res.json({version,updatedAt:new Date().toISOString()});
 });

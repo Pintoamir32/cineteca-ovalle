@@ -31,3 +31,20 @@ export const METRAJES=[
   {label:'Largometraje',hint:'60 min o más',test:m=>m>=60}
 ];
 export const metrajeOfDuration=text=>{const m=durationMinutes(text);return m?METRAJES.find(x=>x.test(m))?.label:undefined};
+
+// Contenido completo con todas las duraciones en el formato del archivo (películas y cargos «Duración»).
+// Devuelve el mismo objeto si no había nada que cambiar.
+export function normalizeDurations(data){
+  if(!data||!Array.isArray(data.records))return data;
+  let changed=false;
+  const fix=v=>{if(typeof v!=='string')return v;const n=formatDuration(v);if(n!==v)changed=true;return n};
+  const records=data.records.map(r=>{
+    if(r?.type!=='Película'||!r.format)return r;
+    const parts=String(r.format).split(' · ');
+    if(parts.length<2)return r;
+    parts[1]=fix(parts[1]);
+    return {...r,format:parts.join(' · ')};
+  });
+  const recordExtras=Object.fromEntries(Object.entries(data.recordExtras||{}).map(([id,e])=>[id,Array.isArray(e?.credits)?{...e,credits:e.credits.map(c=>Array.isArray(c)&&c[0]==='Duración'?[c[0],fix(c[1])]:c)}:e]));
+  return changed?{...data,records,...(data.recordExtras?{recordExtras}:{})}:data;
+}
