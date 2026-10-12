@@ -39,8 +39,7 @@ export const FILTERS={
   Persona:[
     {key:'rol',label:'Rol',get:r=>split(r.subtitle)},
     {key:'pelicula',label:'Película',get:r=>getFilmography(r).map(e=>e.film.title)},
-    DECADE('Década de nacimiento'),
-    COLLECTION,PLACE
+    PLACE
   ],
   Prensa:[
     {key:'medio',label:'Medio de origen',get:r=>r.subtitle},
