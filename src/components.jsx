@@ -39,29 +39,50 @@ export function pageNumbers(current,total){
   }
   return out;
 }
-// Página actual de una lista: vuelve a la 1 cuando cambia `resetKey` (búsqueda, filtros, orden…)
-export function usePaged(list,perPage,resetKey=''){
-  const [page,setPage]=useState(1);
-  useEffect(()=>{setPage(1)},[resetKey]);
-  const total=Math.max(1,Math.ceil(list.length/perPage)), current=Math.min(page,total);
-  return {page:current,total,items:list.slice((current-1)*perPage,current*perPage),setPage};
+// Registros por página: 25, 50 o 100. La elección vale para todas las listas y se recuerda en este navegador.
+export const PAGE_SIZES=[25,50,100];
+const SIZE_KEY='cdo-por-pagina';
+const readSize=()=>{try{const n=Number(localStorage.getItem(SIZE_KEY));return PAGE_SIZES.includes(n)?n:PAGE_SIZES[0]}catch{return PAGE_SIZES[0]}};
+export function usePageSize(){
+  const [size,setSize]=useState(readSize);
+  return [size,n=>{setSize(n);try{localStorage.setItem(SIZE_KEY,String(n))}catch{/* sin almacenamiento: solo esta vez */}}];
 }
-// Botones de página. `scrollRef`: al cambiar de página se vuelve al inicio de la lista
-export function Pager({page,total,onChange,scrollRef,className=''}){
-  if(total<=1)return null;
-  const go=n=>{onChange(n);const el=scrollRef?.current;if(el&&el.getBoundingClientRect().top<0)el.scrollIntoView({block:'start'})};
-  return <nav className={`pagination ${className}`} aria-label="Páginas">
-    <button type="button" disabled={page===1} onClick={()=>go(page-1)}><ArrowLeft/> Anterior</button>
-    <div className="pagination-pages">{pageNumbers(page,total).map((n,i)=>n==='…'?<span key={`e${i}`}>…</span>
-      :<button type="button" key={n} className={n===page?'active':''} aria-current={n===page?'page':undefined} onClick={()=>go(n)}>{n}</button>)}</div>
-    <button type="button" disabled={page===total} onClick={()=>go(page+1)}>Siguiente <ArrowRight/></button>
-  </nav>;
+
+// Página actual de una lista: vuelve a la 1 cuando cambia `resetKey` (búsqueda, filtros, orden…).
+// `fixed`: cantidad fija por página (p. ej. todo junto al editar); si no, la elegida (25, 50 o 100)
+export function usePaged(list,fixed=null,resetKey=''){
+  const [page,setPage]=useState(1), [size,setSize]=usePageSize();
+  useEffect(()=>{setPage(1)},[resetKey]);
+  const perPage=fixed||size;
+  const total=Math.max(1,Math.ceil(list.length/perPage)), current=Math.min(page,total);
+  return {page:current,total,perPage,count:list.length,items:list.slice((current-1)*perPage,current*perPage),setPage,
+    setPerPage:fixed?undefined:n=>{setSize(n);setPage(1)}};
+}
+// Botones de página y selector «Mostrar 25 · 50 · 100». `scrollRef`: al cambiar de página se vuelve al inicio de la lista
+export function Pager({page,total,onChange,scrollRef,className='',perPage,onPerPage,count=0}){
+  const sizes=onPerPage&&count>PAGE_SIZES[0];
+  if(total<=1&&!sizes)return null;
+  const toTop=()=>{const el=scrollRef?.current;if(el&&el.getBoundingClientRect().top<0)el.scrollIntoView({block:'start'})};
+  const go=n=>{onChange(n);toTop()};
+  return <div className="pagination-wrap">
+    {total>1&&<nav className={`pagination ${className}`} aria-label="Páginas">
+      <button type="button" disabled={page===1} onClick={()=>go(page-1)}><ArrowLeft/> Anterior</button>
+      <div className="pagination-pages">{pageNumbers(page,total).map((n,i)=>n==='…'?<span key={`e${i}`}>…</span>
+        :<button type="button" key={n} className={n===page?'active':''} aria-current={n===page?'page':undefined} onClick={()=>go(n)}>{n}</button>)}</div>
+      <button type="button" disabled={page===total} onClick={()=>go(page+1)}>Siguiente <ArrowRight/></button>
+    </nav>}
+    {sizes&&<div className={`pagination-size ${total>1?'':'is-alone'}`} role="group" aria-label="Registros por página">
+      <span>Mostrar</span>
+      {PAGE_SIZES.map(n=><button type="button" key={n} className={n===perPage?'active':''} aria-pressed={n===perPage} onClick={()=>{onPerPage(n);toTop()}}>{n}</button>)}
+      <span>por página</span>
+    </div>}
+  </div>;
 }
 
 // Lista paginada dentro de una página: children recibe los elementos de la página actual
-export function Paged({items,perPage,children,className='is-compact'}){
+export function Paged({items,perPage=null,children,className='is-compact'}){
   const ref=useRef(null), p=usePaged(items,perPage,items.length);
-  return <div ref={ref}>{children(p.items)}<Pager page={p.page} total={p.total} onChange={p.setPage} scrollRef={ref} className={className}/></div>;
+  return <div ref={ref}>{children(p.items)}<Pager page={p.page} total={p.total} onChange={p.setPage} scrollRef={ref} className={className} perPage={p.perPage} onPerPage={p.setPerPage} count={p.count}/></div>;
 }
 
 export function Counter({value,duration=1200,pad=0}){

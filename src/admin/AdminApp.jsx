@@ -11,7 +11,7 @@ import { LoginScreen, PasswordField } from './Login';
 import { TYPE_META, TYPES, code, extraOf, missingFields, typeBySlug, typeColor } from './meta';
 import { RecordEditor } from './RecordEditor';
 import { LogoMark } from '../Logo';
-import { Pager } from '../components';
+import { Pager, usePageSize } from '../components';
 import { CollectionList, LocationEditor, LocationList, TimelineList } from './SiteEditors';
 import { AboutEditor, HeroesEditor, HomeEditor } from './HomeEditor';
 import { TOURS, Tour, takeLegacySeen, tourViewOf } from './Tour';
@@ -384,12 +384,11 @@ function NewRecordMenu({type}){
 
 /* ---------- Listado de registros ---------- */
 
-const RECORDS_PER_PAGE=24;
 
 function RecordList(){
   const {slug}=useParams(), type=typeBySlug(slug), {go}=useAdminNav();
   const [q,setQ]=useState(''), [sort,setSort]=useState('recent'), [filter,setFilter]=useState(null), {toast,confirm}=useUi();
-  const [page,setPage]=useState(1), topRef=useRef(null);
+  const [page,setPage]=useState(1), topRef=useRef(null), [perPage,setPerPage]=usePageSize();
   // Al buscar, filtrar, ordenar o cambiar de sección se vuelve a la primera página
   useEffect(()=>{setPage(1)},[slug,q,sort,filter]);
   if(!type)return <Dashboard/>;
@@ -406,8 +405,8 @@ function RecordList(){
     toast(r.draft?`“${r.title}” ya se ve en el sitio.`:`“${r.title}” quedó como borrador.`);
   };
   list=[...list].sort(sort==='title'?(a,b)=>a.title.localeCompare(b.title,'es'):sort==='year'?(a,b)=>String(a.year).localeCompare(String(b.year)):(a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||'')||b.id-a.id);
-  const totalPages=Math.max(1,Math.ceil(list.length/RECORDS_PER_PAGE)), current=Math.min(page,totalPages);
-  const shown=list.slice((current-1)*RECORDS_PER_PAGE,current*RECORDS_PER_PAGE);
+  const totalPages=Math.max(1,Math.ceil(list.length/perPage)), current=Math.min(page,totalPages);
+  const shown=list.slice((current-1)*perPage,current*perPage);
   return <div className="cms-page" ref={topRef}>
     <PageHead eyebrow="ARCHIVO" title={meta.label} desc={`${records.filter(r=>r.type===type).length} fichas. Haz clic en una para editarla.`}><NewRecordMenu type={type}/></PageHead>
     <div className="cms-toolbar">
@@ -424,7 +423,7 @@ function RecordList(){
       <button type="button" className="cms-tile-pub" onClick={()=>togglePublished(r)} title={r.draft?'Publicar: que se vea en el sitio':'Despublicar: ocultarla del sitio'}>{r.draft?<><Eye/> Publicar</>:<><EyeOff/> Despublicar</>}</button>
       </div>})}
     </div>
-    <Pager page={current} total={totalPages} onChange={setPage} scrollRef={topRef} className="is-compact"/>
+    <Pager page={current} total={totalPages} onChange={setPage} scrollRef={topRef} className="is-compact" perPage={perPage} onPerPage={n=>{setPerPage(n);setPage(1)}} count={list.length}/>
     {!list.length&&<p className="cms-empty">{filter==='drafts'?'No hay fichas en borrador.':'No hay fichas que coincidan.'}</p>}
   </div>;
 }

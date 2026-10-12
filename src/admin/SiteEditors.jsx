@@ -130,7 +130,7 @@ export function CollectionList(){
     <PageHead eyebrow="ORGANIZAR EL ARCHIVO" title="Colecciones" desc="Recorridos temáticos. Cada ficha pertenece a una colección.">
       <button type="button" className="cms-btn is-primary" onClick={()=>go('/admin/colecciones/nuevo')}><Plus/> Nueva colección</button>
     </PageHead>
-    <Paged items={collections.map((c,i)=>({c,i}))} perPage={24}>{page=><div className="cms-collections">{page.map(({c,i})=><button type="button" key={c.slug||i} className="cms-collection" onClick={()=>go(`/admin/colecciones/${i}`)}>
+    <Paged items={collections.map((c,i)=>({c,i}))} >{page=><div className="cms-collections">{page.map(({c,i})=><button type="button" key={c.slug||i} className="cms-collection" onClick={()=>go(`/admin/colecciones/${i}`)}>
       <img src={c.image} alt=""/><div className="cms-collection-shade"/>
       <span>{pad(i+1)}</span><h3>{c.title}</h3><b style={tagStyle(c.color)}>{countByCollection(c.title)} fichas</b>
     </button>)}</div>}</Paged>
@@ -177,7 +177,7 @@ export function TimelineList(){
       <button type="button" className="cms-btn" onClick={()=>setPreview(true)} disabled={!timelineEvents.length}><Eye/> Vista previa</button>
       <button type="button" className="cms-btn is-primary" onClick={()=>add()}><Plus/> Nuevo hito</button>
     </PageHead>
-    {timelineEvents.length?<Paged items={timelineEvents.map((e,i)=>({e,i}))} perPage={20}>{page=>groupsOf(page).map(g=><section key={g.decade} className="cms-timeline-group">
+    {timelineEvents.length?<Paged items={timelineEvents.map((e,i)=>({e,i}))} >{page=>groupsOf(page).map(g=><section key={g.decade} className="cms-timeline-group">
       <header><h2>{g.decade==='Sin año'?g.decade:`Década de ${g.decade.slice(0,-1)}`}</h2><small>{g.items.length} {g.items.length===1?'hito':'hitos'}</small>
         {g.decade!=='Sin año'&&<button type="button" className="cms-btn is-ghost is-small" onClick={()=>add(g.decade.slice(0,-1))}><Plus/> Agregar aquí</button>}</header>
       <ol className="cms-timeline">{g.items.map(({e,i})=><li key={`${e.year}-${i}`}><button type="button" onClick={()=>go(`/admin/linea-de-tiempo/${i}`)}>

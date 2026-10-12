@@ -524,3 +524,10 @@ footer .footer-line b{color:#c9cfcb;font-weight:700}
 .pagination.is-compact>button{padding:10px 14px}
 .pagination.is-compact .pagination-pages button,.pagination.is-compact .pagination-pages span{width:34px;height:34px}
 .page-pager{padding:0 6vw 70px}
+/* Registros por página: 25 · 50 · 100 */
+.pagination-size{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:16px;font:600 9px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:#7b817c}
+.pagination-size.is-alone{margin-top:40px;padding-top:24px;border-top:1px solid var(--line)}
+.pagination-size span:first-child{margin-right:4px}.pagination-size span:last-child{margin-left:4px}
+.pagination-size button{min-width:40px;height:30px;padding:0 8px;border:1px solid var(--line);background:transparent;font:700 10px 'IBM Plex Mono';color:var(--black);cursor:pointer;transition:.2s}
+.pagination-size button:hover:not(.active){background:#efeee6}
+.pagination-size button.active{background:var(--forest);color:#fff;border-color:var(--forest)}

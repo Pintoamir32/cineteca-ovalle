@@ -1,7 +1,7 @@
 import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpDown, CalendarDays, CirclePlay, Clapperboard, Clock, Film, Grid2X2, List, MapPin, Ruler, Search, Settings2, Table2, X } from 'lucide-react';
-import { Counter, Paged, Pager, RecordCard, RecordRow, usePaged } from './components';
+import { Counter, Paged, Pager, RecordCard, RecordRow, usePaged, usePageSize } from './components';
 import { collections, locations, recordExtras, sections, timelineEvents } from './data';
 import { countByCollection, countByLocation, countByType, getAllRecords, getMapPoints, pointsOf, getFilmPeople, getFilmography, getLocations, getRecordPeople, placesOf, findRecordByParam, recordPath, recordSlug } from './repository';
 import { useEdit } from './edit-context';
@@ -15,7 +15,6 @@ import { filmPeopleNames, filtersFor, matches, optionsOf, valueLabel } from './f
 import { durationMinutes, metrajeOfDuration } from './duration';
 
 
-const PAGE_SIZE=8, COLLECTIONS_PER_PAGE=8, TIMELINE_PER_PAGE=10, FILMOGRAPHY_PER_PAGE=10;
 
 const formatParts=r=>(r.format||'').split(' · ');
 // Minúsculas y sin tildes, para buscar "munoz" y encontrar "Muñoz"
@@ -67,7 +66,7 @@ export function ArchivePage({kind='archivo'}){
   },[list,columns,sortKey,sortDir]);
   // Primer clic: ascendente; segundo: descendente
   const sortBy=key=>{const next=new URLSearchParams(params);const dir=sortKey===key&&sortDir==='asc'?'desc':'asc';next.set('orden',key);next.set('dir',dir);next.delete('page');setParams(next)};
-  const perPage=view==='table'?20:PAGE_SIZE;
+  const [perPage,setPerPage]=usePageSize();
   const totalPages=Math.max(1,Math.ceil(list.length/perPage));
   const page=Math.min(totalPages,Math.max(1,Number(params.get('page'))||1));
   const pagedList=useMemo(()=>sorted.slice((page-1)*perPage,page*perPage),[sorted,page,perPage]);
@@ -97,7 +96,7 @@ export function ArchivePage({kind='archivo'}){
         </tr>)}</tbody>
       </table></div>}
     {!list.length&&<div className="no-results"><Search/><h3>No encontramos coincidencias.</h3><p>Prueba con otro término de búsqueda.</p><button onClick={()=>setParams({})}>Limpiar búsqueda</button></div>}
-    <Pager page={page} total={totalPages} onChange={goToPage}/></section>
+    <Pager page={page} total={totalPages} onChange={goToPage} perPage={perPage} onPerPage={n=>{setPerPage(n);goToPage(1)}} count={list.length}/></section>
   </main>
 }
 
@@ -179,7 +178,7 @@ export function RecordDetail({item,extra}){
         <p className="ficha-person-bio">{f('description',item.description,{multiline:true})}</p>
         <div className="ficha-media ficha-filmography" id="filmografia">
           <div className="ficha-filmography-head"><div className="ficha-section-label"><span>02</span> FILMOGRAFÍA</div><span>{String(works.length).padStart(2,'0')} {works.length===1?'PELÍCULA':'PELÍCULAS'}</span></div>
-          {works.length?<Paged items={works} perPage={FILMOGRAPHY_PER_PAGE}>{page=><ol className="ficha-filmography-list">{page.map(w=>w.film?(()=>{const film=w.film,[fGenre,fDuration]=(film.format||'').split(' · ');return <li key={`f${film.id}`}>
+          {works.length?<Paged items={works}>{page=><ol className="ficha-filmography-list">{page.map(w=>w.film?(()=>{const film=w.film,[fGenre,fDuration]=(film.format||'').split(' · ');return <li key={`f${film.id}`}>
             <img src={film.image} alt="" loading="lazy" decoding="async"/>
             <div className="ficha-filmography-info">
               <small>{film.year}{fGenre&&` · ${fGenre}`}{fDuration&&` · ${fDuration}`}</small>
@@ -271,8 +270,8 @@ export function CollectionsPage(){
   const list=edit?.items||collections, on=i=>edit?.index===i;
   const v=(i,key,value,opts)=>on(i)?f(key,value,opts):value;
   // En el sitio, de a 8; en la vista previa del gestor se ven todas (se eligen desde su lista)
-  const gridRef=useRef(null), paged=usePaged(list,edit?Math.max(list.length,1):COLLECTIONS_PER_PAGE), offset=(paged.page-1)*COLLECTIONS_PER_PAGE;
-  return <main className="discovery-page"><HeroBanner id="colecciones"/><section className="collections-grid" data-reveal ref={gridRef}>{paged.items.map((c,k)=>{const i=edit?k:offset+k;return <Link to={`/archivo?collection=${encodeURIComponent(c.title)}`} className={`collection-card stagger-item${on(i)?' is-editing':''}`} style={{transitionDelay:`${k*80}ms`}} key={c.slug||i} onClick={edit&&!on(i)?ev=>{ev.preventDefault();edit.pick?.(i)}:undefined}><img src={c.image} alt="" loading="lazy" decoding="async"/><div className="collection-shade"/>{on(i)&&slot('image')}<span>{String(i+1).padStart(2,'0')}</span><h2>{v(i,'title',c.title)}</h2><p>{v(i,'description',c.description,{multiline:true})}</p><b style={tagStyle(c.color)}>{on(i)&&edit.count!=null?edit.count:countByCollection(c.title)} registros <ArrowRight/></b></Link>})}</section>{paged.total>1&&<div className="page-pager"><Pager page={paged.page} total={paged.total} onChange={paged.setPage} scrollRef={gridRef}/></div>}</main>;
+  const gridRef=useRef(null), paged=usePaged(list,edit?Math.max(list.length,1):null), offset=(paged.page-1)*paged.perPage;
+  return <main className="discovery-page"><HeroBanner id="colecciones"/><section className="collections-grid" data-reveal ref={gridRef}>{paged.items.map((c,k)=>{const i=edit?k:offset+k;return <Link to={`/archivo?collection=${encodeURIComponent(c.title)}`} className={`collection-card stagger-item${on(i)?' is-editing':''}`} style={{transitionDelay:`${k*80}ms`}} key={c.slug||i} onClick={edit&&!on(i)?ev=>{ev.preventDefault();edit.pick?.(i)}:undefined}><img src={c.image} alt="" loading="lazy" decoding="async"/><div className="collection-shade"/>{on(i)&&slot('image')}<span>{String(i+1).padStart(2,'0')}</span><h2>{v(i,'title',c.title)}</h2><p>{v(i,'description',c.description,{multiline:true})}</p><b style={tagStyle(c.color)}>{on(i)&&edit.count!=null?edit.count:countByCollection(c.title)} registros <ArrowRight/></b></Link>})}</section>{(paged.total>1||paged.count>25)&&<div className="page-pager"><Pager page={paged.page} total={paged.total} onChange={paged.setPage} scrollRef={gridRef} perPage={paged.perPage} onPerPage={paged.setPerPage} count={paged.count}/></div>}</main>;
 }
 
 export function TimelinePage(){
@@ -285,8 +284,8 @@ export function TimelinePage(){
   const pick=i=>{setPicked(i);requestAnimationFrame(()=>{const el=detailRef.current, r=el?.getBoundingClientRect();if(r&&(r.top<90||r.top>window.innerHeight*.6))el.scrollIntoView({behavior:'smooth',block:'start'})})};
   const current=edit?edit.index:Math.min(picked,list.length-1), active=list[current]||{}, isActive=(e,i)=>i===current;
   // En el sitio, de a 10 hitos; al cambiar de página se muestra el primero de esa página
-  const spineRef=useRef(null), paged=usePaged(list,edit?Math.max(list.length,1):TIMELINE_PER_PAGE), offset=edit?0:(paged.page-1)*TIMELINE_PER_PAGE;
-  const changePage=n=>{paged.setPage(n);setPicked((n-1)*TIMELINE_PER_PAGE)};
+  const spineRef=useRef(null), paged=usePaged(list,edit?Math.max(list.length,1):null), offset=edit?0:(paged.page-1)*paged.perPage;
+  const changePage=n=>{paged.setPage(n);setPicked((n-1)*paged.perPage)};
   return <main className="timeline-page">
     <HeroBanner id="linea"/>
     <section className="timeline-layout" data-reveal>
@@ -296,7 +295,7 @@ export function TimelinePage(){
           <span className="timeline-entry-line"><span className="timeline-entry-dot"/></span>
           <span className="timeline-entry-body"><small>{e.type}</small><strong>{e.title}</strong></span>
         </button>})}
-        <Pager page={paged.page} total={paged.total} onChange={changePage} scrollRef={spineRef} className="is-compact"/>
+        <Pager page={paged.page} total={paged.total} onChange={changePage} scrollRef={spineRef} className="is-compact" perPage={paged.perPage} onPerPage={paged.setPerPage&&(n=>{paged.setPerPage(n);setPicked(0)})} count={paged.count}/>
       </div>
       <aside className="timeline-detail" ref={detailRef}>
         {active.image?<img key={active.image} src={active.image} alt={active.title||""} decoding="async"/>:<div className="timeline-detail-noimg"/>}

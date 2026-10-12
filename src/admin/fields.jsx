@@ -258,7 +258,7 @@ export function ImagePicker({value,onPick,onPickMany,multiple=false,onClose,titl
     </div>}
     {tab==='library'&&<>
       {multiple&&<p className="cms-help">Marca las imágenes que quieras añadir.</p>}
-      <Paged items={library} perPage={36}>{page=><div className="cms-library">{page.map(src=>{const on=multiple?selected.includes(src):src===value;return <button type="button" key={src.slice(0,200)} className={on?'is-current':''}
+      <Paged items={library}>{page=><div className="cms-library">{page.map(src=>{const on=multiple?selected.includes(src):src===value;return <button type="button" key={src.slice(0,200)} className={on?'is-current':''}
         onClick={()=>multiple?setSelected(s=>on?s.filter(x=>x!==src):[...s,src]):edit([{src}])}><img src={thumb(src,240)} alt="" loading="lazy"/>{on&&<Check/>}</button>})}</div>}</Paged>
       {multiple&&<div className="cms-modal-actions">
         <button type="button" className="cms-btn" disabled={!selected.length} onClick={()=>deliver(selected)}>Añadir sin editar</button>
@@ -362,7 +362,7 @@ export function RecordPicker({onPick,onClose,exclude=[],title='Vincular registro
       <button type="button" className={!type?'active':''} onClick={()=>setType('')}>Todos <b>{matches.length}</b></button>
       {typeList.map(t=>{const n=matches.filter(r=>r.type===t).length;return <button key={t} type="button" className={`${type===t?'active':''} ${n?'':'is-zero'}`} onClick={()=>setType(type===t?'':t)}>{t} <b>{n}</b></button>})}
     </div>}
-    <Paged items={list} perPage={30}>{page=><div className="cms-record-options">
+    <Paged items={list}>{page=><div className="cms-record-options">
       {page.map(r=><button key={r.id} type="button" onClick={()=>pick(r)}>
         <img src={thumb(r.image,120)} alt="" loading="lazy"/>
         <span><strong>{r.title}{r.draft&&<em className="cms-draft-mark">Borrador</em>}</strong><small><i style={tagStyle(r.color)}>{r.type}</i>{r.year} · {r.subtitle}</small></span>

@@ -67,7 +67,7 @@ export function SubmissionsPage(){
         <label className="cms-search"><Search/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Buscar por obra, nombre o correo…"/>{q&&<button type="button" onClick={()=>setQ('')} aria-label="Limpiar"><X/></button>}</label>
         <div className="cms-segment is-small">{[...Object.entries(STATUS).map(([k,l])=>[k,`${l}s`]),['todas','Todas']].map(([k,l])=><button key={k} type="button" className={filter===k?'active':''} onClick={()=>{setFilter(k);setOpen(null)}}>{l}{k!=='todas'&&` · ${counts[k]}`}</button>)}</div>
       </div>
-      {shown.length?<Paged items={shown} perPage={12}>{page=><ul className="cms-subs">{page.map(s=>{const isOpen=open===s.id;return <li key={s.id} className={`cms-sub is-${s.status}${isOpen?' is-open':''}`}>
+      {shown.length?<Paged items={shown}>{page=><ul className="cms-subs">{page.map(s=>{const isOpen=open===s.id;return <li key={s.id} className={`cms-sub is-${s.status}${isOpen?' is-open':''}`}>
         <button type="button" className="cms-sub-head" onClick={()=>setOpen(isOpen?null:s.id)} aria-expanded={isOpen}>
           <Film/><span><strong>{s.title}</strong><small>{s.name} · {dateOf(s.createdAt)}</small></span>
           <em className={`cms-sub-status is-${s.status}`}>{STATUS[s.status]}</em><ChevronDown className="cms-sub-chev"/>
