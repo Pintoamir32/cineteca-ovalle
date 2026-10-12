@@ -5,7 +5,7 @@ import { Counter, Paged, Pager, RecordCard, RecordRow, usePaged } from './compon
 import { collections, locations, recordExtras, sections, timelineEvents } from './data';
 import { countByCollection, countByLocation, countByType, getAllRecords, getFilmPeople, getFilmography, getLocations, getRecordPeople, placesOf, findRecordByParam, recordPath, recordSlug } from './repository';
 import { useEdit } from './edit-context';
-import { useSiteText } from './site-text';
+import { useHero, useSiteText } from './site-text';
 import { SearchSelect } from './SearchSelect';
 import { BackLink, DocumentView, MediaViewer, panelShape } from './record-views';
 import { tagStyle } from './color';
@@ -14,15 +14,6 @@ import { durationMinutes, metrajeOfDuration } from './duration';
 
 
 const PAGE_SIZE=8, COLLECTIONS_PER_PAGE=8, TIMELINE_PER_PAGE=10, FILMOGRAPHY_PER_PAGE=10;
-
-const pageInfo={
-  archivo:{title:'Archivo abierto',eyebrow:'TODOS LOS REGISTROS',desc:'Busca de forma transversal en películas, personas, prensa, entrevistas y artículos.',image:'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1600&q=88'},
-  peliculas:{title:'Películas',eyebrow:'OBRAS AUDIOVISUALES',desc:'Ficción, documental y registros de la memoria audiovisual del Valle del Limarí.',image:'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1600&q=88'},
-  personas:{title:'Personas',eyebrow:'VOCES Y OFICIOS',desc:'Directoras, actores, técnicos y gestores que han construido el cine regional.',image:'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1600&q=88'},
-  prensa:{title:'Archivo de prensa',eyebrow:'DOCUMENTOS HISTÓRICOS',desc:'Recortes, programas y materiales que registran la vida cinematográfica de Ovalle.',image:'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1600&q=88'},
-  entrevistas:{title:'Entrevistas',eyebrow:'MEMORIA ORAL',desc:'Relatos en texto, audio y video de quienes vivieron y construyeron esta historia.',image:'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=1600&q=88'},
-  articulos:{title:'Artículos y crítica',eyebrow:'IDEAS EN CIRCULACIÓN',desc:'Investigaciones, ensayos y miradas contemporáneas sobre el patrimonio audiovisual.',image:'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1600&q=88'}
-};
 
 const formatParts=r=>(r.format||'').split(' · ');
 // Minúsculas y sin tildes, para buscar "munoz" y encontrar "Muñoz"
@@ -51,7 +42,7 @@ function tableColumns(kind){
 }
 
 export function ArchivePage({kind='archivo'}){
-  const [params,setParams]=useSearchParams(), [showFilters,setShowFilters]=useState(false); const info=pageInfo[kind], section=sections.find(s=>s.slug===kind); const q=params.get('q')||'';
+  const [params,setParams]=useSearchParams(), [showFilters,setShowFilters]=useState(false); const hero=useHero(kind), section=sections.find(s=>s.slug===kind); const q=params.get('q')||'';
   const recordType=section?'':params.get('type')||'';
   const reverseOrder=['personas','prensa','entrevistas','articulos'].includes(kind);
   const compactCards=reverseOrder;
@@ -87,8 +78,8 @@ export function ArchivePage({kind='archivo'}){
   const clearFilters=()=>{const next=new URLSearchParams();for(const k of ['q','view','orden','dir'])params.get(k)&&next.set(k,params.get(k));setParams(next)};
   const setView=v=>{const next=new URLSearchParams(params);v==='grid'?next.delete('view'):next.set('view',v);setParams(next)};
   const headerCount=section?countByType(section.type):getAllRecords().length;
-  return <main className="catalog-page"><section className="page-hero"><img src={info.image} alt=""/><div className="page-hero-shade"/><div><span>{info.eyebrow}</span><h1>{info.title}</h1><p>{info.desc}</p></div><b><Counter value={headerCount} pad={3}/><small>REGISTROS</small></b></section>
-    <section className="catalog-content" data-reveal><div className="catalog-tools"><div className="catalog-search"><Search/><input value={q} onChange={update} placeholder={kind==='peliculas'?'Buscar por título, director o persona…':`Buscar en ${info.title.toLowerCase()}…`}/>{q&&<button onClick={()=>setParams({})}><X/></button>}</div><button className="filter-toggle" onClick={()=>setShowFilters(!showFilters)} aria-expanded={showFilters}><Settings2/> Filtros{chips.length>0&&<b className="filter-count">{chips.length}</b>}</button></div>
+  return <main className="catalog-page"><section className="page-hero"><img src={hero.image} alt=""/>{hero.imageButton}<div className="page-hero-shade"/><div><span>{hero.kicker}</span><h1>{hero.title}</h1><p>{hero.text}</p></div><b><Counter value={headerCount} pad={3}/><small>REGISTROS</small></b></section>
+    <section className="catalog-content" data-reveal><div className="catalog-tools"><div className="catalog-search"><Search/><input value={q} onChange={update} placeholder={kind==='peliculas'?'Buscar por título, director o persona…':`Buscar en ${hero.plainTitle.toLowerCase()}…`}/>{q&&<button onClick={()=>setParams({})}><X/></button>}</div><button className="filter-toggle" onClick={()=>setShowFilters(!showFilters)} aria-expanded={showFilters}><Settings2/> Filtros{chips.length>0&&<b className="filter-count">{chips.length}</b>}</button></div>
     {showFilters&&<div className="filter-panel filter-panel-wide">{!section&&<SearchSelect label="Tipo de registro" value={recordType} onChange={setType} options={[{value:'',label:'Todos los tipos'},...sections.map(x=>({value:x.type,label:`${x.type} (${countByType(x.type)})`}))]}/>}{panelFilters.map(f=><SearchSelect key={f.key} label={f.label} value={params.get(f.key)||''} onChange={v=>setFilter(f.key,v)} disabled={!f.options.length} options={[{value:'',label:f.options.length?'Todos':'Sin datos todavía'},...f.options]}/>)}</div>}
     <div className="catalog-heading"><p><b>{list.length}</b> resultados {q&&<>para “{q}”</>}{chips.map(f=><button key={f.key} className="catalog-chip" onClick={()=>f.key==='type'?setType(''):setFilter(f.key,'')}>{f.label}: {f.text} <X/></button>)}{chips.length>1&&<button className="catalog-chip is-clear" onClick={clearFilters}>Quitar filtros</button>}</p><div className="view-toggle"><button className={view==='grid'?'active':''} onClick={()=>setView('grid')} aria-label="Vista de cuadrícula"><Grid2X2/></button><button className={view==='list'?'active':''} onClick={()=>setView('list')} aria-label="Vista de lista"><List/></button><button className={view==='table'?'active':''} onClick={()=>setView('table')} aria-label="Vista de tabla" title="Tabla ordenable"><Table2/></button></div></div>
     {view==='grid'
@@ -260,13 +251,19 @@ export function RecordDetail({item,extra}){
 }
 
 // En el gestor (ver edit-context): `items` es la lista con el borrador y `index` el elemento en edición
+// Portada de colecciones, línea de tiempo y mapa (textos y foto desde el gestor)
+function HeroBanner({id}){
+  const hero=useHero(id);
+  return <section className="discovery-hero"><img src={hero.image} alt="" loading="lazy" decoding="async"/>{hero.imageButton}<div className="discovery-hero-shade"/><span>{hero.kicker}</span><h1>{hero.title}</h1><p>{hero.text}</p></section>;
+}
+
 export function CollectionsPage(){
   const {edit,f,slot}=useEdit(), {t}=useSiteText();
   const list=edit?.items||collections, on=i=>edit?.index===i;
   const v=(i,key,value,opts)=>on(i)?f(key,value,opts):value;
   // En el sitio, de a 8; en la vista previa del gestor se ven todas (se eligen desde su lista)
   const gridRef=useRef(null), paged=usePaged(list,edit?Math.max(list.length,1):COLLECTIONS_PER_PAGE), offset=(paged.page-1)*COLLECTIONS_PER_PAGE;
-  return <main className="discovery-page"><section className="discovery-hero"><img src="https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>{t('collectionsKicker')}</span><h1>{t('collectionsTitle')}</h1><p>{t('collectionsIntro')}</p></section><section className="collections-grid" data-reveal ref={gridRef}>{paged.items.map((c,k)=>{const i=edit?k:offset+k;return <Link to={`/archivo?collection=${encodeURIComponent(c.title)}`} className={`collection-card stagger-item${on(i)?' is-editing':''}`} style={{transitionDelay:`${k*80}ms`}} key={c.slug||i} onClick={edit&&!on(i)?ev=>{ev.preventDefault();edit.pick?.(i)}:undefined}><img src={c.image} alt="" loading="lazy" decoding="async"/><div className="collection-shade"/>{on(i)&&slot('image')}<span>{String(i+1).padStart(2,'0')}</span><h2>{v(i,'title',c.title)}</h2><p>{v(i,'description',c.description,{multiline:true})}</p><b style={tagStyle(c.color)}>{on(i)&&edit.count!=null?edit.count:countByCollection(c.title)} registros <ArrowRight/></b></Link>})}</section>{paged.total>1&&<div className="page-pager"><Pager page={paged.page} total={paged.total} onChange={paged.setPage} scrollRef={gridRef}/></div>}</main>;
+  return <main className="discovery-page"><HeroBanner id="colecciones"/><section className="collections-grid" data-reveal ref={gridRef}>{paged.items.map((c,k)=>{const i=edit?k:offset+k;return <Link to={`/archivo?collection=${encodeURIComponent(c.title)}`} className={`collection-card stagger-item${on(i)?' is-editing':''}`} style={{transitionDelay:`${k*80}ms`}} key={c.slug||i} onClick={edit&&!on(i)?ev=>{ev.preventDefault();edit.pick?.(i)}:undefined}><img src={c.image} alt="" loading="lazy" decoding="async"/><div className="collection-shade"/>{on(i)&&slot('image')}<span>{String(i+1).padStart(2,'0')}</span><h2>{v(i,'title',c.title)}</h2><p>{v(i,'description',c.description,{multiline:true})}</p><b style={tagStyle(c.color)}>{on(i)&&edit.count!=null?edit.count:countByCollection(c.title)} registros <ArrowRight/></b></Link>})}</section>{paged.total>1&&<div className="page-pager"><Pager page={paged.page} total={paged.total} onChange={paged.setPage} scrollRef={gridRef}/></div>}</main>;
 }
 
 export function TimelinePage(){
@@ -282,7 +279,7 @@ export function TimelinePage(){
   const spineRef=useRef(null), paged=usePaged(list,edit?Math.max(list.length,1):TIMELINE_PER_PAGE), offset=edit?0:(paged.page-1)*TIMELINE_PER_PAGE;
   const changePage=n=>{paged.setPage(n);setPicked((n-1)*TIMELINE_PER_PAGE)};
   return <main className="timeline-page">
-    <section className="discovery-hero"><img src="https://images.unsplash.com/photo-1586899028174-e7098604235b?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>{t('timelineKicker')}</span><h1>{t('timelineTitle')}</h1><p>{t('timelineIntro')}</p></section>
+    <HeroBanner id="linea"/>
     <section className="timeline-layout" data-reveal>
       <div className="timeline-spine" ref={spineRef}>
         {paged.items.map((e,k)=>{const i=offset+k;return <button key={`${e.year}-${i}`} className={`timeline-entry${isActive(e,i)?' active':''} stagger-item`} style={{transitionDelay:`${(k%8)*50}ms`}} onClick={()=>edit?(i!==edit.index&&edit.pick?.(i)):pick(i)}>
@@ -314,5 +311,5 @@ export function MapPage(){
   const delta=selected.name==='Combarbalá'?0.25:0.18;
   const bbox=`${selected.lon-delta},${selected.lat-delta},${selected.lon+delta},${selected.lat+delta}`;
   const mapUrl=`https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${selected.lat}%2C${selected.lon}`;
-  return <main className="map-page"><section className="discovery-hero"><img src="https://images.unsplash.com/photo-1472396961693-142e6e269027?auto=format&fit=crop&w=1600&q=88" alt="" loading="lazy" decoding="async"/><div className="discovery-hero-shade"/><span>GEOGRAFÍA DEL ARCHIVO</span><h1>Mapa Región de Coquimbo</h1><p>Explora las obras, personas y documentos según su vínculo con el territorio.</p></section><section className="map-explorer" data-reveal><div className="archive-map real-map"><iframe key={selected.id} title={`Mapa de ${selected.name}`} src={mapUrl} loading="lazy"/><div className="map-caption"><MapPin/> Mapa geográfico · OpenStreetMap</div></div><aside><span>LOCALIDAD SELECCIONADA</span><h2>{selected.name}</h2><div className="map-location-list">{!locations.length&&<p className="map-empty">Aún no hay lugares en el mapa.</p>}{locations.map(l=><button key={l.id} className={selected.id===l.id?'active':''} onClick={()=>setSelected(l)}><MapPin/>{l.name}<b>{countByLocation(l.name)}</b></button>)}</div><strong>{countByLocation(selected.name)}</strong><small>REGISTROS VINCULADOS</small><Link to={`/archivo?locacion=${encodeURIComponent(selected.name)}`}>Explorar registros <ArrowRight/></Link></aside></section></main>
+  return <main className="map-page"><HeroBanner id="mapa"/><section className="map-explorer" data-reveal><div className="archive-map real-map"><iframe key={selected.id} title={`Mapa de ${selected.name}`} src={mapUrl} loading="lazy"/><div className="map-caption"><MapPin/> Mapa geográfico · OpenStreetMap</div></div><aside><span>LOCALIDAD SELECCIONADA</span><h2>{selected.name}</h2><div className="map-location-list">{!locations.length&&<p className="map-empty">Aún no hay lugares en el mapa.</p>}{locations.map(l=><button key={l.id} className={selected.id===l.id?'active':''} onClick={()=>setSelected(l)}><MapPin/>{l.name}<b>{countByLocation(l.name)}</b></button>)}</div><strong>{countByLocation(selected.name)}</strong><small>REGISTROS VINCULADOS</small><Link to={`/archivo?locacion=${encodeURIComponent(selected.name)}`}>Explorar registros <ArrowRight/></Link></aside></section></main>
 }

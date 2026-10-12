@@ -4,6 +4,7 @@ import { ArrowRight, Check, CheckCircle2, Mail, Send } from 'lucide-react';
 import { useSiteText } from './site-text';
 import './submit.css';
 import { formatDuration } from './duration';
+import { useHero } from './site-text';
 
 /* «Inscribe tu obra»: realizadoras y realizadores envían su película para que la Cineteca la conozca.
    Llega al gestor, sección «Inscripciones» (ver server/index.js, /api/submissions). */
@@ -54,11 +55,12 @@ export function SubmitPage(){
     <div className="sb-grid">{children}</div>
   </section>;
 
+  const hero=useHero('inscribir');
   return <main className="submit-page" ref={topRef}>
     <section className="sb-hero">
-      <span className="sb-kicker">CONVOCATORIA ABIERTA · PERMANENTE</span>
-      <h1>Inscribe<br/><em>tu obra.</em></h1>
-      <p>¿Hiciste una película en la región? Cuéntanos de ella: la revisaremos para sumarla al archivo, a una función o a una colección de la Cineteca.</p>
+      <span className="sb-kicker">{hero.kicker}</span>
+      <h1>{hero.title}</h1>
+      <p>{hero.text}</p>
     </section>
 
     {state==='sent'?<section className="sb-done" role="status">

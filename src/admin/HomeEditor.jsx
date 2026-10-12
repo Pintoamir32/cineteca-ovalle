@@ -2,7 +2,10 @@ import React, { useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, ImagePlus, Layers, Maximize2, Minimize2, Plus, RotateCcw, Star, Trash2, X } from 'lucide-react';
 import { heroSlides, homeContent, records, site } from '../data';
 import { HOME_SECTIONS, HomeEditContext, rich } from '../home';
-import { getPath } from '../site-text';
+import { getPath, HERO_PAGES, heroPaths } from '../site-text';
+import { ArchivePage, CollectionsPage, MapPage, TimelinePage } from '../pages';
+import { SubmitPage } from '../submit';
+import { LegalPage } from '../legal';
 import { originalHome, saveError, setData, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
 import { aspectNear, Choice, Editable, ImagePicker, RecordPicker, thumb, useUi, useAskRemove } from './fields';
@@ -280,6 +283,77 @@ export function AboutEditor(){
     </div>
     <HomeEditContext.Provider value={edit}>
       <SiteFrame className="is-home is-about" apiRef={frameApi} real={real} path="/nosotros"><AboutPage/></SiteFrame>
+    </HomeEditContext.Provider>
+  </EditorShell>;
+}
+
+/* ---------- Portadas de las páginas: la página real con su portada editable ---------- */
+const HERO_VIEWS={archivo:()=><ArchivePage/>,colecciones:()=><CollectionsPage/>,linea:()=><TimelinePage/>,mapa:()=><MapPage/>,inscribir:()=><SubmitPage/>,legal:()=><LegalPage/>};
+const heroView=key=>(HERO_VIEWS[key]||(()=><ArchivePage kind={key}/>))();
+
+export function HeroesEditor(){
+  useStoreVersion();
+  const {go,setDirty:setNavDirty}=useAdminNav(), {toast,confirm}=useUi();
+  const load=()=>structuredClone(homeContent);
+  const [draft,setDraft]=useState(load), [dirty,setDirty]=useState(false), [real,setReal]=useState(false), [page,setPage]=useState(HERO_PAGES[0][0]);
+  const clearLocal=useLocalDraft('portadas',draft,dirty,d=>{setDraft(d);setDirty(true)});
+  const frameApi=useRef(null);
+  const set=(path,value)=>{setDraft(d=>setPath(d,path,value));setDirty(true)};
+  const [,label,href]=HERO_PAGES.find(([k])=>k===page);
+  const paths=heroPaths(page);
+
+  const edit={
+    content:draft,
+    text:(path,{as='span',vars,em}={})=>{
+      const value=getPath(draft,path), name=path===paths.kicker?'Antetítulo':path===paths.title?'Título':path===paths.text?'Introducción':'Texto';
+      return <Editable key={path} as={as} value={value} onChange={v=>set(path,v)} multiline={name!=='Antetítulo'}
+        render={v=>rich(v,{vars,em})} placeholder={`Escribe ${name==='Título'?'el título':name==='Antetítulo'?'el antetítulo':'aquí…'}`} label={`${label} · ${name.toLowerCase()}`}/>;
+    },
+    image:(path,{label:l,className,fallback,aspect})=><HomeImageButton key={path} label={l} className={className} value={getPath(draft,path)} fallback={fallback||getPath(ORIGINAL,path)} aspect={aspect||16/6} onChange={v=>set(path,v)}/>
+  };
+
+  const save=async()=>{
+    const missing=HERO_PAGES.find(([k])=>{const p=heroPaths(k);return !String(getPath(draft,p.title)??'').trim()||(getPath(ORIGINAL,p.image)&&!getPath(draft,p.image))});
+    if(missing){setPage(missing[0]);return toast(`La portada de «${missing[1]}» necesita un título y una foto antes de guardar.`,'error')}
+    try{await setData({homeContent:draft})}catch(err){return toast(saveError(err),'error')}
+    clearLocal();setDirty(false);setNavDirty(false);toast('Portadas actualizadas y publicadas.');
+  };
+  const discard=async()=>{if(await confirm({title:'¿Descartar los cambios?',text:'Las portadas volverán a su última versión guardada.',ok:'Descartar'})){setDraft(load());setDirty(false)}};
+  const restore=async()=>{
+    if(!await confirm({title:`¿Volver a la portada original de «${label}»?`,text:'Se reemplazan sus textos y su foto por los originales. Podrás revisarlo antes de guardar.',ok:'Restablecer'}))return;
+    setDraft(d=>Object.values(paths).reduce((acc,p)=>setPath(acc,p,getPath(ORIGINAL,p)),d));setDirty(true);
+  };
+
+  const panel=<>
+    <PanelBlock title="Página">
+      <div className="cms-hsecs">{HERO_PAGES.map(([k,l])=><section key={k} className={`cms-hsec${k===page?' is-open':''}`}>
+        <div className="cms-hsec-head"><button type="button" className="cms-hsec-toggle" onClick={()=>setPage(k)} aria-pressed={k===page}><span>{l}</span></button></div>
+      </section>)}</div>
+    </PanelBlock>
+    <PanelBlock title="Cómo editar">
+      <ul className="cms-tips">
+        <li>Clic en el antetítulo, el título o la introducción para cambiarlos</li>
+        {getPath(ORIGINAL,paths.image)&&<li>Botón negro sobre la foto → cambiarla</li>}
+        <li>Entre asteriscos → <em>cursiva destacada</em>: <code>*palabra*</code></li>
+      </ul>
+    </PanelBlock>
+    <PanelBlock title="Portada original">
+      <button type="button" className="cms-btn is-ghost is-block" onClick={restore}><RotateCcw/> Volver a la original</button>
+      <p className="cms-help">Solo la de «{label}». Se puede revisar y descartar antes de guardar.</p>
+    </PanelBlock>
+  </>;
+
+  return <EditorShell crumb="Sitio" title="Portadas de páginas" dirty={dirty} onBack={()=>go('/admin')} onSave={save} onDiscard={discard} viewHref={href} panel={panel}
+    hint="Elige una página en el panel. Es la página real: clic en los textos de la portada para reescribirlos, o en el botón negro para cambiar la foto.">
+    <div className="cms-frame-tools">
+      <div className="cms-segment is-small">
+        <button type="button" className={!real?'active':''} onClick={()=>setReal(false)}><Minimize2/> Ajustar al ancho</button>
+        <button type="button" className={real?'active':''} onClick={()=>setReal(true)}><Maximize2/> Tamaño real</button>
+      </div>
+      <span>{label}</span>
+    </div>
+    <HomeEditContext.Provider value={edit}>
+      <SiteFrame key={page} className="is-home" apiRef={frameApi} real={real} path={href}>{heroView(page)}</SiteFrame>
     </HomeEditContext.Provider>
   </EditorShell>;
 }

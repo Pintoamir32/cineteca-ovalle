@@ -90,6 +90,9 @@ function withoutPlaceholders(home){
   for(const [k,old] of Object.entries(PLACEHOLDERS))if(old.includes(home[k]??''))home[k]=ORIGINAL.homeContent[k];
   // «Sobre la Cineteca»: los textos que aún no se han guardado toman su valor original
   home.about={...ORIGINAL.homeContent.about,...home.about};
+  // Portadas de páginas: cada una toma lo original en lo que aún no se ha guardado
+  const heroes=ORIGINAL.homeContent.heroes;
+  home.heroes=Object.fromEntries([...new Set([...Object.keys(heroes),...Object.keys(home.heroes||{})])].map(k=>[k,{...heroes[k],...home.heroes?.[k]}]));
   return home;
 }
 

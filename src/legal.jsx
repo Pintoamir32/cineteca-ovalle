@@ -1,15 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useSiteText } from './site-text';
+import { useHero, useSiteText } from './site-text';
 
 // Aviso legal: derechos sobre el archivo, uso de los contenidos y privacidad del sitio
 export function LegalPage(){
-  const email=useSiteText().content.footerEmail;
+  const email=useSiteText().content.footerEmail, hero=useHero('legal');
   return <main className="legal-page">
     <section className="legal-hero">
-      <span>INFORMACIÓN LEGAL</span>
-      <h1>Aviso legal</h1>
-      <p>Condiciones de uso del sitio y del archivo digital de la Cineteca de Ovalle.</p>
+      <span>{hero.kicker}</span>
+      <h1>{hero.title}</h1>
+      <p>{hero.text}</p>
     </section>
     <article className="legal-body">
       <section>

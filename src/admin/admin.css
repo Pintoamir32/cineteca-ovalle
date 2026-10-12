@@ -1056,3 +1056,4 @@ html:has(.cms-preview-doc){overflow:hidden}
 .cms-body-drop.is-center span{left:20%;width:60%}
 .cms-body-drop.is-full span{left:0;width:100%}
 .cms-body-ghost{position:fixed;z-index:50;width:120px;height:auto;transform:translate(-50%,-50%) rotate(-2deg);border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.3);opacity:.9;pointer-events:none}
+.page-hero-edit-img{top:24px;right:24px}

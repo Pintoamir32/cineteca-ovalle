@@ -183,6 +183,21 @@ export const homeContent = {
   fichaLeadTitle:'Una pieza, múltiples lecturas.',
   collectionsKicker:'RECORRIDOS CURATORIALES', collectionsTitle:'Colecciones', collectionsIntro:'Entradas temáticas para descubrir conexiones inesperadas dentro del archivo.',
   timelineKicker:'HISTORIA AUDIOVISUAL', timelineTitle:'Línea de tiempo', timelineIntro:'Ochenta años de imágenes, encuentros y memoria en movimiento.',
+  // Portadas de las demás páginas: se editan desde el gestor (Sitio → Portadas de páginas).
+  // Colecciones y línea de tiempo usan los textos de arriba (collections…, timeline…) y aquí solo su foto.
+  heroes:{
+    archivo:{kicker:'TODOS LOS REGISTROS',title:'Archivo abierto',text:'Busca de forma transversal en películas, personas, prensa, entrevistas y artículos.',image:'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1600&q=88'},
+    peliculas:{kicker:'OBRAS AUDIOVISUALES',title:'Películas',text:'Ficción, documental y registros de la memoria audiovisual del Valle del Limarí.',image:'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1600&q=88'},
+    personas:{kicker:'VOCES Y OFICIOS',title:'Personas',text:'Directoras, actores, técnicos y gestores que han construido el cine regional.',image:'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1600&q=88'},
+    prensa:{kicker:'DOCUMENTOS HISTÓRICOS',title:'Archivo de prensa',text:'Recortes, programas y materiales que registran la vida cinematográfica de Ovalle.',image:'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1600&q=88'},
+    entrevistas:{kicker:'MEMORIA ORAL',title:'Entrevistas',text:'Relatos en texto, audio y video de quienes vivieron y construyeron esta historia.',image:'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=1600&q=88'},
+    articulos:{kicker:'IDEAS EN CIRCULACIÓN',title:'Artículos y crítica',text:'Investigaciones, ensayos y miradas contemporáneas sobre el patrimonio audiovisual.',image:'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1600&q=88'},
+    colecciones:{image:'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=88'},
+    linea:{image:'https://images.unsplash.com/photo-1586899028174-e7098604235b?auto=format&fit=crop&w=1600&q=88'},
+    mapa:{kicker:'GEOGRAFÍA DEL ARCHIVO',title:'Mapa Región de Coquimbo',text:'Explora las obras, personas y documentos según su vínculo con el territorio.',image:'https://images.unsplash.com/photo-1472396961693-142e6e269027?auto=format&fit=crop&w=1600&q=88'},
+    inscribir:{kicker:'CONVOCATORIA ABIERTA · PERMANENTE',title:'Inscribe\n*tu obra.*',text:'¿Hiciste una película en la región? Cuéntanos de ella: la revisaremos para sumarla al archivo, a una función o a una colección de la Cineteca.'},
+    legal:{kicker:'INFORMACIÓN LEGAL',title:'Aviso legal',text:'Condiciones de uso del sitio y del archivo digital de la Cineteca de Ovalle.'}
+  },
   hidden:[],
   // Página «Sobre la Cineteca»: se edita desde el gestor (Sitio → Sobre la Cineteca)
   about:{
