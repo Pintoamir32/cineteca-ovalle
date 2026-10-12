@@ -30,8 +30,8 @@ export const PREFILL_KEY='cdo-prefill';
 function toFilmDraft(s){
   const credits=[...(s.production?[['Producción',s.production]]:[]),
     ...String(s.credits||'').split('\n').map(l=>l.split(/:\s*/)).filter(p=>p.length>1&&p[0].trim()&&p.slice(1).join(':').trim()).map(p=>[p[0].trim(),p.slice(1).join(':').trim()])];
-  return {record:{title:s.title,subtitle:s.direction||'',year:s.year||'',format:[s.genre,formatDuration(s.duration),s.format].map(x=>x||'').join(' · ').replace(/( · )+$/,''),description:s.synopsis||'',draft:true},
-    extra:{credits,media:s.link||'',mediaType:'video'}};
+  return {record:{title:s.title,subtitle:s.direction||'',year:s.year||'',format:[s.genre,formatDuration(s.duration),s.format].map(x=>x||'').join(' · ').replace(/( · )+$/,''),description:s.synopsis||'',draft:true,...(s.poster?{image:s.poster}:{})},
+    extra:{credits,media:s.link||'',mediaType:'video',...(s.images?.length?{gallery:s.images}:{})}};
 }
 
 export function SubmissionsPage(){
@@ -80,6 +80,7 @@ export function SubmissionsPage(){
           </div>
           <h4>Sinopsis</h4><p className="cms-sub-text">{s.synopsis}</p>
           {TECH.some(([k])=>s[k])&&<><h4>Ficha técnica</h4><dl className="cms-sub-tech">{TECH.filter(([k])=>s[k]).map(([k,l])=><div key={k}><dt>{l}</dt><dd>{s[k]}</dd></div>)}</dl></>}
+          {(s.poster||s.images?.length>0)&&<><h4>Imágenes</h4><div className="cms-sub-images">{s.poster&&<a href={s.poster} target="_blank" rel="noreferrer" className="is-poster" title="Afiche"><img src={s.poster} alt="Afiche"/><small>Afiche</small></a>}{(s.images||[]).map((src,i)=><a key={i} href={src} target="_blank" rel="noreferrer"><img src={src} alt={`Imagen ${i+1}`}/></a>)}</div></>}
           {s.credits&&<><h4>Otros créditos o comentarios</h4><p className="cms-sub-text">{s.credits}</p></>}
           <div className="cms-sub-actions">
             <button type="button" className="cms-btn is-primary" onClick={()=>createFilm(s)}><Clapperboard/> Crear ficha de película</button>

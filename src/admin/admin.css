@@ -1080,3 +1080,7 @@ html:has(.cms-preview-doc){overflow:hidden}
 [data-fz-mode] [data-fz]{cursor:pointer;outline:1px dashed transparent;outline-offset:3px;transition:outline-color .15s}
 [data-fz-mode] [data-fz]:hover{outline-color:color-mix(in srgb,var(--forest) 55%,transparent)}
 [data-fz-mode] [data-fz][data-fz-on]{outline:2px solid var(--acid);box-shadow:0 0 0 4px color-mix(in srgb,var(--acid) 30%,transparent)}
+.cms-sub-images{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.cms-sub-images a{position:relative;display:block}
+.cms-sub-images img{display:block;height:110px;width:auto;max-width:180px;object-fit:cover;border-radius:8px;border:1px solid rgba(16,18,16,.1)}
+.cms-sub-images small{position:absolute;left:6px;bottom:6px;padding:2px 6px;border-radius:4px;background:rgba(16,18,16,.75);color:#fff;font:600 9px 'IBM Plex Mono';text-transform:uppercase}

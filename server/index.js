@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import express from 'express';
 import { openStore } from './db.js';
-import { normalizeDurations } from '../src/duration.js';
+import { formatDuration, normalizeDurations } from '../src/duration.js';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 // Producción por defecto (Hostinger ejecuta este archivo tal cual); «npm run dev» agrega --dev
@@ -232,9 +232,19 @@ async function newUser({name,user,password}){
 const SUBMISSION_FIELDS={
   // campo: [largo máximo, obligatorio]
   name:[120,true], phone:[40,true], email:[160,true], title:[200,true], synopsis:[4000,true], link:[500,false],
-  year:[20,false], duration:[40,false], genre:[80,false], format:[120,false], direction:[200,false],
-  production:[200,false], place:[200,false], credits:[2000,false]
+  // Ficha técnica: obligatoria (salvo los comentarios)
+  year:[20,true], duration:[40,true], genre:[80,true], format:[120,true], direction:[200,true],
+  production:[200,true], place:[200,true], credits:[2000,false]
 };
+// Afiche e imágenes de la obra (opcionales): llegan como data URL, ya achicadas en el navegador
+const SUBMISSION_IMAGE=/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/, SUBMISSION_IMAGE_MAX=4*1024*1024, SUBMISSION_IMAGES=6;
+async function storeSubmissionImage(dataUrl){
+  const m=SUBMISSION_IMAGE.exec(String(dataUrl||''));if(!m)return null;
+  const buf=Buffer.from(m[2],'base64');if(!buf.length||buf.length>SUBMISSION_IMAGE_MAX)return null;
+  const id=crypto.createHash('sha256').update(buf).digest('hex').slice(0,32);
+  if(!await db.hasMedia(id))await db.putMedia(id,m[1],buf);
+  return `/api/media/${id}`;
+}
 const SUBMISSION_STATUS=['nueva','revisada','archivada'];
 const sent=new Map();// envíos por dirección en la última hora: frena el correo basura
 api.post('/submissions',async(req,res)=>{
@@ -253,6 +263,13 @@ api.post('/submissions',async(req,res)=>{
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email))return res.status(400).json({error:'Revisa el correo: no parece válido.'});
   if(data.link&&!/^https?:\/\/\S+$/i.test(data.link))return res.status(400).json({error:'El enlace debe empezar con http:// o https://'});
   if(!body.consent)return res.status(400).json({error:'Debes aceptar que la Cineteca te contacte por esta inscripción.'});
+  data.duration=formatDuration(data.duration);
+  const poster=body.poster?await storeSubmissionImage(body.poster):null;
+  if(body.poster&&!poster)return res.status(400).json({error:'No pudimos recibir el afiche. Prueba con un JPG o PNG más liviano.'});
+  if(poster)data.poster=poster;
+  const extras=Array.isArray(body.images)?body.images.slice(0,SUBMISSION_IMAGES):[];
+  const images=(await Promise.all(extras.map(storeSubmissionImage))).filter(Boolean);
+  if(images.length)data.images=images;
   await db.addSubmission(crypto.randomBytes(12).toString('hex'),data);
   sent.set(ip,[...recent,now]);
   res.json({ok:true});
