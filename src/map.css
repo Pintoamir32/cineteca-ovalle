@@ -9,3 +9,22 @@
 .map-location-list button.active,.map-location-list button.active b{color:var(--acid)}
 .map-explorer>aside h2{margin-bottom:35px}
 @media(max-width:760px){.real-map{height:600px;min-height:600px}.map-caption{left:12px;bottom:12px}}
+/* Mapa con Leaflet: comunas y lugares de filmación */
+.film-map-canvas{position:absolute;inset:0;z-index:1;background:#dfe2d3}
+.film-map-canvas .leaflet-tile-pane{filter:saturate(.72) contrast(1.04)}
+.film-map-place span{display:block;width:16px;height:16px;border-radius:50%;background:var(--paper);border:3px solid var(--forest);box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.film-map-pin span{position:absolute;left:1px;top:0;width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--black);border:3px solid var(--acid);box-shadow:0 3px 8px rgba(0,0,0,.35)}
+.film-map-pin span::after{content:'';position:absolute;inset:5px;border-radius:50%;background:var(--acid)}
+.film-map-pop{display:grid;gap:4px;font-family:'Manrope',sans-serif}
+.film-map-pop img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:6px;margin-bottom:4px}
+.film-map-pop small{font:600 9px 'IBM Plex Mono';letter-spacing:.08em;text-transform:uppercase;color:#6b716c}
+.film-map-pop strong{font:700 16px/1.15 'Syne';letter-spacing:-.02em;color:var(--black)}
+.film-map-pop a{font:700 11px 'IBM Plex Mono';color:var(--forest);text-decoration:none;margin-top:4px}
+.map-films{display:grid;gap:8px;margin:0 0 30px}
+.map-films>span{font:600 9px 'IBM Plex Mono';letter-spacing:.14em;color:#92a49b}
+.map-films a{display:grid;grid-template-columns:48px 1fr;gap:10px;align-items:center;color:white;text-decoration:none}
+.map-films img{width:48px;height:48px;object-fit:cover;border-radius:6px}
+.map-films strong{display:block;font-size:12px;line-height:1.2}
+.map-films small{display:block;font:600 8px 'IBM Plex Mono';color:#92a49b;text-transform:uppercase;margin-top:3px}
+.map-films a:hover strong{color:var(--acid)}
+.ficha-film-locations strong small{display:block;font-weight:500;font-size:11px;color:#6b716c;margin-top:2px}

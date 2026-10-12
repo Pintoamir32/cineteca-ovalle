@@ -112,3 +112,9 @@ export function findRecordByParam(param){
 
 // «Recién catalogado» automático: las últimas fichas creadas (el número más alto es la más nueva)
 export const newestRecords=(n=4)=>[...getAllRecords()].sort((a,b)=>b.id-a.id).slice(0,n);
+
+// Puntos exactos de las fichas (por ahora, las películas georreferenciadas) para el mapa del sitio
+export const pointsOf=extra=>(extra?.points||[]).filter(pt=>Number.isFinite(pt?.lat)&&Number.isFinite(pt?.lon));
+export function getMapPoints(){
+  return getAllRecords().flatMap(r=>pointsOf(recordExtras[r.id]).map((pt,i)=>({...pt,key:`${r.id}-${i}`,record:r})));
+}

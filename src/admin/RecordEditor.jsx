@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Circle, Eye, EyeOff, FileText, ImagePlus, Images, MapPin, Plus, Star, Trash2, Type, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Crosshair, ChevronDown, ChevronUp, Circle, Eye, EyeOff, FileText, ImagePlus, Images, MapPin, Plus, Star, Trash2, Type, X } from 'lucide-react';
 import { RecordCard, RecordRow } from '../components';
 import { collections, locations, records, site } from '../data';
 import { EditContext } from '../edit-context';
@@ -9,7 +9,7 @@ import { BODY_IMAGE_ALIGNS, BODY_IMAGE_SIZE, PANEL_SHAPES, bodyBlocks, bodyImage
 import { getFilmography, getInterviewees, INTERVIEW_FORMATS, interviewFormat, joinNames } from '../repository';
 import { deleteRecord, nextId, saveError, saveRecord, setData, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
-import { Choice, ColorSwatches, Editable, EditableChoice, EditableImage, ImagePicker, MEDIA_TYPES, MediaPicker, RecordPicker, thumb, useUi, useAskRemove } from './fields';
+import { Choice, ColorSwatches, Modal, Editable, EditableChoice, EditableImage, ImagePicker, MEDIA_TYPES, MediaPicker, RecordPicker, thumb, useUi, useAskRemove } from './fields';
 import { SiteFrame } from './SiteFrame';
 import { HomeEditContext } from '../site-text';
 import { useSharedTexts } from './shared-text';
@@ -17,6 +17,7 @@ import { TYPE_META, code, extraOf, missingFields, typeBySlug, typeColor } from '
 import { PREFILL_KEY } from './Submissions';
 import { formatDuration } from '../duration';
 import { useLocalDraft } from './autosave';
+import { LocationPicker } from './LocationPicker';
 
 
 function blankDraft(type){
@@ -578,10 +579,48 @@ function RecordPanelBlocks({r,e,meta,setE,openPicker}){
       </li>)}</ul>}
       <button type="button" className="cms-btn is-block" onClick={()=>openPicker('relation')}><Plus/> Vincular otra ficha</button>
       <label className="cms-panel-label">{r.type==='Película'?'Locaciones':'Territorios'} · {places.length}</label>
+      {r.type==='Película'?<FilmPlaces places={places} e={e} setE={setE} free={free}/>:<>
       {places.length>0&&<div className="pv-chips">{places.map(l=><span key={l} className="pv-chip"><MapPin/>{l}<button type="button" onClick={ask(`«${l}»`,()=>setE({locations:places.filter(x=>x!==l)}))} aria-label={`Quitar ${l}`}><X/></button></span>)}</div>}
-      {free.length>0&&<Choice value="" placeholder="+ Añadir comuna" options={free} onChange={n=>setE({locations:[...places,n]})}/>}
+      {free.length>0&&<Choice value="" placeholder="+ Añadir comuna" options={free} onChange={n=>setE({locations:[...places,n]})}/>}</>}
     </PanelBlock>
   </>;
+}
+
+/* Película: primero la comuna (ubicación general) y luego, si se quiere, los puntos exactos donde se filmó.
+   Los puntos (extra.points: {place, lat, lon, label}) se muestran en el mapa del sitio. */
+function FilmPlaces({places,e,setE,free}){
+  const ask=useAskRemove();
+  const points=e.points||[];
+  const [adding,setAdding]=useState(null);
+  const addPlace=n=>{setE({locations:[...places,n]});setAdding(n)};
+  const removePlace=n=>setE({locations:places.filter(x=>x!==n),points:points.filter(pt=>pt.place!==n)});
+  return <>
+    {places.length>0&&<ul className="cms-film-places">{places.map(n=>{const own=points.map((pt,i)=>({...pt,i})).filter(pt=>pt.place===n);return <li key={n}>
+      <div className="cms-film-place"><MapPin/><strong>{n}</strong>
+        <button type="button" className="cms-icon-btn is-danger-text" onClick={ask(`«${n}» y sus puntos`,()=>removePlace(n))} aria-label={`Quitar ${n}`} title="Quitar comuna"><X/></button></div>
+      {own.map(pt=><div key={pt.i} className="cms-film-point"><Crosshair/><span>{pt.label||`${pt.lat.toFixed(4)}, ${pt.lon.toFixed(4)}`}</span>
+        <button type="button" className="cms-icon-btn is-danger-text" onClick={ask(`el punto «${pt.label||'sin nombre'}»`,()=>setE({points:points.filter((_,j)=>j!==pt.i)}))} aria-label="Quitar punto" title="Quitar punto"><X/></button></div>)}
+      <button type="button" className="cms-btn is-ghost is-small" onClick={()=>setAdding(n)}><Plus/> {own.length?'Otro punto exacto':'Ubicar punto exacto'}</button>
+    </li>})}</ul>}
+    {free.length>0&&<Choice value="" placeholder="+ Añadir comuna" options={free} onChange={addPlace}/>}
+    <p className="cms-help">Primero elige la comuna; luego marca en el mapa el lugar exacto donde se filmó. Los puntos aparecen en el mapa del sitio.</p>
+    {adding&&<PointModal place={adding} onClose={()=>setAdding(null)} onSave={pt=>{setE({points:[...points,{place:adding,...pt}]});setAdding(null)}}/>}
+  </>;
+}
+
+function PointModal({place,onSave,onClose}){
+  const base=locations.find(l=>l.name===place)||{lat:-30.6011,lon:-71.199};
+  const [pos,setPos]=useState(null), [label,setLabel]=useState('');
+  const cur=pos||{lat:base.lat,lon:base.lon};
+  return <Modal onClose={onClose} title={`Punto exacto en ${place}`} className="cms-point-modal">
+    <p className="cms-help">Busca el lugar o haz clic en el mapa donde se filmó. Si no lo sabes, puedes dejarlo solo con la comuna.</p>
+    <div className="cms-point-map"><LocationPicker lat={cur.lat} lon={cur.lon} valid name="" onPick={({lat,lon},found)=>{setPos({lat,lon});if(found&&!label)setLabel(found.name)}}/></div>
+    <label className="cms-field"><span>Nombre del lugar · opcional</span><input value={label} onChange={ev=>setLabel(ev.target.value)} placeholder="Ej.: Estación de Ovalle, Plaza de Armas…" maxLength={120}/></label>
+    <div className="cms-modal-actions">
+      <button type="button" className="cms-btn" onClick={onClose}>Solo la comuna</button>
+      <button type="button" className="cms-btn is-primary" disabled={!pos} onClick={()=>onSave({...pos,label:label.trim()})}><Check/> Guardar punto</button>
+    </div>
+  </Modal>;
 }
 
 /* ---------- Vista previa: tarjeta y fila, con los componentes reales del sitio ---------- */

@@ -1,11 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpDown, CalendarDays, CirclePlay, Clapperboard, Clock, Film, Grid2X2, List, MapPin, Ruler, Search, Settings2, Table2, X } from 'lucide-react';
 import { Counter, Paged, Pager, RecordCard, RecordRow, usePaged } from './components';
 import { collections, locations, recordExtras, sections, timelineEvents } from './data';
-import { countByCollection, countByLocation, countByType, getAllRecords, getFilmPeople, getFilmography, getLocations, getRecordPeople, placesOf, findRecordByParam, recordPath, recordSlug } from './repository';
+import { countByCollection, countByLocation, countByType, getAllRecords, getMapPoints, pointsOf, getFilmPeople, getFilmography, getLocations, getRecordPeople, placesOf, findRecordByParam, recordPath, recordSlug } from './repository';
 import { useEdit } from './edit-context';
 import { useHero, useSiteText } from './site-text';
+// Leaflet solo se descarga al abrir el mapa
+const FilmMap=lazy(()=>import('./FilmMap').then(m=>({default:m.FilmMap})));
 import { SearchSelect } from './SearchSelect';
 import { BackLink, DocumentView, MediaViewer, panelShape } from './record-views';
 import { tagStyle } from './color';
@@ -199,7 +201,7 @@ export function RecordDetail({item,extra}){
         <div className="ficha-aside-label">Ficha biográfica</div>
         <dl className="ficha-film-facts">{personFacts.map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>
         {placeList.length>0&&<><div className="ficha-aside-label">{placeList.length>1?`Territorios · ${placeList.length}`:'Territorio'}</div>
-        <ul className="ficha-film-locations">{placeList.map(l=><li key={l}><Link to={`/${item.slug}?locacion=${encodeURIComponent(l)}`} title={`Ver ${item.slug} vinculadas a ${l}`}><MapPin/><strong>{l}</strong><ArrowRight/></Link></li>)}</ul>
+        <ul className="ficha-film-locations">{placeList.map(l=>{const spots=pointsOf(extra).filter(pt=>pt.place===l&&pt.label);return <li key={l}><Link to={`/${item.slug}?locacion=${encodeURIComponent(l)}`} title={`Ver ${item.slug} vinculadas a ${l}`}><MapPin/><strong>{l}{spots.length>0&&<small>{spots.map(pt=>pt.label).join(' · ')}</small>}</strong><ArrowRight/></Link></li>})}</ul>
         <Link className="ficha-film-maplink" to="/mapa">Ver en el mapa <ArrowRight/></Link></>}
       </aside>
     </section>}
@@ -248,7 +250,7 @@ export function RecordDetail({item,extra}){
         <div className="ficha-aside-label">{view.label}</div>
         <dl className="ficha-film-facts">{view.facts.map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>
         <div className="ficha-aside-label">{placeList.length>1?`${isFilm?'Locaciones':'Territorios'} · ${placeList.length}`:view.places}</div>
-        <ul className="ficha-film-locations">{placeList.map(l=><li key={l}><Link to={`/${item.slug}?locacion=${encodeURIComponent(l)}`} title={`Ver ${item.slug} vinculadas a ${l}`}><MapPin/><strong>{l}</strong><ArrowRight/></Link></li>)}</ul>
+        <ul className="ficha-film-locations">{placeList.map(l=>{const spots=pointsOf(extra).filter(pt=>pt.place===l&&pt.label);return <li key={l}><Link to={`/${item.slug}?locacion=${encodeURIComponent(l)}`} title={`Ver ${item.slug} vinculadas a ${l}`}><MapPin/><strong>{l}{spots.length>0&&<small>{spots.map(pt=>pt.label).join(' · ')}</small>}</strong><ArrowRight/></Link></li>})}</ul>
         {slot('places')}
         <Link className="ficha-film-maplink" to="/mapa">Ver en el mapa <ArrowRight/></Link>
       </aside>
@@ -315,8 +317,14 @@ const MAP_DEFAULT={id:0,name:'Ovalle',lat:-30.6011,lon:-71.199};
 export function MapPage(){
   const [picked,setSelected]=useState(null);
   const selected=locations.find(l=>l.id===picked?.id)||locations[0]||MAP_DEFAULT;
-  const delta=selected.name==='Combarbalá'?0.25:0.18;
-  const bbox=`${selected.lon-delta},${selected.lat-delta},${selected.lon+delta},${selected.lat+delta}`;
-  const mapUrl=`https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${selected.lat}%2C${selected.lon}`;
-  return <main className="map-page"><HeroBanner id="mapa"/><section className="map-explorer" data-reveal><div className="archive-map real-map"><iframe key={selected.id} title={`Mapa de ${selected.name}`} src={mapUrl} loading="lazy"/><div className="map-caption"><MapPin/> Mapa geográfico · OpenStreetMap</div></div><aside><span>LOCALIDAD SELECCIONADA</span><h2>{selected.name}</h2><div className="map-location-list">{!locations.length&&<p className="map-empty">Aún no hay lugares en el mapa.</p>}{locations.map(l=><button key={l.id} className={selected.id===l.id?'active':''} onClick={()=>setSelected(l)}><MapPin/>{l.name}<b>{countByLocation(l.name)}</b></button>)}</div><strong>{countByLocation(selected.name)}</strong><small>REGISTROS VINCULADOS</small><Link to={`/archivo?locacion=${encodeURIComponent(selected.name)}`}>Explorar registros <ArrowRight/></Link></aside></section></main>
+  // Se recalcula si cambian las fichas (al cargar lo guardado), pero el mapa no se redibuja en cada render
+  const all=getMapPoints(), sig=all.map(pt=>`${pt.key}:${pt.lat},${pt.lon},${pt.label}`).join('|');
+  const points=useMemo(()=>all,[sig]);// eslint-disable-line react-hooks/exhaustive-deps
+  const here=points.filter(pt=>pt.place===selected.name);
+  return <main className="map-page"><HeroBanner id="mapa"/><section className="map-explorer" data-reveal>
+    <div className="archive-map real-map"><Suspense fallback={null}><FilmMap places={locations} points={points} focus={picked&&selected} onPlace={setSelected}/></Suspense><div className="map-caption"><MapPin/> {points.length} {points.length===1?'lugar de filmación':'lugares de filmación'} · OpenStreetMap</div></div>
+    <aside><span>LOCALIDAD SELECCIONADA</span><h2>{selected.name}</h2>
+      <div className="map-location-list">{!locations.length&&<p className="map-empty">Aún no hay lugares en el mapa.</p>}{locations.map(l=><button key={l.id} className={selected.id===l.id?'active':''} onClick={()=>setSelected(l)}><MapPin/>{l.name}<b>{countByLocation(l.name)}</b></button>)}</div>
+      {here.length>0&&<div className="map-films"><span>FILMADO AQUÍ · {here.length}</span>{here.map(pt=><Link key={pt.key} to={recordPath(pt.record)}><img src={pt.record.image} alt="" loading="lazy"/><div><strong>{pt.record.title}</strong><small>{[pt.record.year,pt.label].filter(Boolean).join(' · ')}</small></div></Link>)}</div>}
+      <strong>{countByLocation(selected.name)}</strong><small>REGISTROS VINCULADOS</small><Link to={`/archivo?locacion=${encodeURIComponent(selected.name)}`}>Explorar registros <ArrowRight/></Link></aside></section></main>;
 }

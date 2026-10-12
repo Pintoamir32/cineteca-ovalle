@@ -1057,3 +1057,13 @@ html:has(.cms-preview-doc){overflow:hidden}
 .cms-body-drop.is-full span{left:0;width:100%}
 .cms-body-ghost{position:fixed;z-index:50;width:120px;height:auto;transform:translate(-50%,-50%) rotate(-2deg);border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.3);opacity:.9;pointer-events:none}
 .page-hero-edit-img{top:24px;right:24px}
+/* Locaciones de películas: comuna y puntos exactos */
+.cms-film-places{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:8px}
+.cms-film-places>li{border:1px solid rgba(16,18,16,.1);border-radius:var(--r-md,12px);padding:8px 10px;background:var(--surface)}
+.cms-film-place,.cms-film-point{display:grid;grid-template-columns:18px 1fr auto;align-items:center;gap:8px}
+.cms-film-place svg,.cms-film-point>svg{width:16px;height:16px;color:var(--forest)}
+.cms-film-point{padding-left:14px;font-size:13px;color:var(--muted)}
+.cms-film-places .cms-btn{margin-top:6px}
+.cms-point-modal{width:min(760px,96vw)}
+.cms-point-map{display:flex;flex-direction:column;height:440px;margin:10px 0 14px;border-radius:12px;overflow:hidden;border:1px solid rgba(16,18,16,.1)}
+.cms-point-map .cms-locpicker{display:flex;flex-direction:column;height:100%}
