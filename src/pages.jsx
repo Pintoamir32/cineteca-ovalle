@@ -149,22 +149,23 @@ export function RecordDetail({item,extra}){
   const shape=panelShape(item,extra);
   // Persona: panel derecho como el de las películas, con sus propios datos (roles, obras y período de su filmografía)
   const workYears=works.map(w=>yearNum(w.year)).filter(y=>y<9999), first=Math.min(...workYears), last=Math.max(...workYears);
-  const personFacts=[['Roles',item.subtitle,true,'subtitle'],['Películas',String(works.length)],['Período',workYears.length?(first===last?String(first):`${first}—${last}`):''],['Vida',item.year],['Colección',item.collection,true]].filter(([,v,,key])=>v||(edit&&key));
+  const personFacts=[['Películas',String(works.length)],['Período',workYears.length?(first===last?String(first):`${first}—${last}`):''],['Vida',item.year],['Colección',item.collection,true]].filter(([,v,,key])=>v||(edit&&key));
   return <main className={`ficha-page${isFilm?' ficha-film':' ficha-person'}`}>
-    {!isFilm&&<section className={`ficha-hero${isPerson&&['center','right'].includes(extra.heroAlign)?` is-align-${extra.heroAlign}`:''}`}>
+    {/* Persona: sin portada; nombre, roles y datos van en el panel derecho */}
+    {!isFilm&&!isPerson&&<section className="ficha-hero">
       <img src={item.image} alt="" loading="lazy" decoding="async"/>
       <div className="ficha-hero-shade"/>
-      {!isPerson&&slot('image')}
+      {slot('image')}
       <BackLink item={item}/>
-      {/* Persona: fotografía, nombre y rol(es); abajo, biografía y filmografía */}
       <div className="ficha-hero-content">
         <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
-        {!isPerson&&<span className="ficha-code">FICHA CDO—{String(item.id).padStart(4,'0')}</span>}
+        <span className="ficha-code">FICHA CDO—{String(item.id).padStart(4,'0')}</span>
         <h1>{f('title',item.title)}</h1>
-        {isPerson?<p className="ficha-person-roles">{f('subtitle',item.subtitle)}</p>:<p>{f('description',item.description,{multiline:true})}</p>}
+        <p>{f('description',item.description,{multiline:true})}</p>
       </div>
     </section>}
     {isPerson&&<section className="ficha-body ficha-person-body" data-reveal>
+      <div className="ficha-film-top ficha-person-top"><BackLink item={item}/><span className="ficha-code">FICHA CDO—{String(item.id).padStart(4,'0')}</span></div>
       <article className="ficha-main">
         <div className="ficha-section-label"><span>01</span> BIOGRAFÍA</div>
         <p className="ficha-person-bio">{f('description',item.description,{multiline:true})}</p>
@@ -187,6 +188,11 @@ export function RecordDetail({item,extra}){
         </div>
       </article>
       <aside className="ficha-aside ficha-film-aside">
+        <header className="ficha-person-head">
+          <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
+          <h1>{f('title',item.title)}</h1>
+          <p className="ficha-person-roles">{f('subtitle',item.subtitle,{placeholder:'Roles'})}</p>
+        </header>
         <figure className={`ficha-poster is-${shape}`}><img src={item.image} alt={`Fotografía de ${item.title}`} decoding="async"/>{slot('image')}<figcaption><span>{item.type}</span><span>{works.length} {works.length===1?'película':'películas'}</span></figcaption></figure>
         <a className="ficha-cta" href="#filmografia"><Film/> Ver filmografía</a>
         <div className="ficha-aside-label">Ficha biográfica</div>

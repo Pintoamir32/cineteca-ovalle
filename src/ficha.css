@@ -220,3 +220,13 @@ a.back-link.back-link:hover .back-link-icon{background:var(--acid);color:var(--b
 .ficha-hero.is-align-center .ficha-hero-content>p{margin-left:auto;margin-right:auto}
 .ficha-hero.is-align-right .ficha-hero-content{margin-left:auto;text-align:right}
 .ficha-hero.is-align-right .ficha-hero-content>p{margin-left:auto}
+/* Persona sin portada: el nombre y los roles encabezan el panel derecho */
+.ficha-person .ficha-person-body{margin-top:24px;border-top:1px solid var(--line)}
+.ficha-person .ficha-person-body .ficha-main{padding-top:36px}
+.ficha-person-head{margin-bottom:24px}
+.ficha-person-head>.ficha-tag{display:table;margin:0 0 16px}
+.ficha-person-head h1{font:700 clamp(32px,3vw,46px)/.95 'Syne';letter-spacing:-.045em;margin:0 0 10px;text-wrap:balance}
+.ficha-person-head .ficha-person-roles{margin:0;color:#4d544f;font-size:15px}
+@media(max-width:760px){.ficha-person .ficha-person-body{margin-top:14px}}
+.ficha-person-top{grid-column:1/-1;margin:0;padding:22px 4vw 18px}
+@media(max-width:1000px){.ficha-person-body .ficha-film-aside{order:-1}.ficha-person-top{order:-2}}
