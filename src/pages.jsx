@@ -1,7 +1,7 @@
 import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpDown, CalendarDays, CirclePlay, Clapperboard, Clock, Film, Grid2X2, List, MapPin, Ruler, Search, Settings2, Table2, X } from 'lucide-react';
-import { Counter, Paged, Pager, RecordCard, RecordRow, usePaged, usePageSize } from './components';
+import { Counter, PageSize, Paged, Pager, RecordCard, RecordRow, usePaged, usePageSize } from './components';
 import { collections, locations, recordExtras, sections, timelineEvents } from './data';
 import { countByCollection, countByLocation, countByType, getAllRecords, getMapPoints, pointsOf, getFilmPeople, getFilmography, getLocations, getRecordPeople, placesOf, findRecordByParam, recordPath, recordSlug } from './repository';
 import { useEdit } from './edit-context';
@@ -82,7 +82,7 @@ export function ArchivePage({kind='archivo'}){
   return <main className="catalog-page"><section className="page-hero"><img src={hero.image} alt=""/>{hero.imageButton}<div className="page-hero-shade"/><div><span>{hero.kicker}</span><h1>{hero.title}</h1><p>{hero.text}</p></div><b><Counter value={headerCount} pad={3}/><small>REGISTROS</small></b></section>
     <section className="catalog-content" data-reveal><div className="catalog-tools"><div className="catalog-search"><Search/><input value={q} onChange={update} placeholder={kind==='peliculas'?'Buscar por título, director o persona…':`Buscar en ${hero.plainTitle.toLowerCase()}…`}/>{q&&<button onClick={()=>setParams({})}><X/></button>}</div><button className="filter-toggle" onClick={()=>setShowFilters(!showFilters)} aria-expanded={showFilters}><Settings2/> Filtros{chips.length>0&&<b className="filter-count">{chips.length}</b>}</button></div>
     {showFilters&&<div className="filter-panel filter-panel-wide">{!section&&<SearchSelect label="Tipo de registro" value={recordType} onChange={setType} options={[{value:'',label:'Todos los tipos'},...sections.map(x=>({value:x.type,label:`${x.type} (${countByType(x.type)})`}))]}/>}{panelFilters.map(f=><SearchSelect key={f.key} label={f.label} value={params.get(f.key)||''} onChange={v=>setFilter(f.key,v)} disabled={!f.options.length} options={[{value:'',label:f.options.length?'Todos':'Sin datos todavía'},...f.options]}/>)}</div>}
-    <div className="catalog-heading"><p><b>{list.length}</b> resultados {q&&<>para “{q}”</>}{chips.map(f=><button key={f.key} className="catalog-chip" onClick={()=>f.key==='type'?setType(''):setFilter(f.key,'')}>{f.label}: {f.text} <X/></button>)}{chips.length>1&&<button className="catalog-chip is-clear" onClick={clearFilters}>Quitar filtros</button>}</p><div className="view-toggle"><button className={view==='grid'?'active':''} onClick={()=>setView('grid')} aria-label="Vista de cuadrícula"><Grid2X2/></button><button className={view==='list'?'active':''} onClick={()=>setView('list')} aria-label="Vista de lista"><List/></button><button className={view==='table'?'active':''} onClick={()=>setView('table')} aria-label="Vista de tabla" title="Tabla ordenable"><Table2/></button></div></div>
+    <div className="catalog-heading"><PageSize perPage={perPage} onPerPage={n=>{setPerPage(n);goToPage(1)}} count={list.length}/><p><b>{list.length}</b> resultados {q&&<>para “{q}”</>}{chips.map(f=><button key={f.key} className="catalog-chip" onClick={()=>f.key==='type'?setType(''):setFilter(f.key,'')}>{f.label}: {f.text} <X/></button>)}{chips.length>1&&<button className="catalog-chip is-clear" onClick={clearFilters}>Quitar filtros</button>}</p><div className="view-toggle"><button className={view==='grid'?'active':''} onClick={()=>setView('grid')} aria-label="Vista de cuadrícula"><Grid2X2/></button><button className={view==='list'?'active':''} onClick={()=>setView('list')} aria-label="Vista de lista"><List/></button><button className={view==='table'?'active':''} onClick={()=>setView('table')} aria-label="Vista de tabla" title="Tabla ordenable"><Table2/></button></div></div>
     {view==='grid'
       ?<div className={`record-grid${compactCards?' record-grid-compact':''}${kind==='peliculas'?' record-grid-poster':''}`}>{pagedList.map((r,i)=><RecordCard item={r} index={i} key={r.id}/>)}</div>
       :view==='list'?<div className="record-list">{pagedList.map((r,i)=><RecordRow item={r} index={i} key={r.id}/>)}</div>
@@ -96,7 +96,7 @@ export function ArchivePage({kind='archivo'}){
         </tr>)}</tbody>
       </table></div>}
     {!list.length&&<div className="no-results"><Search/><h3>No encontramos coincidencias.</h3><p>Prueba con otro término de búsqueda.</p><button onClick={()=>setParams({})}>Limpiar búsqueda</button></div>}
-    <Pager page={page} total={totalPages} onChange={goToPage} perPage={perPage} onPerPage={n=>{setPerPage(n);goToPage(1)}} count={list.length}/></section>
+    <Pager page={page} total={totalPages} onChange={goToPage}/></section>
   </main>
 }
 
@@ -271,7 +271,7 @@ export function CollectionsPage(){
   const v=(i,key,value,opts)=>on(i)?f(key,value,opts):value;
   // En el sitio, de a 8; en la vista previa del gestor se ven todas (se eligen desde su lista)
   const gridRef=useRef(null), paged=usePaged(list,edit?Math.max(list.length,1):null), offset=(paged.page-1)*paged.perPage;
-  return <main className="discovery-page"><HeroBanner id="colecciones"/><section className="collections-grid" data-reveal ref={gridRef}>{paged.items.map((c,k)=>{const i=edit?k:offset+k;return <Link to={`/archivo?collection=${encodeURIComponent(c.title)}`} className={`collection-card stagger-item${on(i)?' is-editing':''}`} style={{transitionDelay:`${k*80}ms`}} key={c.slug||i} onClick={edit&&!on(i)?ev=>{ev.preventDefault();edit.pick?.(i)}:undefined}><img src={c.image} alt="" loading="lazy" decoding="async"/><div className="collection-shade"/>{on(i)&&slot('image')}<span>{String(i+1).padStart(2,'0')}</span><h2>{v(i,'title',c.title)}</h2><p>{v(i,'description',c.description,{multiline:true})}</p><b style={tagStyle(c.color)}>{on(i)&&edit.count!=null?edit.count:countByCollection(c.title)} registros <ArrowRight/></b></Link>})}</section>{(paged.total>1||paged.count>25)&&<div className="page-pager"><Pager page={paged.page} total={paged.total} onChange={paged.setPage} scrollRef={gridRef} perPage={paged.perPage} onPerPage={paged.setPerPage} count={paged.count}/></div>}</main>;
+  return <main className="discovery-page"><HeroBanner id="colecciones"/>{!edit&&<div className="page-size-bar"><PageSize perPage={paged.perPage} onPerPage={paged.setPerPage} count={paged.count}/></div>}<section className="collections-grid" data-reveal ref={gridRef}>{paged.items.map((c,k)=>{const i=edit?k:offset+k;return <Link to={`/archivo?collection=${encodeURIComponent(c.title)}`} className={`collection-card stagger-item${on(i)?' is-editing':''}`} style={{transitionDelay:`${k*80}ms`}} key={c.slug||i} onClick={edit&&!on(i)?ev=>{ev.preventDefault();edit.pick?.(i)}:undefined}><img src={c.image} alt="" loading="lazy" decoding="async"/><div className="collection-shade"/>{on(i)&&slot('image')}<span>{String(i+1).padStart(2,'0')}</span><h2>{v(i,'title',c.title)}</h2><p>{v(i,'description',c.description,{multiline:true})}</p><b style={tagStyle(c.color)}>{on(i)&&edit.count!=null?edit.count:countByCollection(c.title)} registros <ArrowRight/></b></Link>})}</section>{(paged.total>1||paged.count>25)&&<div className="page-pager"><Pager page={paged.page} total={paged.total} onChange={paged.setPage} scrollRef={gridRef}/></div>}</main>;
 }
 
 export function TimelinePage(){
@@ -290,12 +290,13 @@ export function TimelinePage(){
     <HeroBanner id="linea"/>
     <section className="timeline-layout" data-reveal>
       <div className="timeline-spine" ref={spineRef}>
+        <PageSize perPage={paged.perPage} onPerPage={paged.setPerPage&&(n=>{paged.setPerPage(n);setPicked(0)})} count={paged.count} className="is-top"/>
         {paged.items.map((e,k)=>{const i=offset+k;return <button key={`${e.year}-${i}`} className={`timeline-entry${isActive(e,i)?' active':''} stagger-item`} style={{transitionDelay:`${(k%8)*50}ms`}} onClick={()=>edit?(i!==edit.index&&edit.pick?.(i)):pick(i)}>
           <span className="timeline-entry-year">{e.year}</span>
           <span className="timeline-entry-line"><span className="timeline-entry-dot"/></span>
           <span className="timeline-entry-body"><small>{e.type}</small><strong>{e.title}</strong></span>
         </button>})}
-        <Pager page={paged.page} total={paged.total} onChange={changePage} scrollRef={spineRef} className="is-compact" perPage={paged.perPage} onPerPage={paged.setPerPage&&(n=>{paged.setPerPage(n);setPicked(0)})} count={paged.count}/>
+        <Pager page={paged.page} total={paged.total} onChange={changePage} scrollRef={spineRef} className="is-compact"/>
       </div>
       <aside className="timeline-detail" ref={detailRef}>
         {active.image?<img key={active.image} src={active.image} alt={active.title||""} decoding="async"/>:<div className="timeline-detail-noimg"/>}
