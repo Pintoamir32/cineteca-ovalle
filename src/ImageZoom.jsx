@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
-/* Clic en cualquier imagen del sitio → se ve completa, sin recortar.
+/* Clic en una imagen de una ficha → se ve completa, sin recortar (en el resto del sitio no).
    No actúa sobre imágenes que son enlaces o botones (tarjetas, galerías con su propio visor),
    ni sobre el logo o íconos pequeños. Si hay una capa encima de la foto (sombreado de las
    portadas), se busca la imagen que está debajo del clic. */
@@ -15,7 +15,7 @@ const fullSize=src=>typeof src==='string'&&src.includes('images.unsplash.com')
 
 function imageAt(e){
   const t=e.target;
-  if(!(t instanceof Element)||t.closest(SKIP))return null;
+  if(!(t instanceof Element)||!t.closest('.ficha-page,.detail-page')||t.closest(SKIP))return null;
   // Sobre un texto no se abre nada (para poder seleccionarlo)
   if(t.tagName!=='IMG'&&t.textContent.trim())return null;
   const img=t.tagName==='IMG'?t:document.elementsFromPoint(e.clientX,e.clientY).find(el=>el.tagName==='IMG');
