@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, ImagePlus, Layers, Maximize2, Minimize2, Plus, RotateCcw, Star, Trash2, X } from 'lucide-react';
 import { heroSlides, homeContent, records, site } from '../data';
-import { HOME_SECTIONS, HomeEditContext, rich } from '../home';
+import { AUTO_SLIDES, HOME_SECTIONS, HomeEditContext, rich } from '../home';
 import { getPath, HERO_PAGES, heroPaths } from '../site-text';
 import { ArchivePage, CollectionsPage, MapPage, TimelinePage } from '../pages';
 import { SubmitPage } from '../submit';
@@ -39,11 +39,12 @@ function HomeImageButton({label,className,value,fallback,onChange,aspect}){
 
 const SLIDE_ORDERS=[['manual','Manual'],['azar','Al azar'],['recientes','Recientes'],['antiguas','Antiguas']];
 const SLIDE_ORDER_HELP={
-  manual:'Se muestran en el orden de la lista: cámbialo con las flechas de cada diapositiva.',
-  azar:'Cada visita ve las diapositivas en un orden distinto. Aquí se ven en el orden de la lista.',
-  recientes:'Primero las últimas diapositivas que se agregaron. Aquí se ven en el orden de la lista.',
-  antiguas:'Primero las diapositivas que se agregaron hace más tiempo. Aquí se ven en el orden de la lista.'
+  manual:'Muestra las diapositivas que armas aquí, en el orden de la lista (cámbialo con las flechas).',
+  azar:'Se llena solo con fichas del archivo que tengan imagen, distintas en cada visita.',
+  recientes:'Se llena solo con las fichas del archivo más recientes (según su año) que tengan imagen.',
+  antiguas:'Se llena solo con las fichas del archivo más antiguas (según su año) que tengan imagen.'
 };
+const SLIDE_COUNTS=[4,6,8,10];
 
 export function HomeEditor(){
   useStoreVersion();
@@ -73,7 +74,7 @@ export function HomeEditor(){
     clearLocal();setDirty(false);setNavDirty(false);toast('Inicio actualizado y publicado.');
   };
   const discard=async()=>{if(await confirm({title:'¿Descartar los cambios?',text:'El inicio volverá a su última versión guardada.',ok:'Descartar'})){setDraft(load());setDirty(false)}};
-  const restore=async()=>{if(await confirm({title:'¿Volver a los textos originales?',text:'Se reemplazan los textos, secciones y fichas elegidas del inicio y del pie de página por los originales. Las diapositivas no cambian. Podrás revisarlo antes de guardar.',ok:'Restablecer textos'})){setDraft(d=>({...originalHome(),slides:d.slides,slideOrder:d.slideOrder,featuredId:d.featuredId,about:d.about}));setDirty(true)}};
+  const restore=async()=>{if(await confirm({title:'¿Volver a los textos originales?',text:'Se reemplazan los textos, secciones y fichas elegidas del inicio y del pie de página por los originales. Las diapositivas no cambian. Podrás revisarlo antes de guardar.',ok:'Restablecer textos'})){setDraft(d=>({...originalHome(),slides:d.slides,slideOrder:d.slideOrder,slideCount:d.slideCount,featuredId:d.featuredId,about:d.about}));setDirty(true)}};
 
   // Lleva la vista previa hasta una sección
   const reveal=selector=>frameApi.current?.reveal(selector);
@@ -88,8 +89,8 @@ export function HomeEditor(){
 
   // Diapositivas: se agregan, ordenan y quitan en el borrador, y se publican con «Guardar»
   const selectSlide=i=>{setSlide(i);reveal('.hero-new')};
-  // Cada diapositiva nueva guarda su fecha, para ordenar el carrusel por recientes o antiguas
-  const addSlide=s=>{set('slides',[...draft.slides,{...s,createdAt:new Date().toISOString()}]);selectSlide(draft.slides.length)};
+  const addSlide=s=>{set('slides',[...draft.slides,s]);selectSlide(draft.slides.length)};
+  const autoCarousel=!!draft.slideOrder&&draft.slideOrder!=='manual';
   const moveSlide=d=>{const l=[...draft.slides],to=current+d;[l[current],l[to]]=[l[to],l[current]];set('slides',l);setSlide(to)};
   const removeSlide=async()=>{
     if(draft.slides.length<=1)return toast('El carrusel necesita al menos una diapositiva.','error');
@@ -102,9 +103,14 @@ export function HomeEditor(){
   // El panel sigue el orden de la página: cada sección con su ojo (mostrar u ocultar) y sus opciones
   const sections=[
     {id:'hero',label:'Portada · carrusel',selector:'.hero-new',body:<>
-      <label className="cms-panel-label">Orden en el sitio</label>
-      <div className="cms-segment is-small cms-seg-block cms-slide-order">{SLIDE_ORDERS.map(([k,l])=><button key={k} type="button" className={(draft.slideOrder||'manual')===k?'active':''} onClick={()=>set('slideOrder',k==='manual'?undefined:k)}>{l}</button>)}</div>
+      <label className="cms-panel-label">Qué muestra el carrusel</label>
+      <div className="cms-segment is-small cms-seg-block cms-slide-order">{SLIDE_ORDERS.map(([k,l])=><button key={k} type="button" className={(draft.slideOrder||'manual')===k?'active':''} onClick={()=>{set('slideOrder',k==='manual'?undefined:k);reveal('.hero-new')}}>{l}</button>)}</div>
       {help(SLIDE_ORDER_HELP[draft.slideOrder||'manual'])}
+      {autoCarousel?<>
+        <label className="cms-panel-label">Cuántas fichas</label>
+        <div className="cms-segment is-small cms-seg-block">{SLIDE_COUNTS.map(k=><button key={k} type="button" className={(draft.slideCount||AUTO_SLIDES)===k?'active':''} onClick={()=>set('slideCount',k===AUTO_SLIDES?undefined:k)}>{k}</button>)}</div>
+        {help('Los textos e imágenes salen de cada ficha: para cambiarlos, edita la ficha. Las diapositivas armadas a mano se guardan y vuelven a mostrarse si eliges «Manual».')}
+      </>:<>
       <div className="cms-slide-picker">{draft.slides.map((x,i)=><button key={i} type="button" className={i===current?'active':''} onClick={()=>selectSlide(i)} title={`${x.title.replace(/\n/g,' ')} ${x.em}`}>
         {x.image?<img src={thumb(x.image,200)} alt=""/>:<span className="cms-thumb-empty"/>}<b>{String(i+1).padStart(2,'0')}</b>
       </button>)}</div>
@@ -129,6 +135,7 @@ export function HomeEditor(){
         <label className="cms-panel-label">Descripción de la foto</label>
         <Editable className="cms-panel-edit" value={cs.alt} onChange={v=>set(`slides.${current}.alt`,v)} placeholder="Para lectores de pantalla" label="Descripción de la foto"/>
       </div>
+      </>}
     </>},
     {id:'search',body:<>
       <label className="cms-panel-label">Texto de ayuda dentro de la caja</label>
@@ -196,7 +203,7 @@ export function HomeEditor(){
         <button type="button" className={!real?'active':''} onClick={()=>setReal(false)}><Minimize2/> Ajustar al ancho</button>
         <button type="button" className={real?'active':''} onClick={()=>setReal(true)}><Maximize2/> Tamaño real</button>
       </div>
-      <span>Diapositiva {current+1} de {draft.slides.length}</span>
+      <span>{autoCarousel?"Carrusel automático":`Diapositiva ${current+1} de ${draft.slides.length}`}</span>
     </div>
     <HomeEditContext.Provider value={edit}>
       <SiteFrame className="is-home" apiRef={frameApi} real={real}/>

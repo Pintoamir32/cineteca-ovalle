@@ -4,7 +4,7 @@ import { ArrowDownRight, ArrowRight, BookOpen, CirclePlay, FileText, Film, Grid2
 import { tagStyle } from './color';
 import { Counter, SearchResults } from './components';
 import { collections, locations, sections, site } from './data';
-import { countByType, getAllRecords, newestRecords, recordPath } from './repository';
+import { autoSlides, countByType, getAllRecords, newestRecords, recordPath } from './repository';
 import { buildSearchIndex, matchIndex } from './search-index';
 import { SearchSelect } from './SearchSelect';
 import { filtersFor, optionsOf } from './filters';
@@ -29,24 +29,19 @@ const STAT_LINKS=[
 ];
 const TILE_LINKS=[['/colecciones',ArrowDownRight],['/linea-de-tiempo',ArrowDownRight],['/mapa',MapPin],['/nosotros',ArrowDownRight]];
 
-/* Orden del carrusel (se elige en el gestor). Las diapositivas sin fecha son las de antes de que
-   se guardara: cuentan como las más antiguas, en el orden de la lista. «Al azar» cambia en cada visita. */
-const SLIDE_SEED=Math.random();
-function orderSlides(list,order){
-  const items=list.map((s,i)=>({s,i,at:s.createdAt||''}));
-  if(order==='azar'){const key=x=>Math.sin((x.i+1)*12.9898+SLIDE_SEED*78.233)*43758.5453%1;return items.sort((a,b)=>key(a)-key(b)).map(x=>x.s)}
-  if(order==='recientes')return items.sort((a,b)=>b.at.localeCompare(a.at)||b.i-a.i).map(x=>x.s);
-  if(order==='antiguas')return items.sort((a,b)=>a.at.localeCompare(b.at)||a.i-b.i).map(x=>x.s);
-  return list;
-}
+// Cuántas fichas muestra el carrusel automático si no se eligió otra cantidad en el gestor
+export const AUTO_SLIDES=6;
 
 export function Home(){
   // t(): texto de la página; en el gestor se vuelve editable con un clic
   const {edit,content:c,t}=useSiteText();
+  // Carrusel: «Manual» usa las diapositivas armadas en el gestor; al azar, recientes o antiguas
+  // se llena solo con fichas del archivo (y sus textos no se editan en la vista previa)
+  const auto=['azar','recientes','antiguas'].includes(c.slideOrder), editable=edit&&!auto;
   // En el sitio no se muestran las diapositivas de fichas en borrador (en el gestor, sí)
   const visible=c.slides.filter(x=>!x.recordId||getAllRecords().some(r=>r.id===x.recordId));
-  // En el sitio se aplica el orden elegido en el gestor; en el gestor se ven en el orden de la lista
-  const slides=useMemo(()=>edit?c.slides:orderSlides(visible.length?visible:c.slides,c.slideOrder),[edit,c.slides,c.slideOrder]), featuredId=edit?c.featuredId:site.featuredId;
+  const autoList=useMemo(()=>auto?autoSlides(c.slideOrder,c.slideCount||AUTO_SLIDES):[],[auto,c.slideOrder,c.slideCount]);
+  const slides=auto&&autoList.length?autoList:edit||!visible.length?c.slides:visible, featuredId=edit?c.featuredId:site.featuredId;
   const show=id=>edit||!c.hidden?.includes(id);
   const sectionClass=id=>edit&&c.hidden?.includes(id)?' is-hidden-section':'';
   // En el gestor cada sección muestra su nombre al pasar el mouse
@@ -59,7 +54,7 @@ export function Home(){
   const [advType,setAdvType]=useState(''),[adv,setAdv]=useState({});
   // En el gestor la diapositiva visible la controla el panel lateral
   const [ownSlide,setOwnSlide]=useState(0),[paused,setPaused]=useState(false);
-  const slide=edit?edit.slide:ownSlide, setSlide=edit?edit.setSlide:setOwnSlide;
+  const slide=editable?edit.slide:ownSlide, setSlide=editable?edit.setSlide:setOwnSlide;
   const current=slides[Math.min(slide,slides.length-1)]||slides[0];
   useEffect(()=>{
     if(edit||paused||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
@@ -80,16 +75,16 @@ export function Home(){
   const latest=(c.latestIds?.length?c.latestIds.map(id=>allRecords.find(r=>r.id===id)).filter(Boolean):newestRecords());
   const s=i=>`slides.${Math.min(slide,slides.length-1)}.${i}`;
   // En el sitio puede faltar alguna diapositiva (de una ficha en borrador): los textos salen de la que se ve
-  const st=i=>edit?t(s(i)):rich(current[i]);
+  const st=i=>editable?t(s(i)):rich(current[i]);
 
   return <main className="home-page">
     <section className="hero-new" data-edit={edit?'Portada':undefined} onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)}>
       <div className="hero-photo" key={`photo-${slide}`}><img src={current.image} alt={current.alt} loading="eager" decoding="async"/><div className="photo-shade"/></div>
-      {edit&&edit.image(s('image'),{label:`Cambiar foto · diapositiva ${slide+1}`,className:'home-edit-hero-img',aspect:null})}
+      {editable&&edit.image(s('image'),{label:`Cambiar foto · diapositiva ${slide+1}`,className:'home-edit-hero-img',aspect:null})}
       <div className="hero-edition">{t('heroEdition')}</div>
       <div className="hero-title" key={`title-${slide}`}>
         <div className="eyebrow"><span>●</span> {st('eyebrow')}</div>
-        <h1>{st('title')}{(edit||current.em)&&<><br/>{edit?t(s('em'),{as:'em'}):<em>{current.em}</em>}</>}</h1>
+        <h1>{st('title')}{(editable||current.em)&&<><br/>{editable?t(s('em'),{as:'em'}):<em>{current.em}</em>}</>}</h1>
         <p>{st('desc')}</p>
       </div>
       <div className="hero-bottom-right">

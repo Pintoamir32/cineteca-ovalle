@@ -63,15 +63,5 @@ export const slideLinkOptions=()=>[
   ...records.map(r=>({value:`/ficha/${r.id}`,label:`Ficha · ${r.type} · ${r.title}`}))
 ];
 
-// Primera frase de la descripción, sin pasar de ~140 caracteres
-function lead(text=''){
-  const first=String(text).split(/(?<=[.!?])\s/)[0]||'';
-  return first.length<=140?first:`${first.slice(0,137).replace(/\s+\S*$/,'')}…`;
-}
-
-// Diapositiva armada con los datos de una ficha; sus textos se pueden ajustar después
-export const slideFromRecord=r=>({
-  eyebrow:`${r.type} · ${r.year}`.toUpperCase(),
-  title:r.title,em:r.subtitle||'',desc:lead(r.description),
-  image:r.image,alt:r.title,link:`/ficha/${r.id}`,recordId:r.id
-});
+// La diapositiva armada desde una ficha vive junto a los datos: el carrusel automático del sitio también la usa
+export { slideFromRecord } from '../repository';

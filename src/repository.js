@@ -128,3 +128,28 @@ export const pointsOf=extra=>(extra?.points||[]).filter(pt=>Number.isFinite(pt?.
 export function getMapPoints(){
   return getAllRecords().flatMap(r=>pointsOf(recordExtras[r.id]).map((pt,i)=>({...pt,key:`${r.id}-${i}`,record:r})));
 }
+
+// Primera frase de la descripción, sin pasar de ~140 caracteres
+function lead(text=''){
+  const first=String(text).split(/(?<=[.!?])\s/)[0]||'';
+  return first.length<=140?first:`${first.slice(0,137).replace(/\s+\S*$/,'')}…`;
+}
+
+// Diapositiva armada con los datos de una ficha; sus textos se pueden ajustar después
+export const slideFromRecord=r=>({
+  eyebrow:[r.type,r.year].filter(Boolean).join(' · ').toUpperCase(),
+  title:r.title,em:r.subtitle||'',desc:lead(r.description),
+  image:r.image,alt:r.title,link:`/ficha/${r.id}`,recordId:r.id
+});
+
+/* Carrusel automático del inicio: fichas publicadas con imagen, al azar (distinto en cada visita),
+   las más recientes o las más antiguas según su año. Las que no tienen año van al final. */
+const CAROUSEL_SEED=Math.random();
+const yearOf=r=>Number((/\d{4}/.exec(r.year||'')||[])[0])||null;
+export function autoSlides(order,count=6){
+  const pool=getAllRecords().filter(r=>r.image);
+  let list;
+  if(order==='azar'){const key=r=>Math.abs(Math.sin((r.id+1)*12.9898+CAROUSEL_SEED*78.233)*43758.5453)%1;list=[...pool].sort((a,b)=>key(a)-key(b))}
+  else{const dir=order==='antiguas'?1:-1;list=[...pool].sort((a,b)=>{const x=yearOf(a),y=yearOf(b);if(x===y)return dir*(a.id-b.id);if(!x)return 1;if(!y)return -1;return dir*(x-y)})}
+  return list.slice(0,count).map(r=>({...slideFromRecord(r),link:recordPath(r)}));
+}
