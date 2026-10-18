@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { AlertCircle, Inbox, Info, PanelsTopLeft, ArrowLeft, ArrowUpRight, BookOpen, CalendarRange, Check, CircleCheck, CircleHelp, Database, LogOut, UserPlus, Download, ExternalLink, Eye, EyeOff, FileText, Film, Home, Layers, LayoutDashboard, MapPin, Menu, Mic2, Palette, Plus, RotateCcw, Save, Search, Trash2, Upload, UserRound, Users, X } from 'lucide-react';
+import { AlertCircle, ChartColumn, Inbox, Info, PanelsTopLeft, ArrowLeft, ArrowUpRight, BookOpen, CalendarRange, Check, CircleCheck, CircleHelp, Database, LogOut, UserPlus, Download, ExternalLink, Eye, EyeOff, FileText, Film, Home, Layers, LayoutDashboard, MapPin, Menu, Mic2, Palette, Plus, RotateCcw, Save, Search, Trash2, Upload, UserRound, Users, X } from 'lucide-react';
 import { collections, heroSlides, locations, recordExtras, records, timelineEvents } from '../data';
 import { contentHistory, emptyArchive, exportData, getLastSaved, hydrate, importData, newVersionAvailable, resetData, restoreVersion, saveError, setRecordPublished, useStoreVersion } from '../store';
 import { tagStyle } from '../color';
@@ -18,6 +18,7 @@ import { TOURS, Tour, takeLegacySeen, tourViewOf } from './Tour';
 import { ThemeEditor } from './ThemeEditor';
 import { SubmissionsPage, listSubmissions } from './Submissions';
 import { TrashPage } from './Trash';
+import { StatsPage } from './Stats';
 import './admin.css';
 
 const TYPE_ICONS={Película:Film,Persona:UserRound,Prensa:FileText,Entrevista:Mic2,Artículo:BookOpen};
@@ -132,6 +133,7 @@ function AdminShell({session,onLogout}){
         <div className="cms-side-drawer">
         <nav className="cms-side-nav" aria-label="Secciones del gestor">
           {item('',LayoutDashboard,'Resumen')}
+          {item('estadisticas',ChartColumn,'Estadísticas')}
           {group('Archivo',TYPES.map(t=>item(`registros/${TYPE_META[t].slug}`,TYPE_ICONS[t],TYPE_META[t].label,records.filter(r=>r.type===t).length)))}
           {group('Recepción',item('inscripciones',Inbox,'Inscripciones',newSubs||undefined))}
           {group('Organizar el archivo',<>
@@ -185,6 +187,7 @@ function AdminShell({session,onLogout}){
           <Route path="comunas" element={<LocationList/>}/>
           <Route path="comunas/:index" element={<LocationEditor/>}/>
           <Route path="inscripciones" element={<SubmissionsPage/>}/>
+          <Route path="estadisticas" element={<StatsPage/>}/>
           <Route path="usuarios" element={<UsersPage session={session}/>}/>
           <Route path="respaldo" element={<Backup/>}/>
           <Route path="papelera" element={<TrashPage/>}/>

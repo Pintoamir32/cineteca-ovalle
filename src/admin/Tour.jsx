@@ -16,7 +16,7 @@ export function tourViewOf(path){
   if(a==='colecciones')return 'colecciones';
   if(a==='linea-de-tiempo')return 'linea';
   if(a==='comunas')return b?'comuna':'comunas';
-  return {inicio:'inicio',colores:'colores',respaldo:'respaldo',usuarios:'usuarios',papelera:'papelera'}[a]||'dashboard';
+  return {inicio:'inicio',colores:'colores',respaldo:'respaldo',usuarios:'usuarios',papelera:'papelera',estadisticas:'estadisticas'}[a]||'dashboard';
 }
 
 // Antes las pantallas vistas se guardaban en el navegador; se leen una vez para pasarlas a la base de datos
@@ -106,6 +106,12 @@ export const TOURS={
     {target:'.cms-head',title:'Usuarios',text:'Aquí están todas las personas que pueden entrar al gestor y editar el sitio.'},
     {target:'.cms-head-actions',title:'Nuevo usuario',text:'Crea una cuenta con nombre, usuario y una contraseña inicial. Dale esos datos a la persona: después puede cambiar su contraseña desde «Mi cuenta».'},
     {target:'.cms-table',title:'Cada cuenta',text:'El lápiz cambia el nombre o el usuario. La llave pone una contraseña nueva (útil si alguien la olvidó) y cierra sus sesiones abiertas. El basurero elimina la cuenta; no puedes eliminar la tuya y siempre queda al menos una.'}
+  ],
+  estadisticas:[
+    {target:'.cms-head',title:'Estadísticas',text:'Muestra qué se ve en el sitio público: visitas, fichas, secciones y búsquedas. Tus visitas y las de otras cuentas del gestor no cuentan.'},
+    {target:'.cms-stats .cms-segment',title:'Período',text:'Elige si quieres ver lo de hoy, los últimos 7 o 30 días, el último año o todo desde que se empezó a contar.'},
+    {target:'.cms-stat-grid',title:'Qué interesa',text:'Las fichas más vistas, las secciones que más interesan, lo que la gente busca (y lo que busca y no encuentra), desde qué dispositivo y de dónde llega.'},
+    {target:'.cms-stats .cms-section',title:'Todas las fichas',text:'Ordena todas las fichas por las más o las menos vistas. Haz clic en una para abrirla en el editor.'}
   ],
   papelera:[
     {target:'.cms-head',title:'Papelera',text:'Nada de lo que se elimina en el gestor se borra de verdad: fichas, colecciones, hitos, comunas, cuentas e inscripciones quedan aquí.'},

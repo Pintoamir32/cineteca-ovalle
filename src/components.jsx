@@ -5,7 +5,8 @@ import { buildSearchIndex, matchIndex } from './search-index';
 import { useRevealScan } from './reveal';
 import { useSiteText } from './site-text';
 import { tagStyle } from './color';
-import { recordPath } from './repository';
+import { findRecordByParam, recordPath, recordSlug } from './repository';
+import { track, trackVisit } from './stats';
 import { LogoMark } from './Logo';
 import { ImageZoom } from './ImageZoom';
 import { AccessibilityWidget } from './accessibility';
@@ -122,6 +123,13 @@ export function Layout(){
   const location=useLocation();
   useEffect(()=>{window.scrollTo({top:0,left:0,behavior:'instant'})},[location.pathname]);
   useRevealScan(location.pathname);
+  // Estadísticas: cada página o ficha que se abre (las fichas por su número, así no cambian si cambia el título)
+  useEffect(()=>{
+    trackVisit();
+    const path=location.pathname.replace(/\/+$/,'')||'/', ficha=/^\/ficha\/([^/]+)$/.exec(path);
+    if(ficha){const r=findRecordByParam(decodeURIComponent(ficha[1]));if(r&&recordSlug(r)===ficha[1])track(`ficha:${r.id}`)}// por número se redirige a su nombre: cuenta una vez
+    else track(`page:${path}`);
+  },[location.pathname]);
   return <><div className="site"><ScrollProgress/><Topbar/><div className="route-view" key={location.pathname}><Outlet/></div><Footer/><ImageZoom/></div><AccessibilityWidget/></>
 }
 

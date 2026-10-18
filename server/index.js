@@ -284,6 +284,42 @@ api.put('/submissions/:id',needUser,async(req,res)=>{
 });
 api.delete('/submissions/:id',needUser,async(req,res)=>{await db.deleteSubmission(req.params.id);res.json({ok:true})});
 
+/* ---------- Estadísticas de visitas ----------
+   El sitio público avisa qué se ve (páginas, fichas, búsquedas, colecciones, dispositivo y de dónde
+   llega la visita). No se guarda nada de la persona: solo contadores por día. Las visitas de quien
+   tiene sesión en el gestor y las de robots no cuentan. Se juntan en memoria y se guardan cada 20 s. */
+const STAT_KEY=/^(visita|(page|ficha|search|nores|coleccion|device|source):[^\n]{1,140})$/;
+const BOT=/bot|crawl|spider|slurp|preview|facebookexternalhit|headless|lighthouse|monitor|curl|wget|python|axios|node-fetch/i;
+const statDay=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago'}).format(new Date());// AAAA-MM-DD, hora de Chile
+let pendingStats=new Map();
+const statHits=new Map();// vistas por dirección en la última hora: frena a quien quiera inflar los números
+async function flushStats(){
+  if(!pendingStats.size)return;
+  const rows=[...pendingStats.values()];pendingStats=new Map();
+  try{await db.addStats(rows)}catch(err){console.error('[cineteca] no se pudieron guardar las estadísticas',err.code||err.message)}
+}
+setInterval(flushStats,20e3).unref();
+api.post('/stats/hit',async(req,res)=>{
+  res.json({ok:true});
+  if(BOT.test(req.headers['user-agent']||''))return;
+  try{if(await sessionUser(req))return}catch{/* sin base de datos: igual se cuenta */}
+  const hits=(Array.isArray(req.body.hits)?req.body.hits:[]).slice(0,20)
+    .map(h=>({k:String(h?.k||'').trim().slice(0,160),u:!!h?.u})).filter(h=>STAT_KEY.test(h.k));
+  const ip=req.ip, now=Date.now(), seen=statHits.get(ip), recent=seen&&now-seen.at<3600e3?seen.n:0;
+  if(recent+hits.length>600)return;
+  statHits.set(ip,{n:recent+hits.length,at:recent?seen.at:now});
+  const day=statDay();
+  for(const {k,u} of hits){const id=`${day}|${k}`, row=pendingStats.get(id)||[day,k,0,0];row[2]++;if(u)row[3]++;pendingStats.set(id,row)}
+});
+setInterval(()=>{const now=Date.now();for(const [ip,s] of statHits)if(now-s.at>3600e3)statHits.delete(ip)},3600e3).unref();
+// Los últimos `days` días (0 = desde el principio)
+api.get('/stats',needUser,async(req,res)=>{
+  await flushStats();
+  const days=Math.max(0,Math.min(3660,Number(req.query.days)||0));
+  const from=days?new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago'}).format(new Date(Date.now()-(days-1)*864e5)):'2000-01-01';
+  res.json({rows:await db.stats(from),today:statDay(),from});
+});
+
 /* Contenido: un solo documento con todo lo editable del sitio.
    Quien no inició sesión no recibe las fichas en borrador. */
 api.get('/content',async(req,res)=>{
@@ -389,3 +425,5 @@ if(PROD){
 
 app.listen(PORT,()=>console.log(`[cineteca] listo en http://localhost:${PORT}`));
 setInterval(()=>db.purgeSessions().catch(()=>{}),6*3600e3).unref();
+// Al reiniciar (por ejemplo, con un despliegue nuevo) se guardan las visitas que estaban en memoria
+for(const sig of ['SIGTERM','SIGINT'])process.once(sig,()=>flushStats().finally(()=>process.exit(0)));

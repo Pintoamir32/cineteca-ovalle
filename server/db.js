@@ -40,6 +40,10 @@ const TABLES=[
   // Obras inscritas desde el sitio («Inscribe tu obra»); se revisan en el gestor
   `CREATE TABLE IF NOT EXISTS cms_submissions(
     id CHAR(24) PRIMARY KEY, data TEXT NOT NULL, status VARCHAR(20) NOT NULL, created_at DATETIME NOT NULL, INDEX(created_at)
+  ) CHARACTER SET utf8mb4`,
+  // Estadísticas de visitas: un contador por día y por cosa vista (página, ficha, búsqueda…)
+  `CREATE TABLE IF NOT EXISTS cms_stats(
+    day DATE NOT NULL, k VARCHAR(160) NOT NULL, views INT NOT NULL DEFAULT 0, uniques INT NOT NULL DEFAULT 0, PRIMARY KEY(day,k)
   ) CHARACTER SET utf8mb4`
 ];
 
@@ -114,7 +118,10 @@ async function mysqlStore(){
     deletedSubmissions:async()=>(await pool.query(`SELECT id,data,status,created_at AS createdAt FROM cms_submissions WHERE status='eliminada' ORDER BY created_at DESC`))[0].map(r=>({id:r.id,status:r.status,createdAt:new Date(r.createdAt).toISOString(),...JSON.parse(r.data)})),
     setSubmissionStatus:(id,status)=>pool.query('UPDATE cms_submissions SET status=? WHERE id=?',[status,id]),
     // Una inscripción eliminada desaparece del gestor pero sigue en la base de datos
-    deleteSubmission:id=>pool.query("UPDATE cms_submissions SET status='eliminada' WHERE id=?",[id])
+    deleteSubmission:id=>pool.query("UPDATE cms_submissions SET status='eliminada' WHERE id=?",[id]),
+    // rows: [[día, clave, vistas, únicos], …]
+    addStats:rows=>rows.length&&pool.query('INSERT INTO cms_stats(day,k,views,uniques) VALUES ? ON DUPLICATE KEY UPDATE views=views+VALUES(views),uniques=uniques+VALUES(uniques)',[rows]),
+    stats:async from=>(await pool.query("SELECT DATE_FORMAT(day,'%Y-%m-%d') AS day,k,views,uniques FROM cms_stats WHERE day>=? ORDER BY day",[from]))[0]
   };
 }
 
@@ -167,7 +174,16 @@ async function fileStore(){
     submissions:async()=>(await read('submissions',[])).filter(x=>x.status!=='eliminada'),
     deletedSubmissions:async()=>(await read('submissions',[])).filter(x=>x.status==='eliminada'),
     setSubmissionStatus:async(id,status)=>write('submissions',(await read('submissions',[])).map(x=>x.id===id?{...x,status}:x)),
-    deleteSubmission:async id=>write('submissions',(await read('submissions',[])).map(x=>x.id===id?{...x,status:'eliminada'}:x))
+    deleteSubmission:async id=>write('submissions',(await read('submissions',[])).map(x=>x.id===id?{...x,status:'eliminada'}:x)),
+    // En stats.json: { "2026-10-18": { "ficha:12": [vistas, únicos] } }
+    addStats:async rows=>{
+      if(!rows.length)return;
+      const s=await read('stats',{});
+      for(const [day,k,v,u] of rows){const d=s[day]||={}, c=d[k]||=[0,0];c[0]+=v;c[1]+=u}
+      await write('stats',s);
+    },
+    stats:async from=>Object.entries(await read('stats',{})).filter(([day])=>day>=from).sort(([a],[b])=>a.localeCompare(b))
+      .flatMap(([day,d])=>Object.entries(d).map(([k,[views,uniques]])=>({day,k,views,uniques})))
   };
 }
 

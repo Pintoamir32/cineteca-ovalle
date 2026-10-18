@@ -1,6 +1,7 @@
 import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpDown, CalendarDays, CirclePlay, Clapperboard, Clock, Film, Grid2X2, List, MapPin, Ruler, Search, Settings2, Table2, X } from 'lucide-react';
+import { searchTerm, track } from './stats';
 import { Counter, PageSize, Paged, Pager, RecordCard, RecordRow, usePaged, usePageSize } from './components';
 import { collections, locations, recordExtras, sections, timelineEvents } from './data';
 import { countByCollection, countByLocation, countByType, getAllRecords, getMapPoints, pointsOf, getFilmPeople, getFilmography, getLocations, getRecordPeople, interviewFormat, placesOf, findPerson, findRecordByParam, recordPath, recordSlug } from './repository';
@@ -77,6 +78,10 @@ export function ArchivePage({kind='archivo'}){
   const active=[...defs,...LINK_FACETS].map(f=>({...f,value:params.get(f.key)||''})).filter(f=>f.value);
   const activeSig=active.map(f=>`${f.key}=${f.value}`).join('&');
   const list=useMemo(()=>{const filtered=scoped.filter(r=>active.every(f=>matches(r,f,f.value))&&searchText(r).includes(fold(q)));return reverseOrder?filtered.reverse():filtered},[q,scoped,activeSig,reverseOrder]);// eslint-disable-line react-hooks/exhaustive-deps
+  // Estadísticas: la búsqueda cuenta cuando se deja de escribir (y se anota si no encontró nada); también la colección elegida
+  const term=searchTerm(q), noResults=!list.length, collection=params.get('collection')||'';
+  useEffect(()=>{if(term.length<2)return;const t=setTimeout(()=>{track(`search:${term}`);if(noResults)track(`nores:${term}`)},1500);return()=>clearTimeout(t)},[term]);// eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(()=>{if(collection)track(`coleccion:${collection}`)},[collection]);
   // Todos los filtros de la sección se muestran siempre; los que aún no tienen datos quedan desactivados
   const panelFilters=useMemo(()=>defs.map(f=>({...f,options:optionsOf(f,scoped)})),[defs,scoped]);
   const chips=[...(recordType?[{key:'type',label:'Tipo',text:recordType}]:[]),...active.map(f=>({key:f.key,label:f.label,text:valueLabel(f,f.value)}))];
