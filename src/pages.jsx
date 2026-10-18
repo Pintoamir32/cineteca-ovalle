@@ -67,10 +67,10 @@ function tableColumns(kind){
   }
 }
 
-/* Orden de las secciones del archivo: películas y personas parten al azar; prensa, entrevistas y
+/* Orden de las secciones del archivo: el archivo completo, películas y personas parten al azar; prensa, entrevistas y
    artículos, por las más recientes. «Al azar» se mezcla una vez por visita (así las páginas no se
    repiten al avanzar); el año es el primero que aparece (en personas, el de nacimiento). */
-const DEFAULT_ORDER={peliculas:'azar',personas:'azar',prensa:'recientes',entrevistas:'recientes',articulos:'recientes'};
+const DEFAULT_ORDER={archivo:'azar',peliculas:'azar',personas:'azar',prensa:'recientes',entrevistas:'recientes',articulos:'recientes'};
 const ORDERS=[['azar','Al azar'],['recientes','Recientes'],['antiguas','Más antiguas']];
 const SEED_KEY='cdo-orden-azar';
 const newShuffleSeed=()=>{const s=Math.floor(Math.random()*1e9);try{sessionStorage.setItem(SEED_KEY,String(s))}catch{/* sin almacenamiento */}return s};
