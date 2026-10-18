@@ -147,6 +147,10 @@ function RecordEditorInner(){
     <PanelBlock title="Estado de la ficha" aside={<b className={miss.length?'cms-count-warn':'cms-count-ok'}>{miss.length?`${miss.length} pendiente${miss.length>1?'s':''}`:'Completa'}</b>}>
       <ul className="cms-checklist">{checklist.map(k=><li key={k} className={miss.includes(k)?'':'done'}>{miss.includes(k)?<Circle/>:<Check/>}{checkName(k)}{REQUIRED.includes(k)&&miss.includes(k)&&<small>obligatorio para guardar</small>}{k==='Descripción'&&miss.includes(k)&&<small>mín. 40 caracteres</small>}</li>)}</ul>
     </PanelBlock>
+    {mode==='ficha'&&<PanelBlock title="Tamaño de letra">
+      {fz.active?<FontSizeBar fz={fz} e={e} setE={setE} onClose={()=>setFz({active:false})}/>
+        :<button type="button" className="cms-btn is-block" onClick={()=>setFz({active:true})}><ALargeSmall/> Cambiar tamaño de letra</button>}
+    </PanelBlock>}
     {isPerson?<><PersonWorks r={r} e={e} setE={setE} openPicker={edit.open}/></>:isPress?<PressPanel r={r} e={e} setR={setR} setE={setE} openPicker={edit.open}/>
       :isInterview?<InterviewPanel r={r} e={e} setR={setR} setE={setE} openPicker={edit.open}/>
       :isArticle?<ArticlePanel r={r} e={e} setR={setR} setE={setE} openPicker={edit.open}/>:<>
@@ -174,9 +178,7 @@ function RecordEditorInner(){
     hint="Es la ficha real del sitio: clic en cualquier texto para reescribirlo. Las listas (cargos, galería, relacionados y territorios) se manejan en el panel de la derecha.">
     <div className="cms-frame-tools">
       <div className="cms-segment is-small cms-mode">{[['ficha','Ficha completa'],['tarjeta','Tarjeta y lista']].map(([k,l])=><button key={k} type="button" className={mode===k?'active':''} onClick={()=>setMode(k)}>{l}</button>)}</div>
-      {mode==='ficha'&&<button type="button" className={`cms-btn is-small${fz.active?' is-primary':''}`} aria-pressed={fz.active} onClick={()=>setFz(x=>({active:!x.active}))}><ALargeSmall/> {fz.active?'Listo con el tamaño de letra':'Tamaño de letra'}</button>}
     </div>
-    {mode==='ficha'&&fz.active&&<FontSizeBar fz={fz} e={e} setE={setE} onClose={()=>setFz({active:false})}/>}
     {mode==='ficha'?<HomeEditContext.Provider value={shared.context}><EditContext.Provider value={{...edit.context,fz:{...fz,pick:(key,label)=>setFz(x=>({...x,selected:key,label}))}}}>
       <SiteFrame className="is-record" path={`/${r.slug}`}>
         <RecordDetail item={{...r,image:r.image||BLANK}} extra={e}/>
@@ -188,25 +190,25 @@ function RecordEditorInner(){
 
 const BLANK='data:image/gif;base64,R0lGODlhAQABAAAAACw=';
 
-/* Tamaño de letra: con el modo activo, un clic en cualquier texto de la ficha lo elige y aquí se agranda o achica.
+/* Tamaño de letra (en el panel derecho): con el modo activo, un clic en cualquier texto de la ficha lo elige y aquí se agranda o achica.
    Se guarda en extra.fontScale ({clave del texto: escala}); 100 % no se guarda */
 const FZ_MIN=.6, FZ_MAX=2, FZ_STEP=.1;
 function FontSizeBar({fz,e,setE,onClose}){
   const scales=e.fontScale||{}, value=fz.selected?scales[fz.selected]||1:1;
   const changed=Object.keys(scales).length;
   const set=v=>{const next={...scales};const n=Math.round(Math.min(FZ_MAX,Math.max(FZ_MIN,v))*10)/10;if(n===1)delete next[fz.selected];else next[fz.selected]=n;setE({fontScale:Object.keys(next).length?next:undefined})};
-  return <div className="cms-fz-bar" role="group" aria-label="Tamaño de letra">
+  return <div className="cms-fz-panel" role="group" aria-label="Tamaño de letra">
     {fz.selected?<>
       <span className="cms-fz-name"><small>Texto elegido</small><strong>{fz.label||fz.selected}</strong></span>
-      <button type="button" className="cms-icon-btn" onClick={()=>set(value-FZ_STEP)} disabled={value<=FZ_MIN} aria-label="Achicar" title="Achicar">A−</button>
-      <output aria-live="polite">{Math.round(value*100)}%</output>
-      <button type="button" className="cms-icon-btn" onClick={()=>set(value+FZ_STEP)} disabled={value>=FZ_MAX} aria-label="Agrandar" title="Agrandar">A+</button>
-      {value!==1&&<button type="button" className="cms-btn is-ghost is-small" onClick={()=>set(1)}><RotateCcw/> 100 %</button>}
+      <div className="cms-fz-steps">
+        <button type="button" className="cms-icon-btn" onClick={()=>set(value-FZ_STEP)} disabled={value<=FZ_MIN} aria-label="Achicar" title="Achicar">A−</button>
+        <output aria-live="polite">{Math.round(value*100)}%</output>
+        <button type="button" className="cms-icon-btn" onClick={()=>set(value+FZ_STEP)} disabled={value>=FZ_MAX} aria-label="Agrandar" title="Agrandar">A+</button>
+      </div>
+      {value!==1&&<button type="button" className="cms-btn is-ghost is-small is-block" onClick={()=>set(1)}><RotateCcw/> Volver a 100 %</button>}
     </>:<span className="cms-fz-name"><strong>Haz clic en cualquier texto de la ficha</strong><small>Luego agrándalo o achícalo aquí. Cada texto tiene su propio tamaño.</small></span>}
-    <span className="cms-fz-end">
-      {changed>0&&<button type="button" className="cms-btn is-ghost is-small" onClick={()=>setE({fontScale:undefined})} title="Todos los textos vuelven a su tamaño original">Restablecer todo · {changed}</button>}
-      <button type="button" className="cms-btn is-small is-primary" onClick={onClose}><Check/> Listo</button>
-    </span>
+    {changed>0&&<button type="button" className="cms-btn is-ghost is-small is-block" onClick={()=>setE({fontScale:undefined})} title="Todos los textos vuelven a su tamaño original">Restablecer todo · {changed}</button>}
+    <button type="button" className="cms-btn is-primary is-block" onClick={onClose}><Check/> Listo</button>
   </div>;
 }
 
