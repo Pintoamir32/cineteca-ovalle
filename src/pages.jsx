@@ -67,6 +67,23 @@ function tableColumns(kind){
   }
 }
 
+/* Orden de las secciones del archivo: películas y personas parten al azar; prensa, entrevistas y
+   artículos, por las más recientes. «Al azar» se mezcla una vez por visita (así las páginas no se
+   repiten al avanzar); el año es el primero que aparece (en personas, el de nacimiento). */
+const DEFAULT_ORDER={peliculas:'azar',personas:'azar',prensa:'recientes',entrevistas:'recientes',articulos:'recientes'};
+const ORDERS=[['azar','Al azar'],['recientes','Recientes'],['antiguas','Más antiguas']];
+const SEED_KEY='cdo-orden-azar';
+const newShuffleSeed=()=>{const s=Math.floor(Math.random()*1e9);try{sessionStorage.setItem(SEED_KEY,String(s))}catch{/* sin almacenamiento */}return s};
+const shuffleSeed=()=>{try{const s=Number(sessionStorage.getItem(SEED_KEY));if(s)return s}catch{/* sin almacenamiento */}return newShuffleSeed()};
+const mix=(id,seed)=>{let h=(seed^Math.imul(Number(id)+1,2654435761))>>>0;h=Math.imul(h^(h>>>16),2246822507)>>>0;return (h^(h>>>13))>>>0};
+const firstYear=r=>Number((/\d{4}/.exec(r.year||'')||[])[0])||null;
+function orderRecords(list,order,seed){
+  if(order==='azar')return [...list].sort((a,b)=>mix(a.id,seed)-mix(b.id,seed));
+  const dir=order==='recientes'?-1:1;
+  // Los que no tienen año van al final
+  return [...list].sort((a,b)=>{const x=firstYear(a),y=firstYear(b);if(x===y)return dir*(a.id-b.id);if(!x)return 1;if(!y)return -1;return dir*(x-y)});
+}
+
 export function ArchivePage({kind='archivo'}){
   const [params,setParams]=useSearchParams(), [showFilters,setShowFilters]=useState(false); const hero=useHero(kind), section=sections.find(s=>s.slug===kind); const q=params.get('q')||'';
   const recordType=section?'':params.get('type')||'';
@@ -77,7 +94,18 @@ export function ArchivePage({kind='archivo'}){
   const scoped=useMemo(()=>getAllRecords().filter(r=>(!section||r.type===section.type)&&(!recordType||r.type===recordType)),[section,recordType]);
   const active=[...defs,...LINK_FACETS].map(f=>({...f,value:params.get(f.key)||''})).filter(f=>f.value);
   const activeSig=active.map(f=>`${f.key}=${f.value}`).join('&');
-  const list=useMemo(()=>{const filtered=scoped.filter(r=>active.every(f=>matches(r,f,f.value))&&searchText(r).includes(fold(q)));return reverseOrder?filtered.reverse():filtered},[q,scoped,activeSig,reverseOrder]);// eslint-disable-line react-hooks/exhaustive-deps
+  // Secciones: al azar, recientes o más antiguas, según el año (cada una parte con su orden propio)
+  const orderable=!!DEFAULT_ORDER[kind], order=orderable&&ORDERS.some(([k])=>k===params.get('ordenar'))?params.get('ordenar'):DEFAULT_ORDER[kind]||'azar';
+  const [seed,setSeed]=useState(shuffleSeed);
+  const list=useMemo(()=>{
+    const filtered=scoped.filter(r=>active.every(f=>matches(r,f,f.value))&&searchText(r).includes(fold(q)));
+    if(orderable)return orderRecords(filtered,order,seed);
+    return reverseOrder?filtered.reverse():filtered;
+  },[q,scoped,activeSig,reverseOrder,orderable,order,seed]);// eslint-disable-line react-hooks/exhaustive-deps
+  const setOrder=k=>{
+    if(k==='azar'&&order==='azar'){const s=newShuffleSeed();setSeed(s)}// otra vez «Al azar»: se vuelve a mezclar
+    const next=new URLSearchParams(params);k===DEFAULT_ORDER[kind]?next.delete('ordenar'):next.set('ordenar',k);next.delete('page');setParams(next);
+  };
   // Estadísticas: la búsqueda cuenta cuando se deja de escribir (y se anota si no encontró nada); también la colección elegida
   const term=searchTerm(q), noResults=!list.length, collection=params.get('collection')||'';
   useEffect(()=>{if(term.length<2)return;const t=setTimeout(()=>{track(`search:${term}`);if(noResults)track(`nores:${term}`)},1500);return()=>clearTimeout(t)},[term]);// eslint-disable-line react-hooks/exhaustive-deps
@@ -104,14 +132,14 @@ export function ArchivePage({kind='archivo'}){
   const update=e=>{const v=e.target.value,next=new URLSearchParams(params);v?next.set('q',v):next.delete('q');next.delete('page');setParams(next)};
   const setFilter=(key,value)=>{const next=new URLSearchParams(params);value?next.set(key,value):next.delete(key);next.delete('page');setParams(next)};
   // Al cambiar de tipo en el archivo completo se quitan los filtros que eran de otro tipo
-  const setType=value=>{const next=new URLSearchParams();for(const k of ['q','view','orden','dir'])params.get(k)&&next.set(k,params.get(k));value&&next.set('type',value);setParams(next)};
-  const clearFilters=()=>{const next=new URLSearchParams();for(const k of ['q','view','orden','dir'])params.get(k)&&next.set(k,params.get(k));setParams(next)};
+  const setType=value=>{const next=new URLSearchParams();for(const k of ['q','view','orden','dir','ordenar'])params.get(k)&&next.set(k,params.get(k));value&&next.set('type',value);setParams(next)};
+  const clearFilters=()=>{const next=new URLSearchParams();for(const k of ['q','view','orden','dir','ordenar'])params.get(k)&&next.set(k,params.get(k));setParams(next)};
   const setView=v=>{const next=new URLSearchParams(params);v==='grid'?next.delete('view'):next.set('view',v);setParams(next)};
   const headerCount=section?countByType(section.type):getAllRecords().length;
   return <main className="catalog-page"><section className="page-hero"><img src={hero.image} alt=""/>{hero.imageButton}<div className="page-hero-shade"/><div><span>{hero.kicker}</span><h1>{hero.title}</h1><p>{hero.text}</p></div><b><Counter value={headerCount} pad={3}/><small>REGISTROS</small></b></section>
     <section className="catalog-content" data-reveal><div className="catalog-tools"><div className="catalog-search"><Search/><input value={q} onChange={update} placeholder={kind==='peliculas'?'Buscar por título, director o persona…':`Buscar en ${hero.plainTitle.toLowerCase()}…`}/>{q&&<button onClick={()=>{const next=new URLSearchParams(params);next.delete('q');next.delete('page');setParams(next)}} aria-label="Borrar búsqueda"><X/></button>}</div><button className="filter-toggle" onClick={()=>setShowFilters(!showFilters)} aria-expanded={showFilters}><Settings2/> Filtros{chips.length>0&&<b className="filter-count">{chips.length}</b>}</button></div>
     {showFilters&&<div className="filter-panel filter-panel-wide">{!section&&<SearchSelect label="Tipo de registro" value={recordType} onChange={setType} options={[{value:'',label:'Todos los tipos'},...sections.map(x=>({value:x.type,label:`${x.type} (${countByType(x.type)})`}))]}/>}{panelFilters.map(f=><SearchSelect key={f.key} label={f.label} value={params.get(f.key)||''} onChange={v=>setFilter(f.key,v)} disabled={!f.options.length} options={[{value:'',label:f.options.length?'Todos':'Sin datos todavía'},...f.options]}/>)}</div>}
-    <div className="catalog-heading"><PageSize perPage={perPage} onPerPage={n=>{setPerPage(n);goToPage(1)}} count={list.length}/><p><b>{list.length}</b> resultados {q&&<>para “{q}”</>}{chips.map(f=><button key={f.key} className="catalog-chip" onClick={()=>f.key==='type'?setType(''):setFilter(f.key,'')}>{f.label}: {f.text} <X/></button>)}{chips.length>1&&<button className="catalog-chip is-clear" onClick={clearFilters}>Quitar filtros</button>}</p><div className="view-toggle"><button className={view==='grid'?'active':''} onClick={()=>setView('grid')} aria-label="Vista de cuadrícula"><Grid2X2/></button><button className={view==='list'?'active':''} onClick={()=>setView('list')} aria-label="Vista de lista"><List/></button><button className={view==='table'?'active':''} onClick={()=>setView('table')} aria-label="Vista de tabla" title="Tabla ordenable"><Table2/></button></div></div>
+    <div className="catalog-heading">{orderable&&<div className="pagination-size catalog-order" role="group" aria-label="Ordenar"><span>Ordenar</span>{ORDERS.map(([k,l])=><button key={k} type="button" className={order===k?'active':''} aria-pressed={order===k} onClick={()=>setOrder(k)} title={k==='azar'&&order==='azar'?'Volver a mezclar':undefined}>{l}</button>)}</div>}<PageSize perPage={perPage} onPerPage={n=>{setPerPage(n);goToPage(1)}} count={list.length}/><p><b>{list.length}</b> resultados {q&&<>para “{q}”</>}{chips.map(f=><button key={f.key} className="catalog-chip" onClick={()=>f.key==='type'?setType(''):setFilter(f.key,'')}>{f.label}: {f.text} <X/></button>)}{chips.length>1&&<button className="catalog-chip is-clear" onClick={clearFilters}>Quitar filtros</button>}</p><div className="view-toggle"><button className={view==='grid'?'active':''} onClick={()=>setView('grid')} aria-label="Vista de cuadrícula"><Grid2X2/></button><button className={view==='list'?'active':''} onClick={()=>setView('list')} aria-label="Vista de lista"><List/></button><button className={view==='table'?'active':''} onClick={()=>setView('table')} aria-label="Vista de tabla" title="Tabla ordenable"><Table2/></button></div></div>
     {view==='grid'
       ?<div className={`record-grid${compactCards?' record-grid-compact':''}${kind==='peliculas'?' record-grid-poster':''}`}>{pagedList.map((r,i)=><RecordCard item={r} index={i} key={r.id}/>)}</div>
       :view==='list'?<div className="record-list">{pagedList.map((r,i)=><RecordRow item={r} index={i} key={r.id}/>)}</div>
