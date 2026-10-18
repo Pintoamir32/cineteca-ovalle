@@ -1116,3 +1116,7 @@ ul.cms-stat-rows.cms-card{padding:10px}
 /* Orden del carrusel: cuatro opciones en dos filas dentro del panel angosto */
 .cms-slide-order{display:grid;grid-template-columns:1fr 1fr;border-radius:var(--r-md)}
 .cms-slide-order button{border-radius:var(--r-sm);white-space:nowrap}
+.cms-fz-input{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;min-width:0}
+.cms-fz-input input{width:70px;height:38px;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--surface);text-align:center;font:700 15px 'IBM Plex Mono';color:var(--ink)}
+.cms-fz-input input:focus{outline:2px solid var(--forest);outline-offset:1px}
+.cms-fz-input span{font:600 11px 'IBM Plex Mono';color:var(--muted)}

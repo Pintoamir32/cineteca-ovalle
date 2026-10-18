@@ -179,7 +179,7 @@ function RecordEditorInner(){
     <div className="cms-frame-tools">
       <div className="cms-segment is-small cms-mode">{[['ficha','Ficha completa'],['tarjeta','Tarjeta y lista']].map(([k,l])=><button key={k} type="button" className={mode===k?'active':''} onClick={()=>setMode(k)}>{l}</button>)}</div>
     </div>
-    {mode==='ficha'?<HomeEditContext.Provider value={shared.context}><EditContext.Provider value={{...edit.context,fz:{...fz,pick:(key,label)=>setFz(x=>({...x,selected:key,label}))}}}>
+    {mode==='ficha'?<HomeEditContext.Provider value={shared.context}><EditContext.Provider value={{...edit.context,fz:{...fz,pick:(key,label,base)=>setFz(x=>({...x,selected:key,label,base}))}}}>
       <SiteFrame className="is-record" path={`/${r.slug}`}>
         <RecordDetail item={{...r,image:r.image||BLANK}} extra={e}/>
       </SiteFrame>
@@ -190,22 +190,41 @@ function RecordEditorInner(){
 
 const BLANK='data:image/gif;base64,R0lGODlhAQABAAAAACw=';
 
-/* Tamaño de letra (en el panel derecho): con el modo activo, un clic en cualquier texto de la ficha lo elige y aquí se agranda o achica.
-   Se guarda en extra.fontScale ({clave del texto: escala}); 100 % no se guarda */
-const FZ_MIN=.6, FZ_MAX=2, FZ_STEP=.1;
+/* Tamaño de letra (en el panel derecho): con el modo activo, un clic en cualquier texto de la ficha lo elige y aquí
+   se escribe su medida en puntos, como en Word (o se elige de la lista, o se sube y baja con A+ y A−).
+   Los puntos se calculan sobre la vista de escritorio: en pantallas más chicas el texto se achica en proporción.
+   Se guarda en extra.fontScale ({clave del texto: escala respecto de su tamaño original}); el original no se guarda */
+const FZ_MIN=.2, FZ_MAX=6, PT_MIN=1, PT_MAX=400;
+const WORD_SIZES=[8,9,10,10.5,11,12,14,16,18,20,22,24,26,28,36,48,72];
+const ptLabel=pt=>String(Math.round(pt*2)/2).replace('.',',');
 function FontSizeBar({fz,e,setE,onClose}){
   const scales=e.fontScale||{}, value=fz.selected?scales[fz.selected]||1:1;
   const changed=Object.keys(scales).length;
-  const set=v=>{const next={...scales};const n=Math.round(Math.min(FZ_MAX,Math.max(FZ_MIN,v))*10)/10;if(n===1)delete next[fz.selected];else next[fz.selected]=n;setE({fontScale:Object.keys(next).length?next:undefined})};
+  const basePt=(fz.base||16)*.75, pt=basePt*value;
+  const [text,setText]=useState(ptLabel(pt));
+  useEffect(()=>setText(ptLabel(pt)),[fz.selected,pt]);
+  const setScale=v=>{const next={...scales};const n=Math.round(Math.min(FZ_MAX,Math.max(FZ_MIN,v))*1000)/1000;if(Math.abs(n-1)<.005)delete next[fz.selected];else next[fz.selected]=n;setE({fontScale:Object.keys(next).length?next:undefined})};
+  const setPt=p=>setScale(Math.min(PT_MAX,Math.max(PT_MIN,p))/basePt);
+  // Lo escrito se aplica con Enter o al salir del campo; si no es un número, vuelve la medida actual
+  const commit=()=>{const p=parseFloat(String(text).replace(',','.'));if(Number.isFinite(p)&&p>0)setPt(p);else setText(ptLabel(pt))};
+  // Como en Word: A+ y A− pasan a la medida siguiente de la lista
+  const cur=Math.round(pt*2)/2, bigger=WORD_SIZES.find(s=>s>cur), smaller=[...WORD_SIZES].reverse().find(s=>s<cur);
   return <div className="cms-fz-panel" role="group" aria-label="Tamaño de letra">
     {fz.selected?<>
       <span className="cms-fz-name"><small>Texto elegido</small><strong>{fz.label||fz.selected}</strong></span>
       <div className="cms-fz-steps">
-        <button type="button" className="cms-icon-btn" onClick={()=>set(value-FZ_STEP)} disabled={value<=FZ_MIN} aria-label="Achicar" title="Achicar">A−</button>
-        <output aria-live="polite">{Math.round(value*100)}%</output>
-        <button type="button" className="cms-icon-btn" onClick={()=>set(value+FZ_STEP)} disabled={value>=FZ_MAX} aria-label="Agrandar" title="Agrandar">A+</button>
+        <button type="button" className="cms-icon-btn" onClick={()=>setPt(smaller??Math.max(PT_MIN,cur-1))} disabled={cur<=PT_MIN} aria-label="Achicar" title="Achicar">A−</button>
+        <label className="cms-fz-input">
+          <input type="text" inputMode="decimal" list="cms-fz-sizes" value={text} aria-label="Tamaño en puntos"
+            onChange={ev=>setText(ev.target.value)} onBlur={commit} onFocus={ev=>ev.target.select()}
+            onKeyDown={ev=>{if(ev.key==='Enter'){ev.preventDefault();commit()}if(ev.key==='Escape')setText(ptLabel(pt))}}/>
+          <span>pt</span>
+        </label>
+        <datalist id="cms-fz-sizes">{WORD_SIZES.map(s=><option key={s} value={ptLabel(s)}/>)}</datalist>
+        <button type="button" className="cms-icon-btn" onClick={()=>setPt(bigger??Math.min(PT_MAX,cur+1))} disabled={cur>=PT_MAX} aria-label="Agrandar" title="Agrandar">A+</button>
       </div>
-      {value!==1&&<button type="button" className="cms-btn is-ghost is-small is-block" onClick={()=>set(1)}><RotateCcw/> Volver a 100 %</button>}
+      <p className="cms-help">Escribe la medida o elígela de la lista. Tamaño original: {ptLabel(basePt)} pt.</p>
+      {value!==1&&<button type="button" className="cms-btn is-ghost is-small is-block" onClick={()=>setScale(1)}><RotateCcw/> Volver a {ptLabel(basePt)} pt</button>}
     </>:<span className="cms-fz-name"><strong>Haz clic en cualquier texto de la ficha</strong><small>Luego agrándalo o achícalo aquí. Cada texto tiene su propio tamaño.</small></span>}
     {changed>0&&<button type="button" className="cms-btn is-ghost is-small is-block" onClick={()=>setE({fontScale:undefined})} title="Todos los textos vuelven a su tamaño original">Restablecer todo · {changed}</button>}
     <button type="button" className="cms-btn is-primary is-block" onClick={onClose}><Check/> Listo</button>

@@ -19,6 +19,14 @@ export function useEdit(){
 /* Tamaño de letra de cada texto de una ficha (extra.fontScale: {clave: escala}).
    z(clave, nombre) va en cada texto: le aplica su tamaño y lo marca para el modo «Tamaño de letra» del gestor,
    donde un clic sobre el texto lo elige (root va en el contenedor de la ficha). */
+// Tamaño original (en px, sin la escala) del primer texto visible dentro del elemento: con él el gestor
+// muestra la medida en puntos, como Word. La escala (zoom) no cambia el tamaño calculado.
+function baseSize(el){
+  const walker=el.ownerDocument.createTreeWalker(el,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.textContent.trim()?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT});
+  const node=walker.nextNode(), view=el.ownerDocument.defaultView;
+  return parseFloat(view.getComputedStyle(node?.parentElement||el).fontSize)||16;
+}
+
 export function useFz(extra){
   const fz=useContext(EditContext)?.fz;
   const scales=extra?.fontScale||{};
@@ -28,7 +36,7 @@ export function useFz(extra){
   };
   const root=fz?.active?{'data-fz-mode':'',onClickCapture:e=>{
     e.preventDefault();e.stopPropagation();
-    const el=e.target.closest('[data-fz]');if(el)fz.pick(el.dataset.fz,el.dataset.fzLabel);
+    const el=e.target.closest('[data-fz]');if(el)fz.pick(el.dataset.fz,el.dataset.fzLabel,baseSize(el));
   }}:{};
   return {z,root};
 }
