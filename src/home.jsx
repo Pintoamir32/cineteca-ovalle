@@ -29,12 +29,24 @@ const STAT_LINKS=[
 ];
 const TILE_LINKS=[['/colecciones',ArrowDownRight],['/linea-de-tiempo',ArrowDownRight],['/mapa',MapPin],['/nosotros',ArrowDownRight]];
 
+/* Orden del carrusel (se elige en el gestor). Las diapositivas sin fecha son las de antes de que
+   se guardara: cuentan como las más antiguas, en el orden de la lista. «Al azar» cambia en cada visita. */
+const SLIDE_SEED=Math.random();
+function orderSlides(list,order){
+  const items=list.map((s,i)=>({s,i,at:s.createdAt||''}));
+  if(order==='azar'){const key=x=>Math.sin((x.i+1)*12.9898+SLIDE_SEED*78.233)*43758.5453%1;return items.sort((a,b)=>key(a)-key(b)).map(x=>x.s)}
+  if(order==='recientes')return items.sort((a,b)=>b.at.localeCompare(a.at)||b.i-a.i).map(x=>x.s);
+  if(order==='antiguas')return items.sort((a,b)=>a.at.localeCompare(b.at)||a.i-b.i).map(x=>x.s);
+  return list;
+}
+
 export function Home(){
   // t(): texto de la página; en el gestor se vuelve editable con un clic
   const {edit,content:c,t}=useSiteText();
   // En el sitio no se muestran las diapositivas de fichas en borrador (en el gestor, sí)
   const visible=c.slides.filter(x=>!x.recordId||getAllRecords().some(r=>r.id===x.recordId));
-  const slides=edit||!visible.length?c.slides:visible, featuredId=edit?c.featuredId:site.featuredId;
+  // En el sitio se aplica el orden elegido en el gestor; en el gestor se ven en el orden de la lista
+  const slides=useMemo(()=>edit?c.slides:orderSlides(visible.length?visible:c.slides,c.slideOrder),[edit,c.slides,c.slideOrder]), featuredId=edit?c.featuredId:site.featuredId;
   const show=id=>edit||!c.hidden?.includes(id);
   const sectionClass=id=>edit&&c.hidden?.includes(id)?' is-hidden-section':'';
   // En el gestor cada sección muestra su nombre al pasar el mouse

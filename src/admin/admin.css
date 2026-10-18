@@ -1113,3 +1113,6 @@ ul.cms-stat-rows.cms-card{padding:10px}
   .cms-stat-chart{height:140px;gap:2px}
   .cms-stat-bars li{grid-template-columns:minmax(0,45%) 1fr auto}
 }
+/* Orden del carrusel: cuatro opciones en dos filas dentro del panel angosto */
+.cms-slide-order{display:grid;grid-template-columns:1fr 1fr;border-radius:var(--r-md)}
+.cms-slide-order button{border-radius:var(--r-sm);white-space:nowrap}

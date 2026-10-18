@@ -37,6 +37,14 @@ function HomeImageButton({label,className,value,fallback,onChange,aspect}){
   </>;
 }
 
+const SLIDE_ORDERS=[['manual','Manual'],['azar','Al azar'],['recientes','Recientes'],['antiguas','Antiguas']];
+const SLIDE_ORDER_HELP={
+  manual:'Se muestran en el orden de la lista: cámbialo con las flechas de cada diapositiva.',
+  azar:'Cada visita ve las diapositivas en un orden distinto. Aquí se ven en el orden de la lista.',
+  recientes:'Primero las últimas diapositivas que se agregaron. Aquí se ven en el orden de la lista.',
+  antiguas:'Primero las diapositivas que se agregaron hace más tiempo. Aquí se ven en el orden de la lista.'
+};
+
 export function HomeEditor(){
   useStoreVersion();
   const {go,setDirty:setNavDirty}=useAdminNav(), {toast,confirm}=useUi(), ask=useAskRemove();
@@ -65,7 +73,7 @@ export function HomeEditor(){
     clearLocal();setDirty(false);setNavDirty(false);toast('Inicio actualizado y publicado.');
   };
   const discard=async()=>{if(await confirm({title:'¿Descartar los cambios?',text:'El inicio volverá a su última versión guardada.',ok:'Descartar'})){setDraft(load());setDirty(false)}};
-  const restore=async()=>{if(await confirm({title:'¿Volver a los textos originales?',text:'Se reemplazan los textos, secciones y fichas elegidas del inicio y del pie de página por los originales. Las diapositivas no cambian. Podrás revisarlo antes de guardar.',ok:'Restablecer textos'})){setDraft(d=>({...originalHome(),slides:d.slides,featuredId:d.featuredId,about:d.about}));setDirty(true)}};
+  const restore=async()=>{if(await confirm({title:'¿Volver a los textos originales?',text:'Se reemplazan los textos, secciones y fichas elegidas del inicio y del pie de página por los originales. Las diapositivas no cambian. Podrás revisarlo antes de guardar.',ok:'Restablecer textos'})){setDraft(d=>({...originalHome(),slides:d.slides,slideOrder:d.slideOrder,featuredId:d.featuredId,about:d.about}));setDirty(true)}};
 
   // Lleva la vista previa hasta una sección
   const reveal=selector=>frameApi.current?.reveal(selector);
@@ -80,7 +88,8 @@ export function HomeEditor(){
 
   // Diapositivas: se agregan, ordenan y quitan en el borrador, y se publican con «Guardar»
   const selectSlide=i=>{setSlide(i);reveal('.hero-new')};
-  const addSlide=s=>{set('slides',[...draft.slides,s]);selectSlide(draft.slides.length)};
+  // Cada diapositiva nueva guarda su fecha, para ordenar el carrusel por recientes o antiguas
+  const addSlide=s=>{set('slides',[...draft.slides,{...s,createdAt:new Date().toISOString()}]);selectSlide(draft.slides.length)};
   const moveSlide=d=>{const l=[...draft.slides],to=current+d;[l[current],l[to]]=[l[to],l[current]];set('slides',l);setSlide(to)};
   const removeSlide=async()=>{
     if(draft.slides.length<=1)return toast('El carrusel necesita al menos una diapositiva.','error');
@@ -93,6 +102,9 @@ export function HomeEditor(){
   // El panel sigue el orden de la página: cada sección con su ojo (mostrar u ocultar) y sus opciones
   const sections=[
     {id:'hero',label:'Portada · carrusel',selector:'.hero-new',body:<>
+      <label className="cms-panel-label">Orden en el sitio</label>
+      <div className="cms-segment is-small cms-seg-block cms-slide-order">{SLIDE_ORDERS.map(([k,l])=><button key={k} type="button" className={(draft.slideOrder||'manual')===k?'active':''} onClick={()=>set('slideOrder',k==='manual'?undefined:k)}>{l}</button>)}</div>
+      {help(SLIDE_ORDER_HELP[draft.slideOrder||'manual'])}
       <div className="cms-slide-picker">{draft.slides.map((x,i)=><button key={i} type="button" className={i===current?'active':''} onClick={()=>selectSlide(i)} title={`${x.title.replace(/\n/g,' ')} ${x.em}`}>
         {x.image?<img src={thumb(x.image,200)} alt=""/>:<span className="cms-thumb-empty"/>}<b>{String(i+1).padStart(2,'0')}</b>
       </button>)}</div>
