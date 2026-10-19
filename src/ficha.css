@@ -227,3 +227,7 @@ a.back-link.back-link:hover .back-link-icon{background:var(--acid);color:var(--b
 .ficha-person-head .ficha-person-roles{margin:18px 0 0;color:#4d544f;font-size:17px}
 @media(max-width:760px){.ficha-person .ficha-person-body{margin-top:14px}}
 .ficha-person-top{grid-column:1/-1;margin:0;padding:22px 4vw 18px}
+/* Negrita, cursiva y subrayado elegidos en el gestor para un texto de la ficha (también a los textos de adentro) */
+[data-fs-b],[data-fs-b] *{font-weight:800!important}
+[data-fs-i],[data-fs-i] *{font-style:italic!important}
+[data-fs-u],[data-fs-u] *{text-decoration:underline!important;text-underline-offset:.15em}

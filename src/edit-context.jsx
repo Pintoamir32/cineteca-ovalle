@@ -27,12 +27,16 @@ function baseSize(el){
   return parseFloat(view.getComputedStyle(node?.parentElement||el).fontSize)||16;
 }
 
+/* Negrita, cursiva y subrayado de cada texto (extra.fontStyle: {clave: 'b' | 'i' | 'u' combinados, ej. 'bi'}).
+   Van como atributos data-fs-* para que la hoja de estilos los aplique también a los textos de adentro. */
+export const FONT_STYLES=[['b','Negrita'],['i','Cursiva'],['u','Subrayado']];
 export function useFz(extra){
   const fz=useContext(EditContext)?.fz;
-  const scales=extra?.fontScale||{};
+  const scales=extra?.fontScale||{}, styles=extra?.fontStyle||{};
   const z=(key,label,style)=>{
-    const s=scales[key];
-    return {'data-fz':key,'data-fz-label':label,...(fz?.active&&fz.selected===key?{'data-fz-on':''}:{}),style:s&&s!==1?{...style,zoom:s}:style};
+    const s=scales[key], fs=styles[key]||'';
+    const marks=Object.fromEntries(FONT_STYLES.filter(([k])=>fs.includes(k)).map(([k])=>[`data-fs-${k}`,'']));
+    return {'data-fz':key,'data-fz-label':label,...marks,...(fz?.active&&fz.selected===key?{'data-fz-on':''}:{}),style:s&&s!==1?{...style,zoom:s}:style};
   };
   const root=fz?.active?{'data-fz-mode':'',onClickCapture:e=>{
     e.preventDefault();e.stopPropagation();

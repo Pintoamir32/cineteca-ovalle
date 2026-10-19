@@ -1120,3 +1120,7 @@ ul.cms-stat-rows.cms-card{padding:10px}
 .cms-fz-input input{width:70px;height:38px;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--surface);text-align:center;font:700 15px 'IBM Plex Mono';color:var(--ink)}
 .cms-fz-input input:focus{outline:2px solid var(--forest);outline-offset:1px}
 .cms-fz-input span{font:600 11px 'IBM Plex Mono';color:var(--muted)}
+.cms-fz-marks{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.cms-fz-marks .cms-icon-btn{width:auto;height:38px;border-radius:var(--r-sm)}
+.cms-fz-marks svg{width:16px;height:16px}
+.cms-fz-marks .cms-icon-btn.is-on{background:var(--forest);color:#fff;border-color:var(--forest)}
