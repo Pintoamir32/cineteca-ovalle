@@ -366,11 +366,11 @@ footer,
 .discovery-hero>span,.discovery-hero h1,.discovery-hero p,.about-hero>span,.about-hero h1,.about-hero p{position:relative;z-index:2}
 
 /* Línea de tiempo: espina vertical + panel de detalle fijo */
-.timeline-layout{display:grid;grid-template-columns:1fr 480px;align-items:stretch;margin:60px 24px 90px;background:#fff;border:1px solid var(--line)}
+.timeline-layout{display:grid;grid-template-columns:1fr 420px;align-items:stretch;margin:60px 24px 90px;background:#fff;border:1px solid var(--line)}
 .timeline-spine{padding:50px 5vw 60px;border-right:1px solid var(--line)}
-/* El detalle queda fijo a la vista mientras se recorre la lista; la imagen va en formato horizontal */
+/* El detalle queda fijo a la vista mientras se recorre la lista; la imagen va en formato vertical, igual que el recorte del editor */
 .timeline-detail{position:sticky;top:110px;align-self:start;scroll-margin-top:110px;max-height:calc(100vh - 130px);overflow:hidden auto;background:var(--forest);color:#fff}
-.timeline-detail>img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;background:#0c2a20}
+.timeline-detail>img{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;background:#0c2a20}
 .timeline-detail-noimg{height:120px;background:repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 10px,transparent 10px 20px)}
 .timeline-detail-copy{padding:36px 34px 42px}
 .timeline-detail-copy>span{font:700 8px 'IBM Plex Mono';color:var(--acid);letter-spacing:.14em;text-transform:uppercase}
@@ -396,7 +396,7 @@ footer,
   .timeline-layout{grid-template-columns:1fr}
   .timeline-spine{border-right:0;border-bottom:1px solid var(--line)}
   .timeline-detail{position:static;max-height:none;overflow:hidden}
-  .timeline-detail>img{max-height:60vh}
+  .timeline-detail>img{max-height:75vh}
 }
 @media(max-width:760px){
   .timeline-layout{margin:40px 14px 60px}

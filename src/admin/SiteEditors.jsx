@@ -218,7 +218,7 @@ function TimelineModal(){
         {sameYear.length>0&&<> También en {yearOf(e)}: {sameYear.map(x=>x.title).join(', ')}.</>}</p>}
       <Field label="Título"><input value={e.title} onChange={ev=>set({title:ev.target.value})} placeholder="Título del hito" autoFocus={item.isNew&&!!e.year}/></Field>
       <Field label="Texto"><textarea rows={4} value={e.text} onChange={ev=>set({text:ev.target.value})} placeholder="Qué ocurrió y por qué importa"/></Field>
-      <ImageField label="Imagen" value={e.image} onChange={image=>set({image})} aspect={16/9} optional busy={busy}/>
+      <ImageField label="Imagen" value={e.image} onChange={image=>set({image})} aspect={4/5} optional busy={busy}/>
     </>}
   </ItemModal>;
 }
