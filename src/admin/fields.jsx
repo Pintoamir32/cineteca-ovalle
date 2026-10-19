@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Check, ChevronDown, FileText, Film, Headphones, ImagePlus, Images, Link2, Pencil, Plus, Search, SlidersHorizontal, Trash2, Type, Upload, X } from 'lucide-react';
 import { collections, heroSlides, recordExtras, records, theme, timelineEvents } from '../data';
 import { ImageEditor } from './ImageEditor';
+import { RichEditBox } from './RichEditor';
 import { inkOn, isHex, tagStyle } from '../color';
 import { VideoPlayer } from '../record-views';
 import { Paged } from '../components';
@@ -83,14 +84,21 @@ export function Modal({children,onClose,className='',title}){
 
 // multiline: admite saltos de línea · wrap: ajusta el texto largo pero Enter confirma
 // render: cómo mostrar el valor cuando no se está editando (p. ej. con cursivas)
-export function Editable({value,onChange,placeholder='Escribe aquí…',multiline=false,wrap=false,as:Tag='span',className='',type='text',label,render}){
+/* Con `rich` ({runs, onChange(texto, tramos)}) el texto lleva formato por letra (negrita, cursiva, subrayado y
+   tamaño): se edita en un cuadro con su barra de formato (ver RichEditor) */
+export function Editable({value,onChange,placeholder='Escribe aquí…',multiline=false,wrap=false,as:Tag='span',className='',type='text',label,render,rich}){
   const [editing,setEditing]=useState(false), [floatBox,setFloatBox]=useState(null);
-  const original=useRef(value), fieldRef=useRef(null), tagRef=useRef(null), floating=useRef(false);
-  // En la vista previa achicada, el texto se edita en un cuadro flotante a tamaño normal
+  const original=useRef(value), originalRuns=useRef(null), basePx=useRef(16), fieldRef=useRef(null), tagRef=useRef(null), floating=useRef(false);
+  // En la vista previa achicada, el texto se edita en un cuadro flotante a tamaño normal (con formato, siempre)
   const scaleOf=()=>{const frame=tagRef.current?.ownerDocument?.defaultView?.frameElement;if(!frame)return null;const w=frame.getBoundingClientRect().width;return frame.offsetWidth?{frame,scale:w/frame.offsetWidth}:null};
-  const start=()=>{original.current=value;const s=scaleOf();floating.current=!!s&&s.scale<.9;setEditing(true)};
+  const start=()=>{
+    original.current=value;originalRuns.current=rich?.runs;const s=scaleOf();floating.current=!!s&&(!!rich||s.scale<.9);
+    // Tamaño del texto en la ficha (sin el zoom del tamaño de letra), para mostrar las medidas en puntos
+    if(rich&&tagRef.current){const el=tagRef.current;basePx.current=parseFloat(el.ownerDocument.defaultView.getComputedStyle(el).fontSize)||16}
+    setEditing(true);
+  };
   const finish=()=>setEditing(false);
-  const cancel=()=>{onChange(original.current);setEditing(false)};
+  const cancel=()=>{if(rich)rich.onChange(original.current,originalRuns.current);else onChange(original.current);setEditing(false)};
   const area=multiline||wrap||floating.current;
   const grow=el=>{if(el&&area){el.style.height='auto';el.style.height=`${Math.min(el.scrollHeight+el.offsetHeight-el.clientHeight,320)}px`}};
   useEffect(()=>{if(editing){const el=fieldRef.current;el?.focus();el?.select?.();grow(el)}},[editing,floatBox!==null]);// eslint-disable-line react-hooks/exhaustive-deps
@@ -109,6 +117,13 @@ export function Editable({value,onChange,placeholder='Escribe aquí…',multilin
     return()=>{window.removeEventListener('scroll',place,true);window.removeEventListener('resize',place)};
   },[editing]);
   const display=v=>{const empty=v===undefined||v===null||String(v).trim()==='';return empty?placeholder:render?render(v):multiline?String(v).split('\n').map((l,i,a)=><React.Fragment key={i}>{l}{i<a.length-1&&<br/>}</React.Fragment>):v};
+  if(editing&&rich){
+    const box=<RichEditBox value={value} runs={rich.runs} onChange={rich.onChange} multiline={multiline} basePx={basePx.current} label={label} placeholder={placeholder} onDone={finish} onCancel={cancel}/>;
+    if(floating.current)return <Tag ref={tagRef} className={`cms-editable is-floating ${className}`}>{display(value)}
+      {floatBox&&createPortal(<div className="cms-float-edit is-rich" style={floatBox}><span>{label||'Texto'}</span>{box}</div>,document.body)}
+    </Tag>;
+    return <Tag ref={tagRef} className={`cms-editable is-editing ${className}`}>{box}</Tag>;
+  }
   if(editing){
     const props={ref:fieldRef,value:value??'',className:'cms-edit-field',placeholder,'aria-label':label||placeholder,onBlur:finish,onClick:e=>{e.preventDefault();e.stopPropagation()},
       onChange:e=>{onChange(multiline?e.target.value:e.target.value.replace(/\n/g,' '));grow(e.target)},

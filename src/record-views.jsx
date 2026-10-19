@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, CirclePlay, Download,
 import { sections } from './data';
 import { getInterviewees, interviewFormat, joinNames, recordPath } from './repository';
 import { useEdit, useFz } from './edit-context';
+import { richOr } from './rich-text';
 import { tagStyle } from './color';
 import { videoSource } from './video-links';
 import './record-views.css';
@@ -88,12 +89,12 @@ export function BodyImage({block}){
   </figure>;
 }
 export function BodyText({blocks}){
-  return <>{blocks.map((b,i)=>b.type==='image'?(b.src&&<BodyImage key={i} block={b}/>):(b.text?.trim()&&<div key={i} className="body-chunk">{b.text}</div>))}<span className="body-clear"/></>;
+  return <>{blocks.map((b,i)=>b.type==='image'?(b.src&&<BodyImage key={i} block={b}/>):(b.text?.trim()&&<div key={i} className="body-chunk">{richOr(b.runs,b.text)}</div>))}<span className="body-clear"/></>;
 }
 
 // [etiqueta, valor, ancho, campo editable]: en el gestor los campos editables se muestran aunque estén vacíos
-function Facts({rows,z}){
-  const {edit,f}=useEdit();
+function Facts({rows,z,extra}){
+  const {edit,f}=useEdit(extra);
   return <dl className="ficha-film-facts">{rows.filter(([,v,,key])=>v||(edit&&key)).map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined} {...z(`fact.${k}`,`Dato «${k}»`)}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>;
 }
 
@@ -140,7 +141,7 @@ function docConfig(item,extra){
 }
 
 export function DocumentView({item,extra,related,people}){
-  const {f,slot,edit}=useEdit(), {z,root}=useFz(extra);
+  const {f,slot,edit}=useEdit(extra), {z,root}=useFz(extra);
   const cfg=docConfig(item,extra);
   // Imágenes que se pueden ampliar: la principal (prensa, entrevistas y artículos no llevan galería)
   const gallery=useMemo(()=>[
@@ -177,7 +178,7 @@ export function DocumentView({item,extra,related,people}){
       {people.length?<div className="ficha-film-related">{people.map(({person,roles})=><Link to={recordPath(person)} key={person.id}><img src={person.image} alt="" loading="lazy" decoding="async"/><div><small {...z('related.meta','Vinculados · detalle')}>{roles.join(' · ')||person.subtitle}</small><strong {...z('related.title','Vinculados · nombres y títulos')}>{person.title}</strong></div><ArrowRight/></Link>)}</div>
       :<p className="ficha-filmography-empty">Aún no hay personas vinculadas a este registro.</p>}</>}
     <div className="ficha-aside-label" {...z('aside.facts',`Título «${cfg.factsLabel}»`)}>{cfg.factsLabel}</div>
-    <Facts rows={cfg.facts} z={z}/>
+    <Facts rows={cfg.facts} z={z} extra={extra}/>
     {pressFilms.length>0&&<><div className="ficha-aside-label" {...z('aside.related','Título «Películas vinculadas»')}>Películas vinculadas</div><div className="ficha-film-related">{pressFilms.map(r=><Link to={recordPath(r)} key={r.id}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><small {...z('related.meta','Vinculados · detalle')}>{r.type}</small><strong {...z('related.title','Vinculados · nombres y títulos')}>{r.title}</strong></div><ArrowRight/></Link>)}</div></>}
   </div></aside>;
   return <main className={`ficha-page doc-page doc-press doc-${item.slug}`} {...root}>

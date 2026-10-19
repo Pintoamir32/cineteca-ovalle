@@ -4,6 +4,7 @@ import { ALargeSmall, ArrowLeft, Bold, Italic, Underline, ArrowRight, Check, Cro
 import { RecordCard, RecordRow } from '../components';
 import { collections, locations, records, site } from '../data';
 import { EditContext, FONT_STYLES } from '../edit-context';
+import { normalizeRuns, renderRuns, runsOf, sliceRuns, validRuns } from '../rich-text';
 import { RecordDetail } from '../pages';
 import { BODY_IMAGE_ALIGNS, BODY_IMAGE_SIZE, PANEL_SHAPES, bodyBlocks, bodyImageStyle, bodyPlainText, panelShape } from '../record-views';
 import { getFilmography, getInterviewees, INTERVIEW_FORMATS, interviewFormat, joinNames } from '../repository';
@@ -309,13 +310,19 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     if(name==='collection')return [...collections.map(c=>c.title),...records.map(x=>x.collection)];
     return null;
   };
+  // Formato por letra de cada texto (extra.rich: {clave: tramos}, ver rich-text): se guarda junto con el texto
+  const richField=(key,value,onChange)=>({
+    runs:validRuns(e.rich?.[key],value)||undefined,
+    onChange:(text,runs)=>{onChange(text);const next={...e.rich};if(runs)next[key]=runs;else delete next[key];setE({rich:Object.keys(next).length?next:undefined})}
+  });
   const context={
     text:(key,{multiline=false,as,render}={})=>{
       // La indicación siempre dice qué escribir (la página solo aporta la clave del campo)
       const [value,onChange,label,example,hint]=field(key), options=choices(key);
-      if(hint)return <Editable key={key} value={value} onChange={onChange} placeholder={hint} label={label}/>;
+      const rich=richField(key,value,onChange), richRender=rich.runs?v=>renderRuns(runsOf(e.rich?.[key],v),{br:multiline}):render;
+      if(hint)return <Editable key={key} value={value} onChange={onChange} placeholder={hint} label={label} rich={rich} render={richRender}/>;
       if(options)return <EditableChoice key={key} value={value} onChange={onChange} options={options} label={label} normalize={label==='Duración'?formatDuration:undefined} placeholder={`Elige ${withArticle(label)}${example?` (ej. ${example})`:''}`}/>;
-      return <Editable key={key} as={as} render={render} value={value} onChange={onChange} multiline={multiline} wrap={key==='title'} placeholder={`Escribe ${withArticle(label)}${example?` (ej. ${example})`:''}`} label={label}/>;
+      return <Editable key={key} as={as} render={richRender} rich={rich} value={value} onChange={onChange} multiline={multiline} wrap={key==='title'} placeholder={`Escribe ${withArticle(label)}${example?` (ej. ${example})`:''}`} label={label}/>;
     },
     slot:name=>slots[name]?.()
   };
@@ -454,10 +461,14 @@ function ArticlePanel({r,e,setR,setE,openPicker}){
 // ahí); según dónde se suelte a lo ancho, queda a la izquierda, al centro o a la derecha. El tamaño se cambia
 // arrastrando sus esquinas.
 const blockId=()=>Math.random().toString(36).slice(2,9);
-// Dos textos seguidos (al mover o quitar una imagen) vuelven a ser uno
-const mergeTexts=list=>list.reduce((out,b)=>{const prev=out[out.length-1];if(prev?.type==='text'&&b.type==='text'){out[out.length-1]={...prev,text:[prev.text,b.text].filter(t=>t?.trim()).join('\n')};return out}return [...out,b]},[]);
-// Cada párrafo en su propio elemento, para saber dónde se puede soltar una imagen
-const textLines=v=>{const lines=String(v).split('\n');return lines.map((l,i)=><span key={i} data-line={i}>{l}{i<lines.length-1&&<br/>}</span>)};
+// Parte de un bloque de texto (de start a end), con el formato por letra que tenga
+const piece=(b,start,end)=>({text:b.text.slice(start,end),runs:validRuns(b.runs,b.text)?normalizeRuns(sliceRuns(b.runs,start,end)):undefined});
+// Dos textos seguidos (al mover o quitar una imagen) vuelven a ser uno, con su formato
+const mergeTexts=list=>list.reduce((out,b)=>{const prev=out[out.length-1];if(prev?.type==='text'&&b.type==='text'){
+  const parts=[prev,b].filter(x=>x.text?.trim());
+  out[out.length-1]={...prev,text:parts.map(x=>x.text).join('\n'),runs:normalizeRuns(parts.flatMap((x,k)=>[...(k?[{t:'\n'}]:[]),...runsOf(x.runs,x.text)]))};return out}return [...out,b]},[]);
+// Cada párrafo en su propio elemento, para saber dónde se puede soltar una imagen (con su formato por letra)
+const textLines=(v,runs)=>{const lines=String(v).split('\n');let pos=0;return lines.map((l,i)=>{const seg=runs?renderRuns(sliceRuns(runs,pos,pos+l.length)):l;pos+=l.length+1;return <span key={i} data-line={i}>{seg}{i<lines.length-1&&<br/>}</span>})};
 // Una imagen al costado acompaña al párrafo escrito justo antes de ella: si después no sigue texto que la rodee,
 // pasa a quedar al lado del último párrafo del texto anterior (que se divide ahí)
 const besideText=(list,id)=>{
@@ -466,7 +477,7 @@ const besideText=(list,id)=>{
   const lines=prev.text.split('\n'), last=lines.findLastIndex(l=>l.trim());
   if(last<0)return list;
   const before=lines.slice(0,last).join('\n').replace(/\n+$/,''), lastPara=lines.slice(last).join('\n');
-  return [...list.slice(0,i-1),...(before.trim()?[{...prev,text:before}]:[]),img,{id:blockId(),type:'text',text:lastPara},...list.slice(i+1)];
+  return [...list.slice(0,i-1),...(before.trim()?[{...prev,...piece(prev,0,before.length)}]:[]),img,{id:blockId(),type:'text',...piece(prev,prev.text.length-lastPara.length,prev.text.length)},...list.slice(i+1)];
 };
 const sideAt=(x,rect)=>{const f=(x-rect.left)/rect.width;return f<1/3?'left':f>2/3?'right':'center'};
 
@@ -520,7 +531,7 @@ function BodyEditor({blocks,setBlocks,pick,label}){
     if(at.line!=null&&rest[idx]?.type==='text'){
       const t=rest[idx], lines=t.text.split('\n');
       const before=lines.slice(0,at.line+1).join('\n').replace(/\n+$/,''), after=lines.slice(at.line+1).join('\n').replace(/^\n+/,'');
-      rest=[...rest.slice(0,idx),{...t,text:before},img,{id:blockId(),type:'text',text:after},...rest.slice(idx+1)];
+      rest=[...rest.slice(0,idx),{...t,...piece(t,0,before.length)},img,{id:blockId(),type:'text',...piece(t,t.text.length-after.length,t.text.length)},...rest.slice(idx+1)];
     }else rest=[...rest.slice(0,idx),img,...rest.slice(idx)];
     setBlocks(besideText(mergeTexts(rest),img.id));
   };
@@ -559,7 +570,7 @@ function BodyEditor({blocks,setBlocks,pick,label}){
       <figcaption><Editable value={b.caption||''} onChange={v=>put(i,{caption:v})} placeholder="Pie de foto (opcional)" label="Pie de foto"/></figcaption>
     </figure>
     :<div className="cms-body-text" data-block={i} data-kind="text">
-      <Editable as="div" multiline value={b.text||''} onChange={v=>put(i,{text:v})} render={textLines} placeholder={i===0?`Escribe ${withArticle(label||'texto')}…`:'Escribe aquí…'} label={label}/>
+      <Editable as="div" multiline value={b.text||''} onChange={v=>put(i,{text:v})} render={v=>textLines(v,validRuns(b.runs,v))} rich={{runs:validRuns(b.runs,b.text||'')||undefined,onChange:(text,runs)=>put(i,{text,runs})}}placeholder={i===0?`Escribe ${withArticle(label||'texto')}…`:'Escribe aquí…'} label={label}/>
       {list.length>1&&<button type="button" className="cms-body-remove" onClick={b.text?.trim()?ask('este bloque de texto',()=>remove(i)):stop(()=>remove(i))} title="Quitar este texto" aria-label="Quitar este texto"><Trash2/></button>}
     </div>}
     {adder(i+1)}

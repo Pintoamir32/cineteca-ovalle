@@ -182,7 +182,7 @@ function CreditName({name}){
 
 export function RecordDetail({item,extra}){
   const {t}=useSiteText();
-  const {edit,f,slot}=useEdit(), {z,root}=useFz(extra);
+  const {edit,f,slot}=useEdit(extra), {z,root}=useFz(extra);
   const related=(extra.relations||[]).map(rid=>getAllRecords().find(r=>r.id===rid)).filter(Boolean);
   if(['Prensa','Entrevista','Artículo'].includes(item.type))return <DocumentView item={item} extra={extra} related={related} people={getRecordPeople(item,extra)}/>;
   const isFilm=item.type==='Película', isPerson=item.type==='Persona', placeList=placesOf(extra);

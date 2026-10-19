@@ -1124,3 +1124,21 @@ ul.cms-stat-rows.cms-card{padding:10px}
 .cms-fz-marks .cms-icon-btn{width:auto;height:38px;border-radius:var(--r-sm)}
 .cms-fz-marks svg{width:16px;height:16px}
 .cms-fz-marks .cms-icon-btn.is-on{background:var(--forest);color:#fff;border-color:var(--forest)}
+/* Texto con formato por letra (negrita, cursiva, subrayado, tamaño): barra y cuadro de escritura */
+.cms-float-edit.is-rich{max-width:min(640px,calc(100vw - 16px))}
+.cms-rich{display:flex;flex-direction:column;gap:6px;min-width:0}
+.cms-editable.is-editing>.cms-rich{width:100%}
+.cms-rich-tools{display:flex;align-items:center;flex-wrap:wrap;gap:4px;padding:4px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface)}
+.cms-rich-tools button{display:grid;place-items:center;min-width:32px;height:32px;padding:0 6px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--ink);font:700 13px 'Manrope',sans-serif;cursor:pointer}
+.cms-rich-tools button svg{width:16px;height:16px}
+.cms-rich-tools button:hover:not(:disabled){background:rgba(16,18,16,.07)}
+.cms-rich-tools button.is-on{background:var(--forest);color:#fff}
+.cms-rich-tools button:disabled{opacity:.35;cursor:default}
+.cms-rich-sep{width:1px;height:20px;background:var(--line);margin:0 3px}
+.cms-rich-size{display:flex;align-items:center;gap:3px}
+.cms-rich-size input{width:56px;height:32px;border:1px solid var(--line-strong);border-radius:6px;background:#fff;text-align:center;font:700 13px 'IBM Plex Mono';color:var(--ink)}
+.cms-rich-size input:disabled{background:transparent}
+.cms-rich-size span{font:600 10px 'IBM Plex Mono';color:var(--muted)}
+.cms-rich-text{min-height:40px;max-height:320px;overflow:auto;border:1px solid var(--forest);border-radius:var(--r-sm);padding:9px 11px;font:500 15px/1.5 'Manrope',sans-serif;color:var(--ink);background:#fff;outline:none;box-shadow:0 0 0 3px rgba(18,60,47,.12);white-space:pre-wrap;overflow-wrap:anywhere;text-align:left}
+.cms-rich-text:empty:before{content:attr(data-placeholder);color:var(--muted)}
+.cms-rich>small{font-size:11px;color:var(--muted)}

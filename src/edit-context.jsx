@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import { richOr } from './rich-text';
 
 /* Las páginas del sitio se usan también como vista previa en el gestor. Dentro del gestor, este
    contexto vuelve editables sus textos y agrega los botones para cambiar imágenes y archivos.
@@ -7,11 +8,12 @@ import { createContext, useContext } from 'react';
    - slot(nombre): controles propios del gestor en ese punto de la página */
 export const EditContext=createContext(null);
 
-export function useEdit(){
+// Con extra (fichas), fuera del gestor cada texto se muestra con su formato por letra (extra.rich, ver rich-text)
+export function useEdit(extra){
   const edit=useContext(EditContext);
   return {
     edit,
-    f:(key,value,opts)=>edit?edit.text(key,opts):value,
+    f:(key,value,opts)=>edit?edit.text(key,opts):richOr(extra?.rich?.[key],value),
     slot:name=>edit?.slot?.(name)??null
   };
 }
