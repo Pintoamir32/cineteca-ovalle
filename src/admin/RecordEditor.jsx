@@ -310,10 +310,14 @@ function useRecordEdit({r,e,meta,parts,setR,setE,setPart}){
     if(name==='collection')return [...collections.map(c=>c.title),...records.map(x=>x.collection)];
     return null;
   };
-  // Formato por letra de cada texto (extra.rich: {clave: tramos}, ver rich-text): se guarda junto con el texto
+  // Formato por letra de cada texto (extra.rich: {clave: tramos}, ver rich-text): se guarda junto con el texto.
+  // Alineación de cada texto: extra.textAlign ({clave: 'center' | 'right' | 'justify' | 'left'})
+  const keyed=(name,key,v)=>{const next={...e[name]};if(v)next[key]=v;else delete next[key];return Object.keys(next).length?next:undefined};
   const richField=(key,value,onChange)=>({
     runs:validRuns(e.rich?.[key],value)||undefined,
-    onChange:(text,runs)=>{onChange(text);const next={...e.rich};if(runs)next[key]=runs;else delete next[key];setE({rich:Object.keys(next).length?next:undefined})}
+    onChange:(text,runs)=>{onChange(text);setE({rich:keyed('rich',key,runs)})},
+    align:e.textAlign?.[key],
+    onAlign:v=>setE({textAlign:keyed('textAlign',key,v)})
   });
   const context={
     text:(key,{multiline=false,as,render}={})=>{
@@ -477,7 +481,7 @@ const besideText=(list,id)=>{
   const lines=prev.text.split('\n'), last=lines.findLastIndex(l=>l.trim());
   if(last<0)return list;
   const before=lines.slice(0,last).join('\n').replace(/\n+$/,''), lastPara=lines.slice(last).join('\n');
-  return [...list.slice(0,i-1),...(before.trim()?[{...prev,...piece(prev,0,before.length)}]:[]),img,{id:blockId(),type:'text',...piece(prev,prev.text.length-lastPara.length,prev.text.length)},...list.slice(i+1)];
+  return [...list.slice(0,i-1),...(before.trim()?[{...prev,...piece(prev,0,before.length)}]:[]),img,{id:blockId(),type:'text',textAlign:prev.textAlign,...piece(prev,prev.text.length-lastPara.length,prev.text.length)},...list.slice(i+1)];
 };
 const sideAt=(x,rect)=>{const f=(x-rect.left)/rect.width;return f<1/3?'left':f>2/3?'right':'center'};
 
@@ -531,7 +535,7 @@ function BodyEditor({blocks,setBlocks,pick,label}){
     if(at.line!=null&&rest[idx]?.type==='text'){
       const t=rest[idx], lines=t.text.split('\n');
       const before=lines.slice(0,at.line+1).join('\n').replace(/\n+$/,''), after=lines.slice(at.line+1).join('\n').replace(/^\n+/,'');
-      rest=[...rest.slice(0,idx),{...t,...piece(t,0,before.length)},img,{id:blockId(),type:'text',...piece(t,t.text.length-after.length,t.text.length)},...rest.slice(idx+1)];
+      rest=[...rest.slice(0,idx),{...t,...piece(t,0,before.length)},img,{id:blockId(),type:'text',textAlign:t.textAlign,...piece(t,t.text.length-after.length,t.text.length)},...rest.slice(idx+1)];
     }else rest=[...rest.slice(0,idx),img,...rest.slice(idx)];
     setBlocks(besideText(mergeTexts(rest),img.id));
   };
@@ -570,7 +574,7 @@ function BodyEditor({blocks,setBlocks,pick,label}){
       <figcaption><Editable value={b.caption||''} onChange={v=>put(i,{caption:v})} placeholder="Pie de foto (opcional)" label="Pie de foto"/></figcaption>
     </figure>
     :<div className="cms-body-text" data-block={i} data-kind="text">
-      <Editable as="div" multiline value={b.text||''} onChange={v=>put(i,{text:v})} render={v=>textLines(v,validRuns(b.runs,v))} rich={{runs:validRuns(b.runs,b.text||'')||undefined,onChange:(text,runs)=>put(i,{text,runs})}}placeholder={i===0?`Escribe ${withArticle(label||'texto')}…`:'Escribe aquí…'} label={label}/>
+      <Editable as="div" multiline value={b.text||''} onChange={v=>put(i,{text:v})} render={v=>textLines(v,validRuns(b.runs,v))} rich={{runs:validRuns(b.runs,b.text||'')||undefined,onChange:(text,runs)=>put(i,{text,runs}),align:b.textAlign,onAlign:textAlign=>put(i,{textAlign})}} placeholder={i===0?`Escribe ${withArticle(label||'texto')}…`:'Escribe aquí…'} label={label}/>
       {list.length>1&&<button type="button" className="cms-body-remove" onClick={b.text?.trim()?ask('este bloque de texto',()=>remove(i)):stop(()=>remove(i))} title="Quitar este texto" aria-label="Quitar este texto"><Trash2/></button>}
     </div>}
     {adder(i+1)}

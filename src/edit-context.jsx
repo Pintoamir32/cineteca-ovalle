@@ -13,7 +13,7 @@ export function useEdit(extra){
   const edit=useContext(EditContext);
   return {
     edit,
-    f:(key,value,opts)=>edit?edit.text(key,opts):richOr(extra?.rich?.[key],value),
+    f:(key,value,opts)=>edit?edit.text(key,opts):richOr(extra?.rich?.[key],value,{align:extra?.textAlign?.[key]}),
     slot:name=>edit?.slot?.(name)??null
   };
 }

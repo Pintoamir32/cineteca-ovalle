@@ -77,5 +77,8 @@ export function renderRuns(runs,{br=false}={}){
   });
 }
 
-// Texto con su formato si lo tiene y sigue siendo el mismo; si no, el texto tal cual
-export const richOr=(runs,text,opts)=>{const ok=validRuns(runs,text);return ok?renderRuns(ok,opts):text};
+// Texto con su formato si lo tiene y sigue siendo el mismo; si no, el texto tal cual. Con align, en su propio bloque alineado
+export const richOr=(runs,text,{align,...opts}={})=>{
+  const ok=validRuns(runs,text), out=ok?renderRuns(ok,opts):text;
+  return align&&String(text??'').trim()?<span className="rt-align" style={{textAlign:align}}>{out}</span>:out;
+};

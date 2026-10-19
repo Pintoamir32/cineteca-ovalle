@@ -231,3 +231,5 @@ a.back-link.back-link:hover .back-link-icon{background:var(--acid);color:var(--b
 [data-fs-b],[data-fs-b] *{font-weight:800!important}
 [data-fs-i],[data-fs-i] *{font-style:italic!important}
 [data-fs-u],[data-fs-u] *{text-decoration:underline!important;text-underline-offset:.15em}
+/* Alineación elegida en el gestor para un texto de la ficha (izquierda, centro, derecha o justificado) */
+.rt-align{display:block}

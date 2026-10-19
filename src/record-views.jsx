@@ -89,7 +89,7 @@ export function BodyImage({block}){
   </figure>;
 }
 export function BodyText({blocks}){
-  return <>{blocks.map((b,i)=>b.type==='image'?(b.src&&<BodyImage key={i} block={b}/>):(b.text?.trim()&&<div key={i} className="body-chunk">{richOr(b.runs,b.text)}</div>))}<span className="body-clear"/></>;
+  return <>{blocks.map((b,i)=>b.type==='image'?(b.src&&<BodyImage key={i} block={b}/>):(b.text?.trim()&&<div key={i} className="body-chunk" style={b.textAlign?{textAlign:b.textAlign}:undefined}>{richOr(b.runs,b.text)}</div>))}<span className="body-clear"/></>;
 }
 
 // [etiqueta, valor, ancho, campo editable]: en el gestor los campos editables se muestran aunque estén vacíos
