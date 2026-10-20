@@ -66,7 +66,8 @@ export function insertAt(runs,start,end,text){
   return [...before,{...ref,t:text},...after];
 }
 
-const runStyle=r=>({...(r.b&&{fontWeight:800}),...(r.i&&{fontStyle:'italic'}),...(r.u&&{textDecoration:'underline',textUnderlineOffset:'.15em'}),...(r.s&&r.s!==1&&{fontSize:`${r.s}em`})});
+// Las fuentes del sitio no traen cursiva y el sitio apaga la «falsa» cursiva (font-synthesis): aquí se permite
+const runStyle=r=>({...(r.b&&{fontWeight:800}),...(r.i&&{fontStyle:'italic',fontSynthesis:'style'}),...(r.u&&{textDecoration:'underline',textUnderlineOffset:'.15em'}),...(r.s&&r.s!==1&&{fontSize:`${r.s}em`})});
 export const runStyleCss=runStyle;
 
 // Muestra los tramos; con br los saltos de línea pasan a <br/> (si no, quedan como texto)
