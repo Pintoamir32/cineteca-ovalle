@@ -12,6 +12,7 @@ import { deleteRecord, nextId, saveError, saveRecord, setData, useStoreVersion }
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
 import { Choice, ColorSwatches, Modal, Editable, EditableChoice, EditableImage, ImagePicker, MEDIA_TYPES, MediaPicker, RecordPicker, thumb, useUi, useAskRemove } from './fields';
 import { SiteFrame } from './SiteFrame';
+import { GroupFormatBar } from './RichEditor';
 import { HomeEditContext } from '../site-text';
 import { useSharedTexts } from './shared-text';
 import { TYPE_META, code, extraOf, missingFields, typeBySlug, typeColor } from './meta';
@@ -46,6 +47,8 @@ function RecordEditorInner(){
   const isNew=id==='nuevo', existing=isNew?null:records.find(r=>r.id===Number(id));
   const load=()=>asInterview(existing?{record:{...existing},extra:structuredClone(extraOf(existing.id))}:blankDraft(typeBySlug(slug)||'Película'));
   const [draft,setDraft]=useState(load), [dirty,setDirty]=useState(false), [mode,setMode]=useState('ficha');
+  // Grupo de textos de la ficha cuyo formato se está cambiando (ver GroupFormatBar)
+  const [group,setGroup]=useState(null);
   // Destacar en el inicio también espera a «Guardar», como todo lo demás
   const isFeatured=()=>!isNew&&site.featuredId===Number(id);
   const [featured,setFeatured]=useState(isFeatured);
@@ -175,11 +178,12 @@ function RecordEditorInner(){
     <div className="cms-frame-tools">
       <div className="cms-segment is-small cms-mode">{[['ficha','Ficha completa'],['tarjeta','Tarjeta y lista']].map(([k,l])=><button key={k} type="button" className={mode===k?'active':''} onClick={()=>setMode(k)}>{l}</button>)}</div>
     </div>
-    {mode==='ficha'?<HomeEditContext.Provider value={shared.context}><EditContext.Provider value={edit.context}>
+    {mode==='ficha'?<HomeEditContext.Provider value={shared.context}><EditContext.Provider value={{...edit.context,fz:{selected:group?.key,pick:(key,label,base,el)=>setGroup({key,label,base,el})}}}>
       <SiteFrame className="is-record" path={`/${r.slug}`}>
         <RecordDetail item={{...r,image:r.image||BLANK}} extra={e}/>
       </SiteFrame>
     </EditContext.Provider></HomeEditContext.Provider>:<CardPreview r={r} setR={setR}/>}
+    {mode==='ficha'&&group&&<GroupFormatBar key={group.key} group={group} e={e} setE={setE} onClose={()=>setGroup(null)}/>}
     {edit.modals}
   </EditorShell>;
 }

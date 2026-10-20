@@ -1122,3 +1122,9 @@ ul.cms-stat-rows.cms-card{padding:10px}
 .cms-rich-size input{box-sizing:border-box;width:66px;height:30px;padding:0 6px;border:1px solid var(--line-strong);border-radius:6px;background:#fff;text-align:center;font:700 13px 'IBM Plex Mono';color:var(--ink)}
 .cms-rich-size input:disabled{background:transparent}
 .cms-rich-size span{font:600 10px 'IBM Plex Mono';color:var(--muted)}
+/* Grupos de textos de la ficha (títulos de la filmografía, cargos, etiquetas…): un clic abre la barra de formato del grupo */
+[data-fz-mode] [data-fz]:not(:has(.cms-editable)){cursor:pointer}
+[data-fz-mode] [data-fz]:not(:has(.cms-editable)):hover{outline:1px dashed color-mix(in srgb,var(--forest) 55%,transparent);outline-offset:3px}
+[data-fz-mode] [data-fz][data-fz-on]{outline:2px solid var(--acid);outline-offset:3px}
+.cms-rich-name{font:600 10px 'IBM Plex Mono';letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:0 8px 0 6px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cms-rich-bar .cms-rich-group{width:auto;padding:0 8px;gap:5px;display:inline-flex;align-items:center;font:600 12px 'Manrope',sans-serif}

@@ -4,6 +4,7 @@ import { Check, ChevronDown, FileText, Film, Headphones, ImagePlus, Images, Link
 import { collections, heroSlides, recordExtras, records, theme, timelineEvents } from '../data';
 import { ImageEditor } from './ImageEditor';
 import { RichInline } from './RichEditor';
+import { EditContext, baseSize } from '../edit-context';
 import { inkOn, isHex, tagStyle } from '../color';
 import { VideoPlayer } from '../record-views';
 import { Paged } from '../components';
@@ -87,7 +88,7 @@ export function Modal({children,onClose,className='',title}){
 /* Con `rich` ({runs, onChange(texto, tramos), align, onAlign}) el texto lleva formato por letra (negrita, cursiva,
    subrayado y tamaño) y alineación: se escribe directo sobre la vista previa, con su barra de formato encima (ver RichEditor) */
 export function Editable({value,onChange,placeholder='Escribe aquí…',multiline=false,wrap=false,as:Tag='span',className='',type='text',label,render,rich}){
-  const [editing,setEditing]=useState(false), [floatBox,setFloatBox]=useState(null);
+  const [editing,setEditing]=useState(false), [floatBox,setFloatBox]=useState(null), fz=useContext(EditContext)?.fz;
   const original=useRef(value), originalRuns=useRef(null), originalAlign=useRef(null), base=useRef({px:16,align:'left'}), fieldRef=useRef(null), tagRef=useRef(null), floating=useRef(false);
   // En la vista previa achicada, el texto se edita en un cuadro flotante a tamaño normal (salvo el texto con formato, que se escribe ahí mismo)
   const scaleOf=()=>{const frame=tagRef.current?.ownerDocument?.defaultView?.frameElement;if(!frame)return null;const w=frame.getBoundingClientRect().width;return frame.offsetWidth?{frame,scale:w/frame.offsetWidth}:null};
@@ -119,9 +120,15 @@ export function Editable({value,onChange,placeholder='Escribe aquí…',multilin
   const shown=v=>{const empty=v===undefined||v===null||String(v).trim()==='';return empty?placeholder:render?render(v):multiline?String(v).split('\n').map((l,i,a)=><React.Fragment key={i}>{l}{i<a.length-1&&<br/>}</React.Fragment>):v};
   // La alineación elegida se ve también cuando no se está escribiendo
   const display=v=>rich?.align?<span className="rt-align" style={{textAlign:rich.align}}>{shown(v)}</span>:shown(v);
-  if(editing&&rich)return <Tag ref={tagRef} className={`cms-editable is-rich-editing ${className}`}>
-    <RichInline value={value} runs={rich.runs} onChange={rich.onChange} align={rich.align} defaultAlign={base.current.align} onAlign={rich.onAlign} multiline={multiline} basePx={base.current.px} label={label} placeholder={placeholder} onDone={finish} onCancel={cancel}/>
-  </Tag>;
+  if(editing&&rich){
+    // Si el texto es parte de un grupo de la ficha (los cargos, los datos…), desde la barra se pasa a cambiar el formato de todo el grupo
+    const group=fz&&tagRef.current?.closest('[data-fz]');
+    const toGroup=group&&(()=>{finish();fz.pick(group.dataset.fz,group.dataset.fzLabel,baseSize(group),group)});
+    return <Tag ref={tagRef} className={`cms-editable is-rich-editing ${className}`}>
+      <RichInline value={value} runs={rich.runs} onChange={rich.onChange} align={rich.align} defaultAlign={base.current.align} onAlign={rich.onAlign} multiline={multiline} basePx={base.current.px} label={label} placeholder={placeholder} onDone={finish} onCancel={cancel}
+        onGroup={toGroup} groupLabel={group?.dataset.fzLabel}/>
+    </Tag>;
+  }
   if(editing){
     const props={ref:fieldRef,value:value??'',className:'cms-edit-field',placeholder,'aria-label':label||placeholder,onBlur:finish,onClick:e=>{e.preventDefault();e.stopPropagation()},
       onChange:e=>{onChange(multiline?e.target.value:e.target.value.replace(/\n/g,' '));grow(e.target)},

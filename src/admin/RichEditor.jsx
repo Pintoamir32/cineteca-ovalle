@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, Italic, RemoveFormatting, Underline } from 'lucide-react';
+import { AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, Italic, Layers, RemoveFormatting, Underline } from 'lucide-react';
 import { formatRange, insertAt, normalizeRuns, rangeFormat, runStyleCss, runsOf, runsText } from '../rich-text';
 
 /* Texto de la ficha que se escribe directo sobre la vista previa, con formato por letra como en Word: se
@@ -82,7 +82,7 @@ function useToolbarPlace(editRef,barRef){
   return pos;
 }
 
-export function RichInline({value,runs,onChange,align,defaultAlign='left',onAlign,multiline=false,basePx=16,label,placeholder,onDone,onCancel}){
+export function RichInline({value,runs,onChange,align,defaultAlign='left',onAlign,multiline=false,basePx=16,label,placeholder,onDone,onCancel,onGroup,groupLabel}){
   const editRef=useRef(null), barRef=useRef(null), model=useRef(runsOf(runs,value)), saved=useRef([0,0]);
   const [state,setState]=useState({sel:[0,0],fmt:{s:1}});
   const pos=useToolbarPlace(editRef,barRef);
@@ -153,6 +153,57 @@ export function RichInline({value,runs,onChange,align,defaultAlign='left',onAlig
         {ALIGN_BUTTONS.map(([k,Icon,name])=><button key={k} type="button" className={current===k?'is-on':''} aria-pressed={current===k} onMouseDown={keep} onClick={()=>{onAlign(k===defaultAlign?undefined:k);back()}} title={name} aria-label={name}><Icon/></button>)}</>}
       <span className="cms-rich-sep"/>
       <button type="button" disabled={empty} onMouseDown={keep} onClick={clear} title="Quitar el formato de las letras elegidas" aria-label="Quitar formato"><RemoveFormatting/></button>
+      {onGroup&&<><span className="cms-rich-sep"/>
+        <button type="button" className="cms-rich-group" onMouseDown={keep} onClick={onGroup} title={`Cambiar el formato de todos los textos de «${groupLabel}» juntos`}><Layers/> Todos</button></>}
     </div>,document.body)}
   </>;
 }
+
+/* Formato de un grupo de textos de la ficha (todos los títulos de la filmografía, todos los cargos, una etiqueta…):
+   se abre con un clic sobre un texto que no se escribe ahí mismo, y cambia todos los textos del grupo juntos.
+   Se guarda en extra.fontStyle, extra.fontScale y extra.fontAlign (ver useFz). */
+const GROUP_MARKS=[['b',Bold,'Negrita'],['i',Italic,'Cursiva'],['u',Underline,'Subrayado']];
+export function GroupFormatBar({group,e,setE,onClose}){
+  const {key,label,base=16,el}=group, barRef=useRef(null), anchor=useRef(el);
+  anchor.current=el?.isConnected?el:el?.ownerDocument.querySelector(`[data-fz="${CSS.escape(key)}"]`);
+  const pos=useToolbarPlace(anchor,barRef);
+  const styles=e.fontStyle||{}, scales=e.fontScale||{}, aligns=e.fontAlign||{};
+  const marks=styles[key]||'', scale=scales[key]||1, align=aligns[key];
+  const keyed=(map,v)=>{const next={...map};if(v)next[key]=v;else delete next[key];return Object.keys(next).length?next:undefined};
+  const toggle=k=>setE({fontStyle:keyed(styles,MARKS_ORDER.filter(x=>x===k?!marks.includes(x):marks.includes(x)).join(''))});
+  const basePt=base*.75, pt=basePt*scale, cur=Math.round(pt*2)/2;
+  const setPt=p=>{const s=Math.round(Math.min(400,Math.max(1,p))/basePt*1000)/1000;setE({fontScale:keyed(scales,Math.abs(s-1)<.005?undefined:s)})};
+  const [ptText,setPtText]=useState(ptLabel(pt));
+  useEffect(()=>setPtText(ptLabel(pt)),[key,pt]);
+  const commitPt=()=>{const p=parseFloat(String(ptText).replace(',','.'));if(Number.isFinite(p)&&p>0&&p!==cur)setPt(p);else setPtText(ptLabel(pt))};
+  const bigger=WORD_SIZES.find(s=>s>cur), smaller=[...WORD_SIZES].reverse().find(s=>s<cur);
+  const changed=!!(marks||scale!==1||align);
+  const close=useRef(onClose);close.current=onClose;
+  useEffect(()=>{
+    const doc=el?.ownerDocument||document;
+    const outside=ev=>{if(!barRef.current?.contains(ev.target)&&!ev.target.closest?.(`[data-fz="${CSS.escape(key)}"]`))close.current()};
+    const esc=ev=>{if(ev.key==='Escape')close.current()};
+    const docs=[doc,document].filter((d,i,a)=>a.indexOf(d)===i);
+    docs.forEach(d=>{d.addEventListener('pointerdown',outside,true);d.addEventListener('keydown',esc)});
+    return()=>docs.forEach(d=>{d.removeEventListener('pointerdown',outside,true);d.removeEventListener('keydown',esc)});
+  },[key]);// eslint-disable-line react-hooks/exhaustive-deps
+  return createPortal(<div ref={barRef} className="cms-rich-bar is-group" style={pos||{visibility:'hidden'}} role="toolbar" aria-label={`Formato de «${label||key}»`}>
+    <span className="cms-rich-name" title="Cambia todos los textos de este grupo juntos">{label||key}</span>
+    {GROUP_MARKS.map(([k,Icon,name])=><button key={k} type="button" className={marks.includes(k)?'is-on':''} aria-pressed={marks.includes(k)} onClick={()=>toggle(k)} title={name} aria-label={name}><Icon/></button>)}
+    <span className="cms-rich-sep"/>
+    <button type="button" disabled={cur<=1} onClick={()=>setPt(smaller??Math.max(1,cur-1))} title="Achicar" aria-label="Achicar">A−</button>
+    <label className="cms-rich-size" title="Tamaño en puntos">
+      <input type="text" inputMode="decimal" list="cms-rich-sizes" value={ptText} aria-label="Tamaño en puntos"
+        onChange={ev=>setPtText(ev.target.value)} onBlur={commitPt} onFocus={ev=>ev.target.select()}
+        onKeyDown={ev=>{if(ev.key==='Enter'){ev.preventDefault();commitPt()}if(ev.key==='Escape'){ev.stopPropagation();setPtText(ptLabel(pt))}}}/>
+      <span>pt</span>
+    </label>
+    <datalist id="cms-rich-sizes">{WORD_SIZES.map(s=><option key={s} value={ptLabel(s)}/>)}</datalist>
+    <button type="button" disabled={cur>=400} onClick={()=>setPt(bigger??Math.min(400,cur+1))} title="Agrandar" aria-label="Agrandar">A+</button>
+    <span className="cms-rich-sep"/>
+    {ALIGN_BUTTONS.map(([k,Icon,name])=><button key={k} type="button" className={align===k?'is-on':''} aria-pressed={align===k} onClick={()=>setE({fontAlign:keyed(aligns,align===k?undefined:k)})} title={name} aria-label={name}><Icon/></button>)}
+    <span className="cms-rich-sep"/>
+    <button type="button" disabled={!changed} onClick={()=>setE({fontStyle:keyed(styles),fontScale:keyed(scales),fontAlign:keyed(aligns)})} title="Volver al formato original" aria-label="Quitar formato"><RemoveFormatting/></button>
+  </div>,document.body);
+}
+const MARKS_ORDER=['b','i','u'];

@@ -95,7 +95,7 @@ export function BodyText({blocks}){
 // [etiqueta, valor, ancho, campo editable]: en el gestor los campos editables se muestran aunque estén vacíos
 function Facts({rows,z,extra}){
   const {edit,f}=useEdit(extra);
-  return <dl className="ficha-film-facts">{rows.filter(([,v,,key])=>v||(edit&&key)).map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined} {...z(`fact.${k}`,`Dato «${k}»`)}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>;
+  return <dl className="ficha-film-facts">{rows.filter(([,v,,key])=>v||(edit&&key)).map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined} {...z('facts','Datos de la ficha')}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>;
 }
 
 // Relacionados como índice de diario: miniatura en papel, titular con serifa
