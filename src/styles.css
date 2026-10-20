@@ -25,3 +25,7 @@
 .image-zoom-close svg{width:22px;height:22px}
 body.zoom-open{overflow:hidden}
 @keyframes zoomFade{from{opacity:0}to{opacity:1}}
+/* Carrusel: una descripción muy larga se corta en 5 líneas (en el gestor se ve completa para editarla) */
+.hero-title p:not(:has(.cms-editable)){display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+.hero-title h1{overflow-wrap:break-word}
+@media(min-width:761px){.hero-title{right:8vw}}

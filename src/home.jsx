@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowDownRight, ArrowRight, BookOpen, CirclePlay, FileText, Film, Grid2X2, Layers, MapPin, Mic2, Search, Settings2, UserRound } from 'lucide-react';
 import { tagStyle } from './color';
@@ -63,6 +63,19 @@ export function Home(){
     const timer=setTimeout(()=>setSlide(s=>(s+1)%slides.length),window.matchMedia('(prefers-reduced-motion: reduce)').matches?7000:5000);
     return ()=>clearTimeout(timer);
   },[slide,paused,edit,slides.length]);
+  // Con mucho texto, el título se achica hasta que título y descripción caben en la portada (sin bajar de 30 px)
+  const titleRef=useRef(null);
+  useLayoutEffect(()=>{
+    const el=titleRef.current, h1=el?.querySelector('h1');if(!h1)return;
+    const fit=()=>{
+      h1.style.fontSize='';
+      const room=el.parentElement.clientHeight-(window.innerWidth<=760?170:230);
+      let size=parseFloat(getComputedStyle(h1).fontSize);
+      while(el.offsetHeight>room&&size>30){size=Math.max(30,size-4);h1.style.fontSize=`${size}px`}
+    };
+    fit();document.fonts?.ready.then(fit);
+    window.addEventListener('resize',fit);return ()=>window.removeEventListener('resize',fit);
+  },[slide,current]);
   const index=useMemo(()=>buildSearchIndex(),[]);
   const results=useMemo(()=>matchIndex(term,index),[term,index]);
   const allRecords=useMemo(()=>getAllRecords(),[]);
@@ -85,7 +98,7 @@ export function Home(){
       <div className="hero-photo">{slides.map((x,i)=><img key={`${i}-${x.image}`} className={x===current?'is-active':undefined} src={x.image} alt={x===current?x.alt:''} aria-hidden={x===current?undefined:true} loading="eager" decoding="async" fetchpriority={i===0?'high':'low'}/>)}<div className="photo-shade"/></div>
       {editable&&edit.image(s('image'),{label:`Cambiar foto · diapositiva ${slide+1}`,className:'home-edit-hero-img',aspect:null})}
       <div className="hero-edition">{t('heroEdition')}</div>
-      <div className="hero-title" key={`title-${slide}`}>
+      <div className="hero-title" key={`title-${slide}`} ref={titleRef}>
         <div className="eyebrow"><span>●</span> {st('eyebrow')}</div>
         <h1>{st('title')}{(editable||current.em)&&<><br/>{editable?t(s('em'),{as:'em'}):<em>{current.em}</em>}</>}</h1>
         <p>{st('desc')}</p>
