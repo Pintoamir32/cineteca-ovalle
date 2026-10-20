@@ -56,11 +56,13 @@ export function Home(){
   const [ownSlide,setOwnSlide]=useState(0),[paused,setPaused]=useState(false);
   const slide=editable?edit.slide:ownSlide, setSlide=editable?edit.setSlide:setOwnSlide;
   const current=slides[Math.min(slide,slides.length-1)]||slides[0];
+  // Avanza solo cada 5 s (7 s si el sistema pide menos movimiento: cambia sin acercamiento). Al elegir una
+  // diapositiva el tiempo vuelve a contar; se detiene con el mouse sobre los puntos o el botón, y con «Sin animaciones»
   useEffect(()=>{
-    if(edit||paused||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-    const timer=setInterval(()=>setSlide(s=>(s+1)%slides.length),4000);
-    return ()=>clearInterval(timer);
-  },[paused,edit,slides.length]);
+    if(edit||paused||slides.length<2||document.documentElement.classList.contains('a11y-motion'))return;
+    const timer=setTimeout(()=>setSlide(s=>(s+1)%slides.length),window.matchMedia('(prefers-reduced-motion: reduce)').matches?7000:5000);
+    return ()=>clearTimeout(timer);
+  },[slide,paused,edit,slides.length]);
   const index=useMemo(()=>buildSearchIndex(),[]);
   const results=useMemo(()=>matchIndex(term,index),[term,index]);
   const allRecords=useMemo(()=>getAllRecords(),[]);
@@ -78,8 +80,9 @@ export function Home(){
   const st=i=>editable?t(s(i)):rich(current[i]);
 
   return <main className="home-page">
-    <section className="hero-new" data-edit={edit?'Portada':undefined} onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)}>
-      <div className="hero-photo" key={`photo-${slide}`}><img src={current.image} alt={current.alt} loading="eager" decoding="async"/><div className="photo-shade"/></div>
+    <section className="hero-new" data-edit={edit?'Portada':undefined}>
+      {/* Todas las fotos quedan cargadas una sobre otra y la elegida aparece encima: el cambio es inmediato */}
+      <div className="hero-photo">{slides.map((x,i)=><img key={`${i}-${x.image}`} className={x===current?'is-active':undefined} src={x.image} alt={x===current?x.alt:''} aria-hidden={x===current?undefined:true} loading="eager" decoding="async" fetchpriority={i===0?'high':'low'}/>)}<div className="photo-shade"/></div>
       {editable&&edit.image(s('image'),{label:`Cambiar foto · diapositiva ${slide+1}`,className:'home-edit-hero-img',aspect:null})}
       <div className="hero-edition">{t('heroEdition')}</div>
       <div className="hero-title" key={`title-${slide}`}>
@@ -87,7 +90,7 @@ export function Home(){
         <h1>{st('title')}{(editable||current.em)&&<><br/>{editable?t(s('em'),{as:'em'}):<em>{current.em}</em>}</>}</h1>
         <p>{st('desc')}</p>
       </div>
-      <div className="hero-bottom-right">
+      <div className="hero-bottom-right" onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)} onFocus={()=>setPaused(true)} onBlur={()=>setPaused(false)}>
         <Link className="hero-cta" to={current.link}>{t('heroCta')} <ArrowRight/></Link>
         <div className="hero-dots">{slides.map((x,i)=><button type="button" key={i} className={i===slide?'active':''} onClick={()=>setSlide(i)} aria-label={`Ir a la diapositiva ${i+1}`}/>)}</div>
       </div>

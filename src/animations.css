@@ -6,8 +6,11 @@
 @keyframes imgReveal{from{opacity:0;transform:scale(1.04);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}
 .record-photo>img,.page-hero>img,.ficha-hero>img,.discovery-hero>img,.about-hero>img,.collection-card>img,.detail-image>img,.spotlight-image>img,.ficha-gallery-grid>img,.timeline-detail>img{animation:imgReveal .85s cubic-bezier(.16,.8,.3,1) both}
 
-@keyframes heroPhotoZoom{0%{opacity:0;filter:blur(10px);transform:scale(1.22)}18%{opacity:1;filter:blur(0)}100%{opacity:1;filter:blur(0);transform:scale(1)}}
-.hero-photo>img{animation:heroPhotoZoom 4s cubic-bezier(.25,.46,.45,.94) both}
+@keyframes heroPhotoZoom{from{transform:scale(1.08)}to{transform:scale(1)}}
+/* Carrusel del inicio: las fotos están una sobre otra; la elegida aparece con un fundido corto y se acerca de a poco */
+.hero-photo>img{position:absolute;inset:0;width:100%;opacity:0;transition:opacity .7s ease}
+.hero-photo>img.is-active{opacity:1;z-index:1;animation:heroPhotoZoom 6s cubic-bezier(.25,.46,.45,.94) both}
+.hero-photo>.photo-shade{z-index:2}
 
 @keyframes panelDrop{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
 .filter-panel{animation:panelDrop .28s cubic-bezier(.16,.8,.3,1) both;transform-origin:top}
@@ -33,6 +36,8 @@
 .hero-index{animation:heroFadeUp .8s cubic-bezier(.16,.8,.3,1) .55s both}
 
 @media(prefers-reduced-motion: reduce){
+  /* Las fotos del carrusel que no están a la vista siguen ocultas (abajo se fuerza opacity:1 a todas) */
+  .hero-photo>img:not(.is-active){opacity:0!important}
   [data-reveal],.stagger-item,.route-view,.hero-title>*,.hero-edition,.reel-button,.hero-index,
   .record-photo>img,.page-hero>img,.ficha-hero>img,.discovery-hero>img,.about-hero>img,.collection-card>img,
   .detail-image>img,.spotlight-image>img,.hero-photo>img,.ficha-gallery-grid>img,.timeline-detail>img,.filter-panel{
