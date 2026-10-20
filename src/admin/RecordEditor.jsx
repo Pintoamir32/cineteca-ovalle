@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ALargeSmall, ArrowLeft, Bold, Italic, Underline, ArrowRight, Check, Crosshair, RotateCcw, ChevronDown, ChevronUp, Circle, Eye, EyeOff, FileText, ImagePlus, Images, MapPin, Plus, Star, Trash2, Type, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Crosshair, ChevronDown, ChevronUp, Circle, Eye, EyeOff, FileText, ImagePlus, Images, MapPin, Plus, Star, Trash2, Type, X } from 'lucide-react';
 import { RecordCard, RecordRow } from '../components';
 import { collections, locations, records, site } from '../data';
-import { EditContext, FONT_STYLES } from '../edit-context';
+import { EditContext } from '../edit-context';
 import { normalizeRuns, renderRuns, runsOf, sliceRuns, validRuns } from '../rich-text';
 import { RecordDetail } from '../pages';
 import { BODY_IMAGE_ALIGNS, BODY_IMAGE_SIZE, PANEL_SHAPES, bodyBlocks, bodyImageStyle, bodyPlainText, panelShape } from '../record-views';
@@ -52,7 +52,6 @@ function RecordEditorInner(){
   // Copia en el navegador de lo no guardado; una ficha nueva recuperada toma un número libre
   const clearLocal=useLocalDraft(`ficha:${slug}/${id}`,draft,dirty,d=>{setDraft(isNew?{...d,record:{...d.record,id:nextId()}}:d);setDirty(true)});
 
-  const [fz,setFz]=useState({active:false});
   const {record:r,extra:e}=draft, meta=TYPE_META[r.type], isPerson=r.type==='Persona', isPress=r.type==='Prensa', isInterview=r.type==='Entrevista', isArticle=r.type==='Artículo';
   const setR=patch=>{setDraft(d=>({...d,record:{...d.record,...patch}}));setDirty(true)};
   const setE=patch=>{setDraft(d=>({...d,extra:{...d.extra,...patch}}));setDirty(true)};
@@ -148,10 +147,6 @@ function RecordEditorInner(){
     <PanelBlock title="Estado de la ficha" aside={<b className={miss.length?'cms-count-warn':'cms-count-ok'}>{miss.length?`${miss.length} pendiente${miss.length>1?'s':''}`:'Completa'}</b>}>
       <ul className="cms-checklist">{checklist.map(k=><li key={k} className={miss.includes(k)?'':'done'}>{miss.includes(k)?<Circle/>:<Check/>}{checkName(k)}{REQUIRED.includes(k)&&miss.includes(k)&&<small>obligatorio para guardar</small>}{k==='Descripción'&&miss.includes(k)&&<small>mín. 40 caracteres</small>}</li>)}</ul>
     </PanelBlock>
-    {mode==='ficha'&&<PanelBlock title="Formato de texto">
-      {fz.active?<FontSizeBar fz={fz} e={e} setE={setE} onClose={()=>setFz({active:false})}/>
-        :<button type="button" className="cms-btn is-block" onClick={()=>setFz({active:true})}><ALargeSmall/> Tamaño, negrita, cursiva…</button>}
-    </PanelBlock>}
     {isPerson?<><PersonWorks r={r} e={e} setE={setE} openPicker={edit.open}/></>:isPress?<PressPanel r={r} e={e} setR={setR} setE={setE} openPicker={edit.open}/>
       :isInterview?<InterviewPanel r={r} e={e} setR={setR} setE={setE} openPicker={edit.open}/>
       :isArticle?<ArticlePanel r={r} e={e} setR={setR} setE={setE} openPicker={edit.open}/>:<>
@@ -180,7 +175,7 @@ function RecordEditorInner(){
     <div className="cms-frame-tools">
       <div className="cms-segment is-small cms-mode">{[['ficha','Ficha completa'],['tarjeta','Tarjeta y lista']].map(([k,l])=><button key={k} type="button" className={mode===k?'active':''} onClick={()=>setMode(k)}>{l}</button>)}</div>
     </div>
-    {mode==='ficha'?<HomeEditContext.Provider value={shared.context}><EditContext.Provider value={{...edit.context,fz:{...fz,pick:(key,label,base)=>setFz(x=>({...x,selected:key,label,base}))}}}>
+    {mode==='ficha'?<HomeEditContext.Provider value={shared.context}><EditContext.Provider value={edit.context}>
       <SiteFrame className="is-record" path={`/${r.slug}`}>
         <RecordDetail item={{...r,image:r.image||BLANK}} extra={e}/>
       </SiteFrame>
@@ -190,52 +185,6 @@ function RecordEditorInner(){
 }
 
 const BLANK='data:image/gif;base64,R0lGODlhAQABAAAAACw=';
-
-/* Tamaño de letra (en el panel derecho): con el modo activo, un clic en cualquier texto de la ficha lo elige y aquí
-   se escribe su medida en puntos, como en Word (o se elige de la lista, o se sube y baja con A+ y A−).
-   Los puntos se calculan sobre la vista de escritorio: en pantallas más chicas el texto se achica en proporción.
-   Se guarda en extra.fontScale ({clave del texto: escala respecto de su tamaño original}); el original no se guarda.
-   Negrita, cursiva y subrayado se marcan para el mismo texto y se guardan en extra.fontStyle ({clave: 'biu'}) */
-const FZ_MIN=.2, FZ_MAX=6, PT_MIN=1, PT_MAX=400;
-const WORD_SIZES=[8,9,10,10.5,11,12,14,16,18,20,22,24,26,28,36,48,72];
-const ptLabel=pt=>String(Math.round(pt*2)/2).replace('.',',');
-function FontSizeBar({fz,e,setE,onClose}){
-  const scales=e.fontScale||{}, value=fz.selected?scales[fz.selected]||1:1;
-  const styles=e.fontStyle||{}, marks=fz.selected?styles[fz.selected]||'':'';
-  const changed=new Set([...Object.keys(scales),...Object.keys(styles)]).size;
-  const toggle=k=>{const next={...styles};const v=FONT_STYLES.map(([x])=>x).filter(x=>x===k?!marks.includes(x):marks.includes(x)).join('');if(v)next[fz.selected]=v;else delete next[fz.selected];setE({fontStyle:Object.keys(next).length?next:undefined})};
-  const basePt=(fz.base||16)*.75, pt=basePt*value;
-  const [text,setText]=useState(ptLabel(pt));
-  useEffect(()=>setText(ptLabel(pt)),[fz.selected,pt]);
-  const setScale=v=>{const next={...scales};const n=Math.round(Math.min(FZ_MAX,Math.max(FZ_MIN,v))*1000)/1000;if(Math.abs(n-1)<.005)delete next[fz.selected];else next[fz.selected]=n;setE({fontScale:Object.keys(next).length?next:undefined})};
-  const setPt=p=>setScale(Math.min(PT_MAX,Math.max(PT_MIN,p))/basePt);
-  // Lo escrito se aplica con Enter o al salir del campo; si no es un número, vuelve la medida actual
-  const commit=()=>{const p=parseFloat(String(text).replace(',','.'));if(Number.isFinite(p)&&p>0)setPt(p);else setText(ptLabel(pt))};
-  // Como en Word: A+ y A− pasan a la medida siguiente de la lista
-  const cur=Math.round(pt*2)/2, bigger=WORD_SIZES.find(s=>s>cur), smaller=[...WORD_SIZES].reverse().find(s=>s<cur);
-  const icons={b:Bold,i:Italic,u:Underline};
-  return <div className="cms-fz-panel" role="group" aria-label="Formato de texto">
-    {fz.selected?<>
-      <span className="cms-fz-name"><small>Texto elegido</small><strong>{fz.label||fz.selected}</strong></span>
-      <div className="cms-fz-steps">
-        <button type="button" className="cms-icon-btn" onClick={()=>setPt(smaller??Math.max(PT_MIN,cur-1))} disabled={cur<=PT_MIN} aria-label="Achicar" title="Achicar">A−</button>
-        <label className="cms-fz-input">
-          <input type="text" inputMode="decimal" list="cms-fz-sizes" value={text} aria-label="Tamaño en puntos"
-            onChange={ev=>setText(ev.target.value)} onBlur={commit} onFocus={ev=>ev.target.select()}
-            onKeyDown={ev=>{if(ev.key==='Enter'){ev.preventDefault();commit()}if(ev.key==='Escape')setText(ptLabel(pt))}}/>
-          <span>pt</span>
-        </label>
-        <datalist id="cms-fz-sizes">{WORD_SIZES.map(s=><option key={s} value={ptLabel(s)}/>)}</datalist>
-        <button type="button" className="cms-icon-btn" onClick={()=>setPt(bigger??Math.min(PT_MAX,cur+1))} disabled={cur>=PT_MAX} aria-label="Agrandar" title="Agrandar">A+</button>
-      </div>
-      <div className="cms-fz-marks">{FONT_STYLES.map(([k,l])=>{const Icon=icons[k], on=marks.includes(k);return <button key={k} type="button" className={`cms-icon-btn${on?' is-on':''}`} aria-pressed={on} onClick={()=>toggle(k)} aria-label={l} title={l}><Icon/></button>})}</div>
-      <p className="cms-help">Escribe la medida o elígela de la lista. Tamaño original: {ptLabel(basePt)} pt.</p>
-      {value!==1&&<button type="button" className="cms-btn is-ghost is-small is-block" onClick={()=>setScale(1)}><RotateCcw/> Volver a {ptLabel(basePt)} pt</button>}
-    </>:<span className="cms-fz-name"><strong>Haz clic en cualquier texto de la ficha</strong><small>Luego cambia aquí su tamaño o ponlo en negrita, cursiva o subrayado. Cada texto tiene su propio formato.</small></span>}
-    {changed>0&&<button type="button" className="cms-btn is-ghost is-small is-block" onClick={()=>setE({fontScale:undefined,fontStyle:undefined})} title="Todos los textos vuelven a su formato original">Restablecer todo · {changed}</button>}
-    <button type="button" className="cms-btn is-primary is-block" onClick={onClose}><Check/> Listo</button>
-  </div>;
-}
 
 // Entrevista: una o varias personas entrevistadas, {id} (con ficha) o {name} (escrita a mano). De ellas
 // salen el nombre, el título y la imagen (también en las antiguas, que tenían una sola); el formato es texto, audio o video
