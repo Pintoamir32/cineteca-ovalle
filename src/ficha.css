@@ -1,6 +1,6 @@
 .ficha-page{background:var(--paper)}
 .ficha-hero{position:relative;min-height:520px;background:var(--black);color:#fff;overflow:hidden;margin:24px 24px 0;display:flex;flex-direction:column;justify-content:flex-end}
-.ficha-hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:grayscale(.45) contrast(1.05)}
+.ficha-hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .ficha-hero-shade{position:absolute;inset:0;background:linear-gradient(0deg,rgba(6,9,7,.95),rgba(6,9,7,.4) 55%,rgba(6,9,7,.5))}
 .ficha-hero .back-link{position:relative;z-index:2;display:inline-flex;align-items:center;gap:8px;width:max-content;margin:26px 0 0 28px;font:700 9px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:#fff}
 .ficha-hero .back-link svg{width:15px}
@@ -26,7 +26,7 @@
 .ficha-media .media-viewer{margin-top:0}
 .ficha-gallery{margin-top:64px}
 .ficha-gallery-grid{display:flex;flex-wrap:wrap;border:1px solid var(--line);margin-top:24px}
-.ficha-gallery-grid img{flex:1 1 240px;min-width:0;height:260px;object-fit:cover;border-right:1px solid var(--line);border-bottom:1px solid var(--line);filter:grayscale(.2)}
+.ficha-gallery-grid img{flex:1 1 240px;min-width:0;height:260px;object-fit:cover;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
 
 .ficha-aside{padding:70px 32px;background:#fff;position:sticky;top:110px}
 .ficha-facts{display:grid;border-top:1px solid var(--line);margin-bottom:30px}
@@ -102,7 +102,7 @@
 .ficha-film .ficha-aside{padding:28px 28px 36px;position:static}
 .ficha-poster{position:relative;margin:0;aspect-ratio:5/6;overflow:hidden;background:var(--black);box-shadow:0 24px 50px -24px color-mix(in srgb,var(--black) 45%,transparent)}
 .ficha-poster.is-horizontal{aspect-ratio:4/3}
-.ficha-poster img{width:100%;height:100%;object-fit:cover;filter:grayscale(.15)}
+.ficha-poster img{width:100%;height:100%;object-fit:cover}
 .ficha-poster figcaption{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;gap:12px;padding:40px 16px 14px;background:linear-gradient(0deg,rgba(6,9,7,.85),transparent);font:700 8px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:#fff}
 .ficha-poster figcaption span:last-child{color:var(--acid)}
 .ficha-film-aside .ficha-cta{margin:0 0 34px;background:var(--black)}
@@ -119,13 +119,12 @@
 .ficha-film-facts dd{margin:0;font:600 14px 'Manrope'}
 .ficha-film-related{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-bottom:34px}
 .ficha-film-related a{display:flex;align-items:center;gap:12px;padding:6px 10px 6px 6px;border:1px solid var(--line);color:var(--black);transition:.2s}
-.ficha-film-related img{width:44px;height:56px;object-fit:cover;flex-shrink:0;filter:grayscale(.4)}
+.ficha-film-related img{width:44px;height:56px;object-fit:cover;flex-shrink:0}
 .ficha-film-related a>div{flex:1;min-width:0}
 .ficha-film-related small{display:block;font:700 7.5px 'IBM Plex Mono';letter-spacing:.08em;text-transform:uppercase;color:var(--forest);margin-bottom:4px}
 .ficha-film-related strong{display:block;font:600 12px 'Manrope';overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ficha-film-related a>svg{width:14px;flex-shrink:0}
 .ficha-film-related a:hover{border-color:var(--forest)}
-.ficha-film-related a:hover img{filter:none}
 @media(max-width:1000px){.ficha-film .ficha-film-aside,.ficha-person-body .ficha-film-aside{display:grid;grid-template-columns:minmax(0,280px) 1fr;gap:0 28px;align-items:start}.ficha-film .ficha-film-aside>.ficha-poster,.ficha-person-body .ficha-film-aside>.ficha-poster{grid-row:1/span 20}.ficha-film .ficha-film-aside>:not(.ficha-poster),.ficha-person-body .ficha-film-aside>:not(.ficha-poster){grid-column:2}}
 @media(max-width:600px){.ficha-film .ficha-film-aside,.ficha-person-body .ficha-film-aside{display:block}.ficha-film .ficha-film-aside>.ficha-poster,.ficha-person-body .ficha-film-aside>.ficha-poster{width:100%;max-width:360px;margin:0 auto 20px}}
 @media(max-width:760px){.ficha-film .ficha-body{margin-top:14px}.ficha-film-head{margin-bottom:48px}.ficha-film-top{margin-bottom:36px}.ficha-film-director{padding-right:0;border-right:0}}
@@ -157,8 +156,7 @@
 .ficha-filmography-head>span{font:700 8px 'IBM Plex Mono';letter-spacing:.12em;color:#8a908a}
 .ficha-filmography-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
 .ficha-filmography-list li{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:22px;padding:18px 0;border-bottom:1px solid var(--line)}
-.ficha-filmography-list img{width:64px;aspect-ratio:7/10;object-fit:cover;filter:grayscale(.35);transition:filter .25s}
-.ficha-filmography-list li:hover img{filter:none}
+.ficha-filmography-list img{width:64px;aspect-ratio:7/10;object-fit:cover}
 .ficha-filmography-info{min-width:0}
 .ficha-filmography-info small{display:block;font:700 8px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:#8a908a;margin-bottom:8px}
 .ficha-filmography-info h3{font:700 clamp(20px,2vw,26px)/1.1 'Syne';letter-spacing:-.03em;margin:0 0 10px}
@@ -189,14 +187,13 @@ a.back-link.back-link:hover .back-link-icon{background:var(--acid);color:var(--b
 .ficha-people{margin-top:64px}
 .ficha-people-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:10px}
 .ficha-person-card{display:flex;align-items:center;gap:14px;padding:10px 16px 10px 10px;background:#fff;border:1px solid var(--line);color:var(--black);transition:border-color .2s,box-shadow .2s}
-.ficha-person-card img{width:58px;height:58px;border-radius:50%;object-fit:cover;flex-shrink:0;filter:grayscale(.4);transition:filter .25s}
+.ficha-person-card img{width:58px;height:58px;border-radius:50%;object-fit:cover;flex-shrink:0}
 .ficha-person-card>div{flex:1;min-width:0}
 .ficha-person-card h3{font:700 15px/1.2 'Syne';letter-spacing:-.02em;margin:0 0 3px}
 .ficha-person-card small{display:block;font-size:11px;color:#6b716c;margin-bottom:8px}
 .ficha-person-card .ficha-filmography-roles span{padding:3px 8px;font-size:10px}
 .ficha-person-card>svg{width:15px;flex-shrink:0;color:var(--forest);opacity:.4;transition:.2s}
 .ficha-person-card:hover{border-color:var(--forest);box-shadow:0 10px 24px -14px color-mix(in srgb,var(--forest) 40%,transparent)}
-.ficha-person-card:hover img{filter:none}
 .ficha-person-card:hover>svg{opacity:1;transform:translateX(3px)}
 
 
