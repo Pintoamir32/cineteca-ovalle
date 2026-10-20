@@ -10,7 +10,7 @@ import { Choice, ColorSwatches, Editable, ImagePicker, Modal, palette, useAskRem
 import { LocationPicker } from './LocationPicker';
 import { SiteFrame } from './SiteFrame';
 import { EditContext } from '../edit-context';
-import { TimelinePage } from '../pages';
+import { TIMELINE_SHAPES, TimelinePage, timelineShape } from '../pages';
 import { Paged } from '../components';
 import { useLocalDraft } from './autosave';
 
@@ -103,7 +103,8 @@ function ItemModal({item,title,base,label,male=false,validate,save,remove,remove
 const Field=({label,hint,children})=><label className="cms-field cms-item-field"><span>{label}</span>{children}{hint}</label>;
 
 // Imagen del elemento: miniatura con cambiar / quitar; el selector se abre encima de la ventana
-function ImageField({label,value,onChange,aspect,optional=false,busy}){
+// Con `shapes` ([nombre, proporción]) al recortar se elige entre esas formas, y onChange recibe también la elegida
+function ImageField({label,value,onChange,aspect,shapes,optional=false,busy}){
   const [picking,setPicking]=useState(false), confirmAsk=useAskRemove();
   // Mientras la confirmación está abierta, Esc no cierra la ventana del hito
   const ask=(what,fn,text)=>async()=>{busy.current=true;try{await confirmAsk(what,fn,text)()}finally{setTimeout(()=>{busy.current=false})}};
@@ -117,7 +118,7 @@ function ImageField({label,value,onChange,aspect,optional=false,busy}){
         {!value&&optional&&<p className="cms-help">Opcional: sin imagen se muestra un fondo liso.</p>}
       </div>
     </div>
-    {picking&&<ImagePicker value={value} aspect={aspect} fixed onPick={onChange} onRemove={value&&optional?()=>onChange(''):undefined} onClose={()=>open(false)} title={label}/>}
+    {picking&&<ImagePicker value={value} aspect={aspect} shapes={shapes} fixed onPick={onChange}onRemove={value&&optional?()=>onChange(''):undefined} onClose={()=>open(false)} title={label}/>}
   </div>;
 }
 
@@ -218,7 +219,9 @@ function TimelineModal(){
         {sameYear.length>0&&<> También en {yearOf(e)}: {sameYear.map(x=>x.title).join(', ')}.</>}</p>}
       <Field label="Título"><input value={e.title} onChange={ev=>set({title:ev.target.value})} placeholder="Título del hito" autoFocus={item.isNew&&!!e.year}/></Field>
       <Field label="Texto"><textarea rows={4} value={e.text} onChange={ev=>set({text:ev.target.value})} placeholder="Qué ocurrió y por qué importa"/></Field>
-      <ImageField label="Imagen" value={e.image} onChange={image=>set({image})} aspect={4/5} optional busy={busy}/>
+      {/* Vertical u horizontal: se elige al recortarla y así se muestra en el sitio */}
+      <ImageField label="Imagen" value={e.image} aspect={TIMELINE_SHAPES.find(([k])=>k===timelineShape(e))[2]} shapes={TIMELINE_SHAPES.map(([,l,a])=>[l,a])}
+        onChange={(image,a)=>{const shape=TIMELINE_SHAPES.find(s=>s[2]===a);set({image,...(shape&&{imageShape:shape[0]})})}} optional busy={busy}/>
     </>}
   </ItemModal>;
 }

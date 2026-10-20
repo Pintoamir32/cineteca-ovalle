@@ -333,6 +333,9 @@ export function CollectionsPage(){
   return <main className="discovery-page"><HeroBanner id="colecciones"/><section className="collections-grid" data-reveal ref={gridRef}>{paged.items.map((c,k)=>{const i=edit?k:offset+k;return <Link to={`/archivo?collection=${encodeURIComponent(c.title)}`} className={`collection-card stagger-item${on(i)?' is-editing':''}`} style={{transitionDelay:`${k*80}ms`}} key={c.slug||i} onClick={edit&&!on(i)?ev=>{ev.preventDefault();edit.pick?.(i)}:undefined}><img src={c.image} alt="" loading="lazy" decoding="async"/><div className="collection-shade"/>{on(i)&&slot('image')}<span>{String(i+1).padStart(2,'0')}</span><h2>{v(i,'title',c.title)}</h2><p>{v(i,'description',c.description,{multiline:true})}</p><b style={tagStyle(c.color)}>{(n=>`${n} ${n===1?'registro':'registros'}`)(on(i)&&edit.count!=null?edit.count:countByCollection(c.title))} <ArrowRight/></b></Link>})}</section>{(paged.total>1||paged.count>25)&&<div className="page-pager"><Pager page={paged.page} total={paged.total} onChange={paged.setPage} scrollRef={gridRef}/></div>}</main>;
 }
 
+// Forma de la imagen de cada hito (se elige al recortarla en el gestor): [clave, nombre, proporción]
+export const TIMELINE_SHAPES=[['vertical','Vertical',4/5],['horizontal','Horizontal',16/9]];
+export const timelineShape=e=>e?.imageShape==='horizontal'?'horizontal':'vertical';
 export function TimelinePage(){
   const {edit,f,slot}=useEdit(), {t}=useSiteText();
   const list=edit?.items||timelineEvents;
@@ -358,7 +361,7 @@ export function TimelinePage(){
         <Pager page={paged.page} total={paged.total} onChange={changePage} scrollRef={spineRef} className="is-compact"/>
       </div>
       <aside className="timeline-detail" ref={detailRef}>
-        {active.image?<img key={active.image} src={active.image} alt={active.title||""} decoding="async"/>:<div className="timeline-detail-noimg"/>}
+        {active.image?<img key={active.image} className={`is-${timelineShape(active)}`} src={active.image} alt={active.title||""} decoding="async"/>:<div className="timeline-detail-noimg"/>}
         {slot('image')}
         <div className="timeline-detail-copy">
           <span>{active.type} · {f('year',active.year,{placeholder:'1970'})}</span>

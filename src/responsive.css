@@ -371,6 +371,7 @@ footer,
 /* El detalle queda fijo a la vista mientras se recorre la lista; la imagen va en formato vertical, igual que el recorte del editor */
 .timeline-detail{position:sticky;top:110px;align-self:start;scroll-margin-top:110px;max-height:calc(100vh - 130px);overflow:hidden auto;background:var(--forest);color:#fff}
 .timeline-detail>img{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;background:#0c2a20}
+.timeline-detail>img.is-horizontal{aspect-ratio:16/9}
 .timeline-detail-noimg{height:120px;background:repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 10px,transparent 10px 20px)}
 .timeline-detail-copy{padding:36px 34px 42px}
 .timeline-detail-copy>span{font:700 8px 'IBM Plex Mono';color:var(--acid);letter-spacing:.14em;text-transform:uppercase}
