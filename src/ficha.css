@@ -1,6 +1,6 @@
 .ficha-page{background:var(--paper)}
-.ficha-hero{position:relative;min-height:520px;background:var(--black);color:#fff;overflow:hidden;margin:24px 24px 0;display:flex;flex-direction:column;justify-content:flex-end}
-.ficha-hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ficha-hero{position:relative;min-height:680px;background:var(--black);color:#fff;overflow:hidden;margin:24px 24px 0;display:flex;flex-direction:column;justify-content:flex-end}
+.ficha-hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .ficha-hero-shade{position:absolute;inset:0;background:linear-gradient(0deg,rgba(6,9,7,.95),rgba(6,9,7,.4) 55%,rgba(6,9,7,.5))}
 .ficha-hero .back-link{position:relative;z-index:2;display:inline-flex;align-items:center;gap:8px;width:max-content;margin:26px 0 0 28px;font:700 9px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:#fff}
 .ficha-hero .back-link svg{width:15px}
@@ -67,7 +67,7 @@
   .ficha-relacionados .record-grid{margin:0 22px;padding:26px 0 34px}
 }
 @media(max-width:760px){
-  .ficha-hero{margin:14px 14px 0;min-height:420px}
+  .ficha-hero{margin:14px 14px 0;min-height:540px}
   .ficha-hero-content{padding:40px 22px 34px}
   .ficha-body{margin:0 14px}
   .ficha-main,.ficha-aside{padding:44px 22px}
@@ -102,7 +102,7 @@
 .ficha-film .ficha-aside{padding:28px 28px 36px;position:static}
 .ficha-poster{position:relative;margin:0;aspect-ratio:5/6;overflow:hidden;background:var(--black);box-shadow:0 24px 50px -24px color-mix(in srgb,var(--black) 45%,transparent)}
 .ficha-poster.is-horizontal{aspect-ratio:4/3}
-.ficha-poster img{width:100%;height:100%;object-fit:cover}
+.ficha-poster img{width:100%;height:100%;object-fit:contain}
 .ficha-poster figcaption{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;gap:12px;padding:40px 16px 14px;background:linear-gradient(0deg,rgba(6,9,7,.85),transparent);font:700 8px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:#fff}
 .ficha-poster figcaption span:last-child{color:var(--acid)}
 .ficha-film-aside .ficha-cta{margin:0 0 34px;background:var(--black)}
