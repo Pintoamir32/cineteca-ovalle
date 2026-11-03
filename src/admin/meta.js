@@ -1,5 +1,5 @@
 import { recordExtras, records, theme } from '../data';
-import { getLocations } from '../repository';
+import { getLocations, recordCode } from '../repository';
 
 // Cómo se llama cada campo según el tipo de registro, y con qué se rellena una ficha nueva
 export const TYPE_META={
@@ -52,7 +52,7 @@ export function missingFields(record,extra=extraOf(record.id)){
   return only?out.filter(k=>only.includes(k)):out;
 }
 
-export const code=id=>`CDO—${String(id).padStart(4,'0')}`;
+export const code=recordCode;
 
 /* ---------- Carrusel del inicio ---------- */
 

@@ -8,7 +8,7 @@ import { normalizeRuns, renderRuns, runsOf, sliceRuns, validRuns } from '../rich
 import { RecordDetail } from '../pages';
 import { BODY_IMAGE_ALIGNS, BODY_IMAGE_SIZE, PANEL_SHAPES, bodyBlocks, bodyImageStyle, bodyPlainText, panelShape } from '../record-views';
 import { getFilmography, getInterviewees, INTERVIEW_FORMATS, interviewFormat, joinNames } from '../repository';
-import { deleteRecord, idTaken, nextId, saveError, saveRecord, setData, useStoreVersion } from '../store';
+import { codeTaken, deleteRecord, nextId, saveError, saveRecord, setData, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
 import { Choice, ColorSwatches, Modal, Editable, EditableChoice, EditableImage, ImagePicker, MEDIA_TYPES, MediaPicker, RecordPicker, thumb, useUi, useAskRemove } from './fields';
 import { SiteFrame } from './SiteFrame';
@@ -26,7 +26,7 @@ function blankDraft(type){
   const meta=TYPE_META[type];
   const draft={
     // Todo vacío: cada campo muestra en gris cómo completarlo
-    record:{id:nextId(),type,slug:meta.slug,title:'',subtitle:'',year:'',format:'',collection:'',color:typeColor(type),image:'',description:''},
+    record:{id:nextId(),code:'',type,slug:meta.slug,title:'',subtitle:'',year:'',format:'',collection:'',color:typeColor(type),image:'',description:''},
     extra:{credits:[],relations:[],locations:[],mediaType:meta.media,media:'',gallery:[]}
   };
   // Película creada desde una inscripción: parte con sus datos (se usa una sola vez)
@@ -63,11 +63,10 @@ function RecordEditorInner(){
 
   const wasPublished=!!existing&&!existing.draft;
   const save=async()=>{
-    // El código se escribe a mano al crear la ficha: debe existir y no repetir el de otra
-    if(isNew){
-      if(!r.id&&r.id!==0)return toast('Escribe un código para esta ficha antes de guardar.','error');
-      if(idTaken(r.id))return toast('Ese código ya lo usa otra ficha. Escribe uno distinto.','error');
-    }
+    // El código es de nomenclatura libre, a elección de quien cataloga: debe existir y no repetir el de otra ficha
+    const codeVal=(r.code||'').trim();
+    if(!codeVal)return toast('Escribe un código para esta ficha antes de guardar.','error');
+    if(codeTaken(codeVal,r.id))return toast('Ese código ya lo usa otra ficha. Escribe uno distinto.','error');
     // Entrevista: cada persona se vincula a su ficha o se escribe a mano; de ellas sale el título y, si no se
     // sube una imagen, la fotografía (la de la primera vinculada que tenga)
     const who=isInterview?cleanInterviewees(e.interviewees):[];
@@ -78,7 +77,7 @@ function RecordEditorInner(){
     if(!base.title.trim())return toast('Escribe un título antes de guardar.','error');
     if(!base.image)return toast('Añade una imagen principal antes de guardar.','error');
     const {draft:isDraft,...rest}=base;
-    let record={...rest,...(isDraft&&{draft:true}),title:base.title.trim(),format:parts.map(p=>p.trim()).join(' · ').replace(/( · )+$/,'')};// cada dato en su posición (género · duración · soporte), aunque falte uno
+    let record={...rest,...(isDraft&&{draft:true}),code:codeVal,title:base.title.trim(),format:parts.map(p=>p.trim()).join(' · ').replace(/( · )+$/,'')};// cada dato en su posición (género · duración · soporte), aunque falte uno
     let {location,...extra}={...e,credits:e.credits.filter(([k,v])=>k.trim()&&v.trim()),gallery:e.gallery.filter(Boolean)};// eslint-disable-line no-unused-vars,prefer-const
     // Persona: solo nombre, biografía, rol(es), fotografía y obras (películas vinculadas); lo demás no se guarda
     if(isPerson){
@@ -144,16 +143,13 @@ function RecordEditorInner(){
   // Panel en cuatro grupos, de lo que más se mira a lo que menos se cambia
   const panel=<>
     <PanelBlock title="Código">
-      {isNew?<>
-        <label className="cms-panel-label">Código de la ficha</label>
-        <input value={r.id===''||r.id==null?'':r.id} onChange={ev=>{const v=ev.target.value.replace(/\D/g,'');setR({id:v===''?'':Number(v)})}}
-          placeholder="Ej.: 23" inputMode="numeric" aria-label="Código de la ficha"/>
-        <p className={`cms-help${r.id!==''&&r.id!=null&&idTaken(r.id)?' is-error':''}`}>
-          {r.id===''||r.id==null?'Escribe un número: será el código de esta ficha.'
-            :idTaken(r.id)?'Ese código ya lo usa otra ficha.'
-            :`Se guardará como ${code(r.id)}.`}
-        </p>
-      </>:<p className="cms-help">{code(r.id)} · el código se escribe al crear la ficha y no cambia después.</p>}
+      <label className="cms-panel-label">Código de la ficha · nomenclatura libre</label>
+      <input value={r.code||''} onChange={ev=>setR({code:ev.target.value})} placeholder="Ej.: PEL-2024-003" aria-label="Código de la ficha"/>
+      <p className={`cms-help${r.code&&codeTaken(r.code,r.id)?' is-error':''}`}>
+        {!(r.code||'').trim()?'Escribe el código con el que se identificará esta ficha: letras, números o el formato que prefieras.'
+          :codeTaken(r.code,r.id)?'Ese código ya lo usa otra ficha.'
+          :`Se mostrará como ${r.code.trim()}.`}
+      </p>
     </PanelBlock>
     <PanelBlock title="Visibilidad en el sitio">
       <div className="cms-segment is-small cms-seg-block">
@@ -187,7 +183,7 @@ function RecordEditorInner(){
     </PanelBlock>}
   </>;
 
-  return <EditorShell crumb={`${meta.label} · ${isNew?'Nueva ficha':code(r.id)}`} title={r.title} isNew={isNew} dirty={dirty}
+  return <EditorShell crumb={`${meta.label} · ${(r.code||'').trim()||(isNew?'Nueva ficha':code(r))}`} title={r.title} isNew={isNew} dirty={dirty}
     onBack={()=>go(`/admin/registros/${slug}`)} onSave={save} onDiscard={discard} onDelete={remove} deleteLabel="Eliminar esta ficha" viewHref={wasPublished?`/ficha/${r.id}`:undefined}
     saveLabel={isNew&&!published?'Guardar borrador':undefined} note={!isNew&&!wasPublished?'Borrador · no se ve en el sitio':undefined}
     panel={panel}

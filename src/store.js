@@ -172,10 +172,13 @@ export const nextId=()=>{
   const trashed=trash.flatMap(t=>t.kind==='records'?[t.item]:t.kind==='todo'?t.item?.records||[]:[]);
   return Math.max(0,...[...records,...trashed].map(r=>Number(r?.id)).filter(id=>id<1e9))+1;
 };
-// El código de una ficha nueva se escribe a mano: hay que avisar si ya lo usa otra (viva o en la papelera)
-export const idTaken=id=>{
+// El código de cada ficha se escribe a mano, con la nomenclatura que se prefiera: hay que avisar si ya lo
+// usa otra ficha (viva o en la papelera). excludeId deja pasar el código de la propia ficha al editarla.
+export const codeTaken=(code,excludeId)=>{
+  const text=String(code||'').trim().toLowerCase();
+  if(!text)return false;
   const trashed=trash.flatMap(t=>t.kind==='records'?[t.item]:t.kind==='todo'?t.item?.records||[]:[]);
-  return [...records,...trashed].some(r=>Number(r?.id)===Number(id));
+  return [...records,...trashed].some(r=>r?.id!==excludeId&&String(r?.code||'').trim().toLowerCase()===text);
 };
 
 export function saveRecord(record,extra){

@@ -4,7 +4,7 @@ import { ArrowDownRight, ArrowRight, BookOpen, CirclePlay, FileText, Film, Grid2
 import { tagStyle } from './color';
 import { Counter, SearchResults } from './components';
 import { collections, locations, sections, site } from './data';
-import { autoSlides, countByType, getAllRecords, newestRecords, recordPath } from './repository';
+import { autoSlides, countByType, getAllRecords, newestRecords, recordCode, recordPath } from './repository';
 import { buildSearchIndex, matchIndex } from './search-index';
 import { SearchSelect } from './SearchSelect';
 import { filtersFor, optionsOf } from './filters';
@@ -142,7 +142,7 @@ function Spotlight({t,c,edit,featuredId,number,extraClass,tag}){
   const [genre,,support]=(item.format||'').split(' · ');
   const kicker=[genre,item.year,support].filter(Boolean).join(' · ').toUpperCase();
   const image=c.spotlightImage||item.image;
-  return <section className={`spotlight${extraClass}`} data-reveal {...tag}><div className="spotlight-copy"><div className="section-label light"><span>{number}</span> {t('spotlightLabel')}</div><span className="spot-kicker">{kicker}</span><h2>{words.slice(0,cut).join(' ')}{words.length>1&&<><br/><i>{words.slice(cut).join(' ')}</i></>}</h2><p>{item.description}</p><dl><div><dt>{item.type==='Película'?'Dirección':'Autoría'}</dt><dd>{item.subtitle}</dd></div><div><dt>Colección</dt><dd>{item.collection}</dd></div></dl><Link to={recordPath(item)}>{t('spotlightCta')} <ArrowRight/></Link></div><div className="spotlight-image"><img src={image} alt={item.title} loading="lazy" decoding="async"/>{edit&&edit.image('spotlightImage',{label:c.spotlightImage?'Cambiar imagen':'Usar otra imagen',fallback:item.image,className:'home-edit-spot-img'})}<div className="film-code">CDO · {String(item.id).padStart(4,'0')}</div><Link className="spot-play" to={recordPath(item)}><CirclePlay/></Link></div></section>;
+  return <section className={`spotlight${extraClass}`} data-reveal {...tag}><div className="spotlight-copy"><div className="section-label light"><span>{number}</span> {t('spotlightLabel')}</div><span className="spot-kicker">{kicker}</span><h2>{words.slice(0,cut).join(' ')}{words.length>1&&<><br/><i>{words.slice(cut).join(' ')}</i></>}</h2><p>{item.description}</p><dl><div><dt>{item.type==='Película'?'Dirección':'Autoría'}</dt><dd>{item.subtitle}</dd></div><div><dt>Colección</dt><dd>{item.collection}</dd></div></dl><Link to={recordPath(item)}>{t('spotlightCta')} <ArrowRight/></Link></div><div className="spotlight-image"><img src={image} alt={item.title} loading="lazy" decoding="async"/>{edit&&edit.image('spotlightImage',{label:c.spotlightImage?'Cambiar imagen':'Usar otra imagen',fallback:item.image,className:'home-edit-spot-img'})}<div className="film-code">{recordCode(item,' · ')}</div><Link className="spot-play" to={recordPath(item)}><CirclePlay/></Link></div></section>;
 }
 
 // Recién catalogado: índice de fichas; la fila activa cambia la imagen de la izquierda
@@ -156,7 +156,7 @@ function Latest({t,items,number,extraClass,tag}){
       <h2>{t('latestTitle')}</h2>
       <Link className="home-new-preview" to={recordPath(current)} tabIndex={-1} aria-hidden="true">
         {items.map((r,i)=><img key={r.id} src={r.image} alt="" loading="lazy" decoding="async" className={i===active?'is-on':''}/>)}
-        <span>CDO · {String(current.id).padStart(4,'0')}</span>
+        <span>{recordCode(current,' · ')}</span>
       </Link>
       <Link className="home-new-all" to="/archivo">{t('latestLink')} <ArrowRight/></Link>
     </div>

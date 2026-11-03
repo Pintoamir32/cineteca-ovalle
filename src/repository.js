@@ -3,6 +3,12 @@ import { records, recordExtras } from './data';
 // `records` se sincroniza con lo guardado desde el gestor (ver store.js).
 // Las fichas en borrador (despublicadas) solo existen en el gestor: el sitio nunca las ve.
 export const isPublished=r=>!!r&&!r.draft;
+// El código es de nomenclatura libre: lo que se haya escrito en la ficha. Las fichas antiguas, creadas
+// antes de poder escribirlo, muestran en su lugar el correlativo CDO automático de siempre.
+export const recordCode=(item,sep='—')=>{
+  const c=(item?.code||'').trim();
+  return c||`CDO${sep}${String(item?.id).padStart(4,'0')}`;
+};
 export function getAllRecords(){
   return records.filter(isPublished);
 }

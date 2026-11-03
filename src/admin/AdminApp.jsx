@@ -424,7 +424,7 @@ function RecordList(){
     <div className="cms-grid">
       {shown.map(r=>{const miss=missingFields(r,extraOf(r.id));return <div key={r.id} className={`cms-tile-wrap${r.draft?' is-draft':''}`}><button type="button" className="cms-tile" onClick={()=>go(`/admin/registros/${slug}/${r.id}`)}>
         <div className="cms-tile-img">{r.image?<img src={thumb(r.image,480)} alt="" loading="lazy"/>:<span className="cms-thumb-empty"/>}<span className="cms-tag" style={tagStyle(r.color)}>{r.type}</span>{miss.length>0&&<span className="cms-tile-warn" title={`Falta: ${miss.join(', ')}`}><AlertCircle/> {miss.length} {miss.length===1?'pendiente':'pendientes'}</span>}{r.draft&&<span className="cms-tile-draft"><EyeOff/> Borrador</span>}</div>
-        <div className="cms-tile-body"><small>{code(r.id)} · {r.year}</small><strong>{r.title||'Sin título'}</strong><span>{r.subtitle}</span></div>
+        <div className="cms-tile-body"><small>{code(r)} · {r.year}</small><strong>{r.title||'Sin título'}</strong><span>{r.subtitle}</span></div>
       </button>
       <button type="button" className="cms-tile-pub" onClick={()=>togglePublished(r)} title={r.draft?'Publicar: que se vea en el sitio':'Despublicar: ocultarla del sitio'}>{r.draft?<><Eye/> Publicar</>:<><EyeOff/> Despublicar</>}</button>
       </div>})}

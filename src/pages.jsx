@@ -4,7 +4,7 @@ import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpDown, CalendarDays, C
 import { searchTerm, track } from './stats';
 import { Counter, PageSize, Paged, Pager, RecordCard, RecordRow, usePaged, usePageSize } from './components';
 import { collections, locations, recordExtras, sections, timelineEvents } from './data';
-import { countByCollection, countByLocation, countByType, getAllRecords, getMapPoints, pointsOf, getFilmPeople, getFilmography, getLocations, getRecordPeople, interviewFormat, placesOf, findPerson, findRecordByParam, recordPath, recordSlug } from './repository';
+import { countByCollection, countByLocation, countByType, getAllRecords, getMapPoints, pointsOf, getFilmPeople, getFilmography, getLocations, getRecordPeople, interviewFormat, placesOf, findPerson, findRecordByParam, recordCode, recordPath, recordSlug } from './repository';
 import { useEdit, useFz } from './edit-context';
 import { useHero, useSiteText } from './site-text';
 // Leaflet solo se descarga al abrir el mapa
@@ -159,7 +159,7 @@ export function ArchivePage({kind='archivo'}){
   </main>
 }
 
-export function DetailPage(){const {id}=useParams();const item=getAllRecords().find(r=>r.id===Number(id));if(!item)return <Navigate to="/archivo"/>;const related=getAllRecords().filter(r=>r.id!==item.id).slice(0,3);return <main className="detail-page"><BackLink item={item}/><section className="detail-hero"><div className="detail-image"><img src={item.image} alt=""/><span style={tagStyle(item.color)}>{item.type}</span></div><div className="detail-copy"><span>FICHA CDO—{String(item.id).padStart(4,'0')}</span><h1>{item.title}</h1><p>{item.description}</p><dl><div><dt>Fecha</dt><dd>{item.year}</dd></div><div><dt>Autoría</dt><dd>{item.subtitle}</dd></div><div><dt>Formato</dt><dd>{item.format}</dd></div><div><dt>Colección</dt><dd>{item.collection}</dd></div></dl><button><CirclePlay/> Consultar archivo digital</button></div></section><section className="related-page"><div className="section-label"><span>+</span> RECURSOS RELACIONADOS</div><div className="record-grid">{related.map((r,i)=><RecordCard item={r} index={i} key={r.id}/>)}</div></section></main>}
+export function DetailPage(){const {id}=useParams();const item=getAllRecords().find(r=>r.id===Number(id));if(!item)return <Navigate to="/archivo"/>;const related=getAllRecords().filter(r=>r.id!==item.id).slice(0,3);return <main className="detail-page"><BackLink item={item}/><section className="detail-hero"><div className="detail-image"><img src={item.image} alt=""/><span style={tagStyle(item.color)}>{item.type}</span></div><div className="detail-copy"><span>FICHA {recordCode(item)}</span><h1>{item.title}</h1><p>{item.description}</p><dl><div><dt>Fecha</dt><dd>{item.year}</dd></div><div><dt>Autoría</dt><dd>{item.subtitle}</dd></div><div><dt>Formato</dt><dd>{item.format}</dd></div><div><dt>Colección</dt><dd>{item.collection}</dd></div></dl><button><CirclePlay/> Consultar archivo digital</button></div></section><section className="related-page"><div className="section-label"><span>+</span> RECURSOS RELACIONADOS</div><div className="record-grid">{related.map((r,i)=><RecordCard item={r} index={i} key={r.id}/>)}</div></section></main>}
 
 
 
@@ -219,13 +219,13 @@ export function RecordDetail({item,extra}){
       <BackLink item={item}/>
       <div className="ficha-hero-content">
         <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
-        <span className="ficha-code">FICHA CDO—{String(item.id).padStart(4,'0')}</span>
+        <span className="ficha-code">FICHA {recordCode(item)}</span>
         <h1>{f('title',item.title)}</h1>
         <p>{f('description',item.description,{multiline:true})}</p>
       </div>
     </section>}
     {isPerson&&<section className="ficha-body ficha-person-body" data-reveal>
-      <div className="ficha-film-top ficha-person-top"><BackLink item={item}/><span className="ficha-code">FICHA CDO—{String(item.id).padStart(4,'0')}</span></div>
+      <div className="ficha-film-top ficha-person-top"><BackLink item={item}/><span className="ficha-code">FICHA {recordCode(item)}</span></div>
       <article className="ficha-main">
         {/* Nombre y roles encabezan la ficha, como el título en las películas */}
         <header className="ficha-film-head ficha-person-head">
@@ -264,7 +264,7 @@ export function RecordDetail({item,extra}){
     <section className="ficha-body" data-reveal>
       <article className="ficha-main">
         {isFilm&&<header className="ficha-film-head">
-          <div className="ficha-film-top"><BackLink item={item}/><span className="ficha-code">FICHA CDO—{String(item.id).padStart(4,'0')}</span></div>
+          <div className="ficha-film-top"><BackLink item={item}/><span className="ficha-code">FICHA {recordCode(item)}</span></div>
           <span className="ficha-tag" style={tagStyle(item.color)}>{item.type}</span>
           <h1 {...z('title','Título')}>{f('title',item.title)}</h1>
           <div className="ficha-film-byline">

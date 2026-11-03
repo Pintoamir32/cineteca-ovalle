@@ -2,14 +2,14 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, CirclePlay, Download, FileText, Headphones, Maximize2, X } from 'lucide-react';
 import { sections } from './data';
-import { getInterviewees, interviewFormat, joinNames, recordPath } from './repository';
+import { getInterviewees, interviewFormat, joinNames, recordCode, recordPath } from './repository';
 import { useEdit, useFz } from './edit-context';
 import { richOr } from './rich-text';
 import { tagStyle } from './color';
 import { videoSource } from './video-links';
 import './record-views.css';
 
-const code=item=>`FICHA CDO—${String(item.id).padStart(4,'0')}`;
+const code=item=>`FICHA ${recordCode(item)}`;
 
 // Imagen del panel derecho de toda ficha: vertical u horizontal (el artículo parte horizontal; lo demás, vertical)
 export const PANEL_SHAPES=[['vertical','Vertical',5/6],['horizontal','Horizontal',4/3]];
