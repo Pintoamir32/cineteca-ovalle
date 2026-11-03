@@ -90,10 +90,10 @@ function RecordEditorInner(){
       record={...record,format:'',collection:'',description:''};
       extra={...extra,credits:[],locations:[],mediaType:'document',relations:(extra.relations||[]).filter(id=>records.some(x=>x.id===id&&['Película','Persona'].includes(x.type)))};
     }
-    // Entrevista: entrevistado(a), fecha, formato, texto (opcional), archivo adjunto (audio o video) e imagen
+    // Entrevista: entrevistado(a), fecha, formato, texto (opcional), archivo adjunto (audio o video), imagen y películas referenciadas
     if(isInterview){
       record={...record,format:interviewFormat(extra),collection:''};
-      extra={...extra,credits:[],locations:[],relations:[],media:extra.mediaType==='text'?'':extra.media,interviewees:who,interviewee:undefined};
+      extra={...extra,credits:[],locations:[],relations:(extra.relations||[]).filter(id=>records.some(x=>x.id===id&&x.type==='Película')),media:extra.mediaType==='text'?'':extra.media,interviewees:who,interviewee:undefined};
       ({record,extra}=withBody(record,extra));
     }
     // Artículo: título, autor(a), fecha, películas referenciadas y cuerpo; lo demás no se guarda
@@ -405,7 +405,21 @@ function InterviewPanel({r,e,setR,setE,openPicker}){
         {r.image&&<button type="button" className="cms-icon-btn is-danger-text" onClick={ask('la imagen',()=>setR({image:''}))} aria-label="Quitar imagen" title="Quitar imagen"><Trash2/></button>}</div>
       {!r.image&&photo&&<p className="cms-help">Sin imagen propia se usa la fotografía de {photo.title}.</p>}
     </PanelBlock>
+    <InterviewFilms e={e} setE={setE} openPicker={openPicker}/>
   </>;
+}
+
+// Entrevista: películas referenciadas (con enlace a sus fichas), igual que en prensa y artículos
+function InterviewFilms({e,setE,openPicker}){
+  const ask=useAskRemove();
+  const films=(e.relations||[]).map(id=>records.find(x=>x.id===id&&x.type==='Película')).filter(Boolean);
+  return <PanelBlock title={`Películas referenciadas · ${films.length}`}>
+    {films.length>0?<ul className="cms-mini-list">{films.map(x=><li key={x.id}>
+      <img src={thumb(x.image,120)} alt=""/><span>{x.title}<small>{x.year}</small></span>
+      <button type="button" className="cms-icon-btn is-danger-text" onClick={ask(`el vínculo con «${x.title}»`,()=>setE({relations:e.relations.filter(id=>id!==x.id)}))} aria-label={`Quitar ${x.title}`} title="Quitar"><X/></button>
+    </li>)}</ul>:<p className="cms-help">Ninguna todavía.</p>}
+    <button type="button" className="cms-btn is-block" onClick={()=>openPicker('film')}><Plus/> Vincular película</button>
+  </PanelBlock>;
 }
 
 // Artículo: películas referenciadas (con enlace a sus fichas) e imagen principal

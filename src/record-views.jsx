@@ -98,21 +98,6 @@ function Facts({rows,z,extra}){
   return <dl className="ficha-film-facts">{rows.filter(([,v,,key])=>v||(edit&&key)).map(([k,v,wide,key])=><div key={k} className={wide?'wide':undefined} {...z('facts','Datos de la ficha')}><dt>{k}</dt><dd>{key?f(key,v,{placeholder:k}):v}</dd></div>)}</dl>;
 }
 
-// Relacionados como índice de diario: miniatura en papel, titular con serifa
-function RelatedList({related,title='Ver también'}){
-  if(!related.length)return null;
-  return <section className="doc-related">
-    <header><h3>{title}</h3><span>{String(related.length).padStart(2,'0')} registros</span></header>
-    <ol>{related.map((r,i)=><li key={r.id}><Link to={recordPath(r)}>
-      <span className="doc-related-num">{String(i+1).padStart(2,'0')}</span>
-      <span className="doc-related-thumb"><img src={r.image} alt="" loading="lazy" decoding="async"/></span>
-      <span className="doc-related-text"><small>{r.type} · {r.year}</small><strong>{r.title}</strong><em>{r.subtitle}</em></span>
-      <ArrowRight className="doc-related-arrow"/>
-    </Link></li>)}</ol>
-  </section>;
-}
-
-
 /* ---------- Prensa, entrevistas y artículos: una misma vista de documento ---------- */
 
 // Qué muestra cada tipo dentro del diseño de documento
@@ -164,8 +149,9 @@ export function DocumentView({item,extra,related,people}){
   const body=edit?slot('body'):<BodyText blocks={blocks}/>;
   // Entrevista: el reproductor va junto a la ficha (columna derecha), no bajo la foto
   const player=cfg.player&&<div className="press-player" id="media"><MediaViewer item={{...item,image:cfg.image||item.image}} extra={extra}/>{slot('media')}</div>;
-  // Panel derecho, como el de las películas: la imagen principal y los campos propios de cada tipo (y en prensa, sus películas vinculadas)
-  const pressFilms=cfg.press?related.filter(r=>r.type==='Película'):[];
+  // Panel derecho, como el de las películas: la imagen principal, los campos propios de cada tipo y las
+  // películas referenciadas (prensa, entrevistas y artículos las vinculan igual)
+  const linkedFilms=related.filter(r=>r.type==='Película');
   const aside=<aside className="ficha-aside ficha-film-aside doc-aside"><div className="doc-aside-inner">
     <figure className={`press-clipping doc-aside-image is-${panelShape(item,extra)}`}>
       <button type="button" onClick={()=>setZoom(0)} aria-label="Ampliar imagen">
@@ -179,7 +165,9 @@ export function DocumentView({item,extra,related,people}){
       :<p className="ficha-filmography-empty">Aún no hay personas vinculadas a este registro.</p>}</>}
     <div className="ficha-aside-label" {...z('aside.facts',`Título «${cfg.factsLabel}»`)}>{cfg.factsLabel}</div>
     <Facts rows={cfg.facts} z={z} extra={extra}/>
-    {pressFilms.length>0&&<><div className="ficha-aside-label" {...z('aside.related','Título «Películas vinculadas»')}>Películas vinculadas</div><div className="ficha-film-related">{pressFilms.map(r=><Link to={recordPath(r)} key={r.id}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><small {...z('related.meta','Vinculados · detalle')}>{r.type}</small><strong {...z('related.title','Vinculados · nombres y títulos')}>{r.title}</strong></div><ArrowRight/></Link>)}</div></>}
+    <div className="ficha-aside-label" {...z('aside.related','Título «Películas referenciadas»')}>Películas referenciadas</div>
+    {linkedFilms.length?<div className="ficha-film-related">{linkedFilms.map(r=><Link to={recordPath(r)} key={r.id}><img src={r.image} alt="" loading="lazy" decoding="async"/><div><small {...z('related.meta','Vinculados · detalle')}>{r.type}</small><strong {...z('related.title','Vinculados · nombres y títulos')}>{r.title}</strong></div><ArrowRight/></Link>)}</div>
+      :<p className="ficha-filmography-empty">Aún no hay películas vinculadas a este registro.</p>}
   </div></aside>;
   return <main className={`ficha-page doc-page doc-press doc-${item.slug}`} {...root}>
     <div className="doc-grid"><div className="doc-content">
@@ -212,11 +200,6 @@ export function DocumentView({item,extra,related,people}){
     {hasPdf&&<section className="press-pdf" id="documento" data-reveal>
       <div className="ficha-filmography-head"><div className="ficha-section-label">DOCUMENTO DIGITALIZADO</div><div className="press-pdf-links"><a href={extra.media} download={`${item.title}.pdf`} target="_blank" rel="noreferrer"><Download/> Descargar PDF</a><a href={extra.media} target="_blank" rel="noreferrer">Abrir en otra pestaña <ArrowRight/></a></div></div>
       <PdfViewer url={extra.media} title={item.title}/>
-    </section>}
-    {/* Artículo: las películas referenciadas, con enlace a sus fichas */}
-    {cfg.article&&(edit||related.some(r=>r.type==='Película'))&&<section className="doc-footer is-single" data-reveal>
-      <div className="doc-footer-main"><RelatedList related={related.filter(r=>r.type==='Película')} title="Películas referenciadas"/>
-        {!related.some(r=>r.type==='Película')&&edit&&<p className="ficha-filmography-empty">Vincula las películas desde el panel de la derecha.</p>}</div>
     </section>}
     </div>{aside}</div>
     {open&&<div className="press-lightbox" role="dialog" aria-modal="true" aria-label={shown.caption||shown.alt} onClick={()=>setZoom(null)}>
