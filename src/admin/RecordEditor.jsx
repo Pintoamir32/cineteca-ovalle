@@ -201,7 +201,9 @@ function RecordEditorInner(){
   </EditorShell>;
 }
 
-const BLANK='data:image/gif;base64,R0lGODlhAQABAAAAACw=';
+// Transparente de 1×1: con un gif incompleto el navegador no puede medirlo y el contenedor de la portada
+// (que ahora toma el alto real de la foto) queda sin alto, tapando el botón para añadir la imagen
+const BLANK='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
 
 // Entrevista: una o varias personas entrevistadas, {id} (con ficha) o {name} (escrita a mano). De ellas
 // salen el nombre, el título y la imagen (también en las antiguas, que tenían una sola); el formato es texto, audio o video
