@@ -172,6 +172,11 @@ export const nextId=()=>{
   const trashed=trash.flatMap(t=>t.kind==='records'?[t.item]:t.kind==='todo'?t.item?.records||[]:[]);
   return Math.max(0,...[...records,...trashed].map(r=>Number(r?.id)).filter(id=>id<1e9))+1;
 };
+// El código de una ficha nueva se escribe a mano: hay que avisar si ya lo usa otra (viva o en la papelera)
+export const idTaken=id=>{
+  const trashed=trash.flatMap(t=>t.kind==='records'?[t.item]:t.kind==='todo'?t.item?.records||[]:[]);
+  return [...records,...trashed].some(r=>Number(r?.id)===Number(id));
+};
 
 export function saveRecord(record,extra){
   const clean={...record,slug:SLUG_BY_TYPE[record.type]||'archivo',updatedAt:new Date().toISOString()};

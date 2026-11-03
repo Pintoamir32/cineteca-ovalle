@@ -8,7 +8,7 @@ import { normalizeRuns, renderRuns, runsOf, sliceRuns, validRuns } from '../rich
 import { RecordDetail } from '../pages';
 import { BODY_IMAGE_ALIGNS, BODY_IMAGE_SIZE, PANEL_SHAPES, bodyBlocks, bodyImageStyle, bodyPlainText, panelShape } from '../record-views';
 import { getFilmography, getInterviewees, INTERVIEW_FORMATS, interviewFormat, joinNames } from '../repository';
-import { deleteRecord, nextId, saveError, saveRecord, setData, useStoreVersion } from '../store';
+import { deleteRecord, idTaken, nextId, saveError, saveRecord, setData, useStoreVersion } from '../store';
 import { EditorShell, PanelBlock, useAdminNav } from './AdminApp';
 import { Choice, ColorSwatches, Modal, Editable, EditableChoice, EditableImage, ImagePicker, MEDIA_TYPES, MediaPicker, RecordPicker, thumb, useUi, useAskRemove } from './fields';
 import { SiteFrame } from './SiteFrame';
@@ -63,6 +63,11 @@ function RecordEditorInner(){
 
   const wasPublished=!!existing&&!existing.draft;
   const save=async()=>{
+    // El código se escribe a mano al crear la ficha: debe existir y no repetir el de otra
+    if(isNew){
+      if(!r.id&&r.id!==0)return toast('Escribe un código para esta ficha antes de guardar.','error');
+      if(idTaken(r.id))return toast('Ese código ya lo usa otra ficha. Escribe uno distinto.','error');
+    }
     // Entrevista: cada persona se vincula a su ficha o se escribe a mano; de ellas sale el título y, si no se
     // sube una imagen, la fotografía (la de la primera vinculada que tenga)
     const who=isInterview?cleanInterviewees(e.interviewees):[];
@@ -138,6 +143,18 @@ function RecordEditorInner(){
     :isInterview?({Año:'Fecha',Contenido:e.mediaType==='text'?'Contenido':'Archivo adjunto'}[k]||k):r.type==='Película'&&k==='Descripción'?'Sinopsis':k;
   // Panel en cuatro grupos, de lo que más se mira a lo que menos se cambia
   const panel=<>
+    <PanelBlock title="Código">
+      {isNew?<>
+        <label className="cms-panel-label">Código de la ficha</label>
+        <input value={r.id===''||r.id==null?'':r.id} onChange={ev=>{const v=ev.target.value.replace(/\D/g,'');setR({id:v===''?'':Number(v)})}}
+          placeholder="Ej.: 23" inputMode="numeric" aria-label="Código de la ficha"/>
+        <p className={`cms-help${r.id!==''&&r.id!=null&&idTaken(r.id)?' is-error':''}`}>
+          {r.id===''||r.id==null?'Escribe un número: será el código de esta ficha.'
+            :idTaken(r.id)?'Ese código ya lo usa otra ficha.'
+            :`Se guardará como ${code(r.id)}.`}
+        </p>
+      </>:<p className="cms-help">{code(r.id)} · el código se escribe al crear la ficha y no cambia después.</p>}
+    </PanelBlock>
     <PanelBlock title="Visibilidad en el sitio">
       <div className="cms-segment is-small cms-seg-block">
         <button type="button" className={published?'active':''} onClick={()=>setPublished(true)}><Eye/> Publicada</button>
